@@ -1,8 +1,0 @@
-{
-	"name":"jsfs",
-	"description":"an http-accessible filesystem in javascript",
-	"version": "0.0.1",
-	"dependencies":{
-		"express":"3.x"
-	}
-}
