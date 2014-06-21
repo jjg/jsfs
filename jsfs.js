@@ -37,7 +37,7 @@ function storeFile(filename, contents){
 			
 			if(!fs.existsSync(storageFile)){
 				
-				fs.writeFileSync(storageFile, contents, 'base64');
+				fs.writeFileSync(storageFile, contents);
 				
 			} else {
 				
@@ -140,12 +140,15 @@ http.createServer(function(req, res){
 			
 			// extract filename (can look like a path too)
 			filename = req.url;
+			var contentLength = req.headers['content-length'];
+			
+			console.log(req.headers);
 			
 			// extract file contents
-			contents = '';
+			contents = new Buffer(0);
 			
 			req.on('data', function(data){
-				contents += data;
+				contents = new Buffer.concat([contents, data]);
 			});
 			
 			req.on('end', function(){
