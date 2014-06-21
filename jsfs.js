@@ -80,7 +80,7 @@ function getFile(filename){
 		
 		if(fs.existsSync(storageFile)){
 			
-			contents = fs.readFileSync(storageFile, 'base64');
+			contents = fs.readFileSync(storageFile);
 					
 		}
 	}
@@ -148,7 +148,10 @@ http.createServer(function(req, res){
 			contents = new Buffer(0);
 			
 			req.on('data', function(data){
+				
 				contents = new Buffer.concat([contents, data]);
+				
+				console.log('contents.length: ' + contents.length);
 			});
 			
 			req.on('end', function(){
