@@ -14,10 +14,6 @@ files = {};
 // store a file
 function storeFile(filename, contents){
 	
-	console.log('storeFile');
-	console.log('filename: ' + filename);
-	console.log('content length: ' + contents.length);
-	
 	// check for existing filename
 	if(typeof files[filename] === 'undefined'){
 		
@@ -27,8 +23,6 @@ function storeFile(filename, contents){
 		shasum.update(contents);
 		contentsHash = shasum.digest('hex');
 		
-		console.log('contentsHash: ' + contentsHash);
-		
 		// write file to disk under hash-based filename
 		try{
 			
@@ -37,7 +31,7 @@ function storeFile(filename, contents){
 			
 			if(!fs.existsSync(storageFile)){
 				
-				fs.writeFileSync(storageFile, contents);
+				fs.writeFileSync(storageFile, contents, 'binary');
 				
 			} else {
 				
@@ -98,12 +92,10 @@ function getIndex(){
 // start the server
 http.createServer(function(req, res){
 	
-	// determine and route request
-	console.log('Received request: ' + req.method);
-	
 	var filename = null;
 	var contents = null;
 	
+	// determine and route request
 	switch(req.method){
 		
 		case 'GET':
@@ -140,25 +132,19 @@ http.createServer(function(req, res){
 			
 			// extract filename (can look like a path too)
 			filename = req.url;
-			var contentLength = req.headers['content-length'];
-			
-			console.log(req.headers);
 			
 			// extract file contents
-			contents = new Buffer(0);
+			contents = new Buffer('');
 			
 			req.on('data', function(data){
 				
 				contents = new Buffer.concat([contents, data]);
 				
-				console.log('contents.length: ' + contents.length);
 			});
 			
 			req.on('end', function(){
 				
 				var storeResult = storeFile(filename, contents);
-				
-				console.log('storeResult: ' + storeResult);
 				
 				if(storeResult === 'OK'){
 					res.writeHead(200);
