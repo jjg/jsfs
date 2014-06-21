@@ -37,7 +37,7 @@ function storeFile(filename, contents){
 			
 			if(!fs.existsSync(storageFile)){
 				
-				fs.writeFileSync(storageFile, contents);
+				fs.writeFileSync(storageFile, contents, 'base64');
 				
 			} else {
 				
@@ -80,7 +80,7 @@ function getFile(filename){
 		
 		if(fs.existsSync(storageFile)){
 			
-			contents = fs.readFileSync(storageFile);
+			contents = fs.readFileSync(storageFile, 'base64');
 					
 		}
 	}
