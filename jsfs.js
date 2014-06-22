@@ -45,6 +45,8 @@ function storeFile(filename, contents){
 			
 			console.log(files[filename]);
 			
+			// todo: persist metadata to disk
+			
 			return 'OK';
 				
 		} catch(ex){
@@ -121,6 +123,8 @@ function deleteFile(filename){
 				if(hashRefCount < 1){
 					fs.unlinkSync(storageFile);
 				}
+				
+				// todo: persist metadata to disk
 			
 			} catch(ex) {
 				
@@ -139,6 +143,8 @@ function getIndex(){
 	return JSON.stringify(files);
 	
 }
+
+// todo: load metadata from disk
 
 // start the server
 http.createServer(function(req, res){
