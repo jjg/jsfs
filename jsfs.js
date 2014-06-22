@@ -82,6 +82,56 @@ function getFile(filename){
 	return contents;
 }
 
+function deleteFile(filename){
+	
+	var deleted = false;
+	
+	var contents = null;
+	var contentsHash = files[filename].hash;
+	
+	if(contentsHash){
+		
+		var storageFile = storagePath + contentsHash;
+		
+		if(fs.existsSync(storageFile)){
+			
+			try{
+				
+				// remove from index
+				files[filename] = null;
+	
+				deleted = true;
+				
+				// if this is the last link, remove from filesystem
+				// todo: find a more efficient way to do this
+				var hashRefCount = 0;
+				for(var key in files){
+					
+					if(files[key]){
+						if(files[key].hash === contentsHash){
+							hashRefCount++;
+						}
+					}
+					//console.log(key + '\t\t' + files[key].contentSize + '\t' + files[key].onDiskSize);
+				}
+				
+				console.log('hashRefCount: ' + hashRefCount);
+				
+				if(hashRefCount < 1){
+					fs.unlinkSync(storageFile);
+				}
+			
+			} catch(ex) {
+				
+				console.log(ex);
+				
+			}
+		}
+	}
+	
+	return deleted;
+}
+
 // retreive an index of files
 function getIndex(){
 	
@@ -165,7 +215,17 @@ http.createServer(function(req, res){
 			break;
 			
 		case 'DELETE':
-			deleteFile(req);
+			
+			filename = req.url;
+			
+			if(deleteFile(filename)){
+				res.writeHead(200);
+				res.end('file deleted');
+			} else {
+				res.writeHead(500);
+				res.end('error deleting file');
+			}
+			
 			break;
 			
 		default:
@@ -176,7 +236,10 @@ http.createServer(function(req, res){
 	console.log('-----------system stats----------------');
 	console.log('filename\t\tcontent size\tsize on disk');
 	for(var key in files){
-		console.log(key + '\t\t' + files[key].contentSize + '\t' + files[key].onDiskSize);
+		
+		if(files[key]){
+			console.log(key + '\t\t' + files[key].contentSize + '\t' + files[key].onDiskSize);
+		}
 	}
 	console.log('---------------------------------------');
 	
