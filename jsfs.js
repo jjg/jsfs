@@ -98,6 +98,7 @@ function deleteFile(filename){
 			try{
 				
 				// remove from index
+				// todo: find a cleaner way to remove these references
 				files[filename] = null;
 	
 				deleted = true;
@@ -108,14 +109,14 @@ function deleteFile(filename){
 				for(var key in files){
 					
 					if(files[key]){
+						
 						if(files[key].hash === contentsHash){
 							hashRefCount++;
 						}
+						
 					}
-					//console.log(key + '\t\t' + files[key].contentSize + '\t' + files[key].onDiskSize);
+					
 				}
-				
-				console.log('hashRefCount: ' + hashRefCount);
 				
 				if(hashRefCount < 1){
 					fs.unlinkSync(storageFile);
