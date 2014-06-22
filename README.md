@@ -6,6 +6,7 @@ A general-purpose http-accessible, deduplicating node.js filesystem
 #API
     
 ##POST
+Stores the supplied POST body as a file at the location specified in the request.  If a file exists at the specified location, an error is returned (eventually this will be overrideable when an authorization system exists).
 
 ###EXAMPLE
 Request:
@@ -17,6 +18,7 @@ Result:
 HTTP 200 if sucessful, HTTP 500 if not (also "file exists" if an existing file has been posted to the specified location).
 
 ##GET
+Returns a JSON index of stored files & metadata or the binary data of a specific file.
 
 ###EXAMPLE
 
@@ -41,6 +43,7 @@ Specific File Request:
     curl "http://localhost:1313/mycontainer/Brinstar.mp3" > Brinstar.mp3
     
 ##DELETE
+Deletes the file at the specified location.  Returns an error if the file does not exist, or could not be deleted.
 
 ###EXAMPLE
 Request:
