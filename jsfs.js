@@ -64,6 +64,28 @@ function storeFile(filename, contents){
 	}
 }
 
+function storeHashblock(hashblock, contents){
+	
+	try{
+		
+		var storageFile = storagePath + hashblock;
+		var storageSize = contents.length;
+		
+		if(!fs.existsSync(storageFile)){
+			
+			fs.writeFileSync(storageFile, contents, 'binary');
+
+		}
+		
+		return 'OK';
+		
+	} catch(ex) {
+		
+		return 'ERR';
+		
+	}
+}
+
 // retrieve a file
 function getFile(filename){
 
@@ -73,6 +95,25 @@ function getFile(filename){
 	if(contentsHash){
 		
 		var storageFile = storagePath + contentsHash;
+		
+		if(fs.existsSync(storageFile)){
+			
+			contents = fs.readFileSync(storageFile);
+					
+		}
+	}
+	
+	return contents;
+}
+
+// retrieve a hashblock
+function getHashblock(hashblock){
+
+	var contents = null;
+
+	if(hashblock){
+		
+		var storageFile = storagePath + hashblock;
 		
 		if(fs.existsSync(storageFile)){
 			
@@ -190,7 +231,19 @@ http.createServer(function(req, res){
 				break;
 			}
 			
-			contents = getFile(filename);
+			// if block is requested, use special block reader
+			if(filename.substring(0, 11) === '/hashblock/'){
+				
+				// extract the hashblock from the filename
+				var hashblock = filename.substring(11);
+				
+				contents = getHashblock(hashblock);
+				
+			} else {
+				
+				contents = getFile(filename);
+				
+			}
 			
 			if(contents.length > 0){
 				
@@ -219,7 +272,21 @@ http.createServer(function(req, res){
 			
 			req.on('end', function(){
 				
-				var storeResult = storeFile(filename, contents);
+				var storeResult = null;
+				
+				// skip hashing if storing a block directly
+				if(filename.substring(0, 11) === '/hashblock/'){
+					
+					// extract the hashblock from the filename
+					var hashblock = filename.substring(11);
+					
+					storeResult = storeHashblock(hashblock, contents);
+					
+				} else {
+					
+					storeResult = storeFile(filename, contents);
+					
+				}
 				
 				if(storeResult === 'OK'){
 					res.writeHead(200);
