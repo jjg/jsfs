@@ -196,15 +196,40 @@ function saveMetadata(){
 	});
 }
 
-// todo: load metadata from disk
+// load metadata from disk
 function loadMetadata(){
+	
 	try{
+		
 		files = JSON.parse(fs.readFileSync(storagePath + 'metadata.json'));
+		
 		console.log('metadata loaded sucessfully');
+		
+		printStats();
+		
 	} catch(ex) {
+		
 		console.log('error loading metadata, ');
 		console.log(err);
+		
 	}
+}
+
+// print system stats
+function printStats(){
+	
+	console.log('-----------system stats----------------');
+	console.log('filename\t\tcontent size\tsize on disk');
+	
+	for(var key in files){
+		
+		if(files[key]){
+			console.log(key + '\t\t' + files[key].contentSize + '\t' + files[key].onDiskSize);
+		}
+	}
+	
+	console.log('---------------------------------------');
+
 }
 
 // load the fs metadata
@@ -322,15 +347,6 @@ http.createServer(function(req, res){
 			res.end('???');
 	}
 	
-	// print system stats
-	console.log('-----------system stats----------------');
-	console.log('filename\t\tcontent size\tsize on disk');
-	for(var key in files){
-		
-		if(files[key]){
-			console.log(key + '\t\t' + files[key].contentSize + '\t' + files[key].onDiskSize);
-		}
-	}
-	console.log('---------------------------------------');
+	printStats();
 	
 }).listen(1313, '127.0.0.1');
