@@ -45,7 +45,7 @@ function storeFile(filename, contents){
 			
 			console.log(files[filename]);
 			
-			// todo: persist metadata to disk
+			saveMetadata();
 			
 			return 'OK';
 				
@@ -124,7 +124,7 @@ function deleteFile(filename){
 					fs.unlinkSync(storageFile);
 				}
 				
-				// todo: persist metadata to disk
+				saveMetadata();
 			
 			} catch(ex) {
 				
@@ -144,7 +144,30 @@ function getIndex(){
 	
 }
 
+// persist metadata to disk
+function saveMetadata(){
+	fs.writeFile(storagePath + 'metadata.json', JSON.stringify(files), function(err){
+		if(err){
+			console.log('error updating metadata');
+		} else {
+			console.log('metadata stored sucessfully');
+		}
+	});
+}
+
 // todo: load metadata from disk
+function loadMetadata(){
+	try{
+		files = JSON.parse(fs.readFileSync(storagePath + 'metadata.json'));
+		console.log('metadata loaded sucessfully');
+	} catch(ex) {
+		console.log('error loading metadata, ');
+		console.log(err);
+	}
+}
+
+// load the fs metadata
+loadMetadata();
 
 // start the server
 http.createServer(function(req, res){
