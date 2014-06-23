@@ -218,17 +218,30 @@ function loadMetadata(){
 // print system stats
 function printStats(){
 	
-	console.log('-----------system stats----------------');
-	console.log('filename\t\tcontent size\tsize on disk');
+	var totalFiles = 0;
+	var totalSize = 0;
+	var totalSizeOnDisk = 0;
 	
 	for(var key in files){
 		
 		if(files[key]){
-			console.log(key + '\t\t' + files[key].contentSize + '\t' + files[key].onDiskSize);
+			
+			totalFiles++;
+			totalSize = totalSize + files[key].contentSize;
+			totalSizeOnDisk = totalSizeOnDisk + files[key].onDiskSize;
+			
 		}
+		
 	}
 	
-	console.log('---------------------------------------');
+	console.log('\n---------------system stats----------------\n');
+	
+	console.log('Total number of files: ' + totalFiles);
+	console.log('Total number of bytes stored: ' + totalSize);
+	console.log('Total number of bytes on disk: ' + totalSizeOnDisk);
+	console.log('Deduplication rate: ' + ((totalSizeOnDisk / totalSize) * 100) + '%');
+	
+	console.log('\n-------------------------------------------\n');
 
 }
 
