@@ -172,7 +172,8 @@ loadMetadata();
 // start the server
 http.createServer(function(req, res){
 	
-	var filename = null;
+	// file name is the full path (simulates containers)
+	var filename = req.url;
 	var contents = null;
 	
 	// determine and route request
@@ -188,9 +189,6 @@ http.createServer(function(req, res){
 				
 				break;
 			}
-			
-			// extract filename (can look like a path too)
-			filename = req.url;
 			
 			contents = getFile(filename);
 			
@@ -209,9 +207,6 @@ http.createServer(function(req, res){
 			break;
 			
 		case 'POST':
-			
-			// extract filename (can look like a path too)
-			filename = req.url;
 			
 			// extract file contents
 			contents = new Buffer('');
@@ -245,8 +240,6 @@ http.createServer(function(req, res){
 			break;
 			
 		case 'DELETE':
-			
-			filename = req.url;
 			
 			if(deleteFile(filename)){
 				res.writeHead(200);
