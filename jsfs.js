@@ -86,6 +86,21 @@ function storeHashblock(hashblock, contents){
 	}
 }
 
+// eventually may be used for replication, unused now
+function addToIndex(hashblock, contentSize, storageSize){
+	
+	// add filename to index
+	console.log('adding file ' + filename + ' to index');
+	files[filename] = {hash:hashblock,contentSize:contentSize,onDiskSize:storageSize};
+			
+	console.log(files[filename]);
+			
+	saveMetadata();
+			
+	return 'OK';
+	
+}
+
 // retrieve a file
 function getFile(filename){
 
