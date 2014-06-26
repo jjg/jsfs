@@ -104,17 +104,23 @@ function addToIndex(hashblock, contentSize, storageSize){
 // retrieve a file
 function getFile(filename){
 
+	// debug
+	console.log(filename);
+	 
 	var contents = null;
-	var contentsHash = files[filename].hash;
-
-	if(contentsHash){
-		
-		var storageFile = storagePath + contentsHash;
-		
-		if(fs.existsSync(storageFile)){
+	
+	if(typeof files[filename] != 'undefined'){
+		var contentsHash = files[filename].hash;
+	
+		if(contentsHash){
 			
-			contents = fs.readFileSync(storageFile);
-					
+			var storageFile = storagePath + contentsHash;
+			
+			if(fs.existsSync(storageFile)){
+				
+				contents = fs.readFileSync(storageFile);
+						
+			}
 		}
 	}
 	
@@ -316,7 +322,7 @@ http.createServer(function(req, res){
 				
 			}
 			
-			if(contents.length > 0){
+			if(contents && contents.length > 0){
 				
 				res.writeHead(200);
 				res.end(contents);
