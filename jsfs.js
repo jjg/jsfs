@@ -275,12 +275,14 @@ http.createServer(function(req, res){
 	// debug
 	console.log(req.method);
 	
+	res.setHeader('Access-Control-Allow-Origin', '*');
+	
 	// determine and route request
 	switch(req.method){
-			
+		
 		case 'OPTIONS':
 			
-			res.setHeader('Access-Control-Allow-Origin', '*');
+			//res.setHeader('Access-Control-Allow-Origin', '*');
 			res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, DELETE');
 			res.setHeader('Access-Control-Allow-Headers', allowedHeaders.join(','));
 	
@@ -358,13 +360,13 @@ http.createServer(function(req, res){
 				}
 				
 				if(storeResult === 'OK'){
-					res.setHeader('Access-Control-Allow-Origin', '*');
+					//res.setHeader('Access-Control-Allow-Origin', '*');
 					res.writeHead(200);
 					res.end();
 				}
 				
 				if(storeResult === 'EXISTS'){
-					res.setHeader('Access-Control-Allow-Origin', '*');
+					//res.setHeader('Access-Control-Allow-Origin', '*');
 					res.writeHead(500);
 					res.end('file exists');
 				}

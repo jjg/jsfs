@@ -6,13 +6,56 @@
 	</head>
 	<body>
 	
+		<h1>upload files</h1>
 		<input id="uploadInput" type="file" multiple>
 		<input type="button" value="upload" onclick="uploadFiles()">
+		
+		<h1>uploaded files</h1>
+		<ul id="uploadedFileList"></ul>
 	
 		<script>
 		
 			var uploadInput = document.getElementById('uploadInput');
+			var uploadedFileList = document.getElementById('uploadedFileList');
 		
+		
+			// load list of uploaded files
+			getUploadedFiles();
+			
+			// defs
+			function getUploadedFiles(){
+				
+				var xhr = new XMLHttpRequest();
+				
+				xhr.open('GET', 'http://localhost:1313/', true);
+				xhr.onreadystatechange = renderFileList;
+				xhr.send();
+				
+				function renderFileList(){
+				
+					if(this.readyState == 4){
+						
+						console.log(this.responseText);
+						
+						uploadedFileList.innerHTML = null;
+						
+						var uploadedFiles = JSON.parse(this.responseText);
+						
+						for(var key in uploadedFiles){
+							
+							var fileName = key;
+							
+							console.log(fileName);
+							
+							var fileListItem = document.createElement('li');
+							fileListItem.innerHTML = fileName;
+							
+							uploadedFileList.appendChild(fileListItem);
+						}
+					}
+				}
+			}
+			
 			function uploadFiles(){
 				
 				// debug
@@ -25,6 +68,8 @@
 					uploadFile(uploadInput.files[i]);
 					
 				}
+				
+				getUploadedFiles();
 			}
 			
 			function uploadFile(file){
