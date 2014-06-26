@@ -278,9 +278,6 @@ http.createServer(function(req, res){
 	var filename = req.url;
 	var contents = null;
 	
-	// debug
-	console.log(req.method);
-	
 	res.setHeader('Access-Control-Allow-Origin', '*');
 	
 	// determine and route request
