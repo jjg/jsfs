@@ -266,12 +266,28 @@ loadMetadata();
 // start the server
 http.createServer(function(req, res){
 	
+	var allowedHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With','Range','X_FILENAME'];
+			
 	// file name is the full path (simulates containers)
 	var filename = req.url;
 	var contents = null;
 	
+	// debug
+	console.log(req.method);
+	
 	// determine and route request
 	switch(req.method){
+			
+		case 'OPTIONS':
+			
+			res.setHeader('Access-Control-Allow-Origin', '*');
+			res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, DELETE');
+			res.setHeader('Access-Control-Allow-Headers', allowedHeaders.join(','));
+	
+			res.writeHead(204);
+			res.end();
+			
+			break;
 		
 		case 'GET':
 			
@@ -342,18 +358,22 @@ http.createServer(function(req, res){
 				}
 				
 				if(storeResult === 'OK'){
+					res.setHeader('Access-Control-Allow-Origin', '*');
 					res.writeHead(200);
 					res.end();
 				}
 				
 				if(storeResult === 'EXISTS'){
+					res.setHeader('Access-Control-Allow-Origin', '*');
 					res.writeHead(500);
 					res.end('file exists');
 				}
 				
+				/*
 				// if all else fails
 				res.writeHead(500);
 				res.end('unknown error');
+				*/
 				
 			});
 

@@ -1,0 +1,40 @@
+<!-- simple upload (and potentially download) demo page for jsfs -->
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Upload files to jsfs</title>
+	</head>
+	<body>
+	
+		<input id="uploadInput" type="file" multiple>
+		<input type="button" value="upload" onclick="uploadFiles()">
+	
+		<script>
+		
+			var uploadInput = document.getElementById('uploadInput');
+		
+			function uploadFiles(){
+				
+				// debug
+				console.log('got uploadFiles');
+				console.log(uploadInput.files);
+				
+				for(var i=0; i< uploadInput.files.length; i++){
+					console.log('uploading ' + uploadInput.files[i]);
+					
+					uploadFile(uploadInput.files[i]);
+					
+				}
+			}
+			
+			function uploadFile(file){
+				var xhr = new XMLHttpRequest();
+				xhr.open("POST", 'http://localhost:1313/' + file.name, true);
+				xhr.setRequestHeader("X_FILENAME", file.name);
+				xhr.send(file);
+			}
+			
+		</script>
+		
+	</body>
+</html>
