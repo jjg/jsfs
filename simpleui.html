@@ -7,6 +7,7 @@
 	<body>
 	
 		<h1>upload files</h1>
+		bucket: <input id="bucketInput" type="text">
 		<input id="uploadInput" type="file" multiple>
 		<input type="button" value="upload" onclick="uploadFiles()">
 		
@@ -15,9 +16,9 @@
 	
 		<script>
 		
+			var uploadBucketInput = document.getElementById('bucketInput');
 			var uploadInput = document.getElementById('uploadInput');
 			var uploadedFileList = document.getElementById('uploadedFileList');
-		
 		
 			// load list of uploaded files
 			getUploadedFiles();
@@ -35,8 +36,6 @@
 				
 					if(this.readyState == 4){
 						
-						console.log(this.responseText);
-						
 						uploadedFileList.innerHTML = null;
 						
 						var uploadedFiles = JSON.parse(this.responseText);
@@ -44,8 +43,6 @@
 						for(var key in uploadedFiles){
 							
 							var fileName = key;
-							
-							console.log(fileName);
 							
 							var fileLink = document.createElement('a');
 							fileLink.setAttribute('href', 'http://localhost:1313' + fileName);
@@ -62,10 +59,6 @@
 			
 			function uploadFiles(){
 				
-				// debug
-				console.log('got uploadFiles');
-				console.log(uploadInput.files);
-				
 				for(var i=0; i< uploadInput.files.length; i++){
 					console.log('uploading ' + uploadInput.files[i]);
 					
@@ -76,13 +69,16 @@
 			
 			function uploadFile(file){
 				var xhr = new XMLHttpRequest();
-				xhr.open("POST", 'http://localhost:1313/' + file.name, true);
+				xhr.open("POST", 'http://localhost:1313/' + uploadBucketInput.value + '/' + file.name, true);
 				xhr.setRequestHeader("X_FILENAME", file.name);
 				xhr.onreadystatechange = uploadStatus;
 				xhr.send(file);
 				
 				function uploadStatus(){
 					if(this.readyState == 4){
+						
+						console.log('done uploading ' + file.name);
+						
 						getUploadedFiles();
 					}
 				}
