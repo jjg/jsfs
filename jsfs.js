@@ -6,7 +6,8 @@ var crypto = require('crypto');
 var fs = require('fs');
 
 // config
-var storagePath = './thebits/';
+var STORAGEPATH = './thebits/';
+var BLOCKSIZE = 1024;
 
 // globals
 files = {};
@@ -17,6 +18,57 @@ function storeFile(filename, contents){
 	// check for existing filename
 	if(typeof files[filename] === 'undefined'){
 		
+		// init file metadata
+		var fileMetadata = {};
+		fileMetadata.name = filename;
+		fileMetadata.created = Date.now();
+		
+		// generate hashblocks
+		var hashblocks = [];
+		var offset = 0;
+		
+		// debug
+		console.log('actual contents length: ' + contents.length);
+		
+		// slice and store contents
+		for(var i=0;i<contents.length;i = i + BLOCKSIZE){
+		
+			// debug
+			console.log('offset index i: ' + i);
+			
+			// grab a block of the contents
+			var block = contents.slice(i, i + BLOCKSIZE);
+			
+			// generate a hash of the block
+			var blockHash = null;
+			var shasum = crypto.createHash('sha1');
+			shasum.update(block);
+			blockHash = shasum.digest('hex');
+		
+			// save the block to disk
+			var blockFile = STORAGEPATH + blockHash;
+			
+			if(!fs.existsSync(blockFile)){
+				
+				fs.writeFileSync(blockFile, block, 'binary');
+				
+			}
+			
+			// add the block to the hashblock array
+			hashblocks.push(blockHash);
+		}
+		
+		// add the hashblock array to the file metadata
+		fileMetadata.hashblocks = hashblocks;
+		
+		// todo: add the file metadata to the index
+		files[filename] = fileMetadata;
+		
+		saveMetadata();
+		
+		return 'OK';
+		
+		/*
 		// hash the contents
 		var contentsHash = null;
 		var shasum = crypto.createHash('sha1');
@@ -39,7 +91,7 @@ function storeFile(filename, contents){
 				
 			}
 			
-			// add filename to index
+			// add file to index
 			console.log('adding file ' + filename + ' to index');
 			files[filename] = {hash:contentsHash,contentSize:contents.length,onDiskSize:storageSize};
 			
@@ -57,6 +109,8 @@ function storeFile(filename, contents){
 				
 		}
 		
+		*/
+		
 	} else {
 		
 		return 'EXISTS';
@@ -68,7 +122,7 @@ function storeHashblock(hashblock, contents){
 	
 	try{
 		
-		var storageFile = storagePath + hashblock;
+		var storageFile = STORAGEPATH + hashblock;
 		var storageSize = contents.length;
 		
 		if(!fs.existsSync(storageFile)){
@@ -114,7 +168,7 @@ function getFile(filename){
 	
 		if(contentsHash){
 			
-			var storageFile = storagePath + contentsHash;
+			var storageFile = STORAGEPATH + contentsHash;
 			
 			if(fs.existsSync(storageFile)){
 				
@@ -134,7 +188,7 @@ function getHashblock(hashblock){
 
 	if(hashblock){
 		
-		var storageFile = storagePath + hashblock;
+		var storageFile = STORAGEPATH + hashblock;
 		
 		if(fs.existsSync(storageFile)){
 			
@@ -155,7 +209,7 @@ function deleteFile(filename){
 	
 	if(contentsHash){
 		
-		var storageFile = storagePath + contentsHash;
+		var storageFile = STORAGEPATH + contentsHash;
 		
 		if(fs.existsSync(storageFile)){
 			
@@ -208,7 +262,7 @@ function getIndex(){
 
 // persist metadata to disk
 function saveMetadata(){
-	fs.writeFile(storagePath + 'metadata.json', JSON.stringify(files), function(err){
+	fs.writeFile(STORAGEPATH + 'metadata.json', JSON.stringify(files), function(err){
 		if(err){
 			console.log('error updating metadata');
 		} else {
@@ -222,7 +276,7 @@ function loadMetadata(){
 	
 	try{
 		
-		files = JSON.parse(fs.readFileSync(storagePath + 'metadata.json'));
+		files = JSON.parse(fs.readFileSync(STORAGEPATH + 'metadata.json'));
 		
 		console.log('metadata loaded sucessfully');
 		
@@ -231,7 +285,7 @@ function loadMetadata(){
 	} catch(ex) {
 		
 		console.log('error loading metadata, ');
-		console.log(err);
+		console.log(ex);
 		
 	}
 }
