@@ -227,21 +227,34 @@ function getFile(filename, callback){
 					// this is where we check other nodes for the blockfile
 					if(config.peers.length > 0){
 			
+						// debug
+						console.log('checking for block ' + hashblocks[i] + ' on peers');
+						
 						var peers = config.peers;
 						
 						for(var j=0;j<peers.length;j++){
 							
-							http.get(peers[j].host + ':' + peers[j].port + '/hashblock/' + hashblocks[i], function(peerResponse){
+							// debug
+							console.log('requesting:');
+							console.log('http://' + peers[j].host + ':' + peers[j].port + '/hashblock/' + hashblocks[i]);
+							
+							http.get('http://' + peers[j].host + ':' + peers[j].port + '/hashblock/' + hashblocks[i], function(peerResponse){
 								
 								var buffer = '';
 								
 								peerResponse.on('data', function(chunk){
+									
+									// debug
+									console.log('got data');
+									
 									buffer += chunk;
 								});
 									
 								peerResponse.on('end', function(){
 								
 									// debug
+									console.log('got end');
+									
 									console.log('got response from jsfs peer');
 									console.log('length: ' + buffer.length);
 									
@@ -250,6 +263,7 @@ function getFile(filename, callback){
 									// todo: maybe update peer list based on response (or lack of)?
 									
 								});
+								
 							});
 						}
 						
@@ -288,6 +302,9 @@ function getHashblock(hashblock){
 		var storageFile = config.storagePath + hashblock;
 		
 		if(fs.existsSync(storageFile)){
+			
+			// debug
+			console.log('hashblock exists');
 			
 			contents = fs.readFileSync(storageFile);
 					
@@ -437,7 +454,22 @@ http.createServer(function(req, res){
 				// extract the hashblock from the filename
 				var hashblock = filename.substring(11);
 				
+				// debug
+				console.log('hasblock ' + hashblock + ' requested from peer');
+				
 				contents = getHashblock(hashblock);
+				
+				if(contents && contents.length > 0){
+				
+					res.writeHead(200);
+					res.end(contents);
+						
+				} else {
+					
+					res.writeHead(404);
+					res.end('file not found');
+					
+				}
 				
 			} else {
 				
