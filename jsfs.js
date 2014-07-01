@@ -449,7 +449,7 @@ http.createServer(function(req, res){
 			// if block is requested, use special block reader
 			if(filename.substring(0, 11) === '/hashblock/'){
 				
-				// todo: this might need attention...
+				// todo: this might need attention...response code is redundant
 				
 				// extract the hashblock from the filename
 				var hashblock = filename.substring(11);
