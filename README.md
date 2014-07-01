@@ -3,6 +3,21 @@ jsfs
 
 A general-purpose http-accessible, deduplicating node.js filesystem
 
+#REQUIREMENTS
+
+*  node.js
+
+#CONFIGURE
+
+*  Clone this repo
+*  Copy config.ex to config.js
+*  Edit config.js to set the storage path (where you want uploaded data stored) and the block size in bytes (1048576 is a good place to start)
+*  Start the server (node jsfs.js is good enough, or pm2, etc. if you're fancy)
+
+The server will then be listening on port 1313.  You can open simpleui.html in a browser to test things out or use the API below with curl (or to interface your own code).  jsfs will spit out stats and other debug information to the console as you interact with it.
+
+In the future blocksize may be fixed.  Right now you can change it, but bear in mind that changing it will invalidate any data stored at a different block size.  This is an area I'm experimenting with and will be more elegant in the future, but for now when in doubt stick with 1MB (1048576).
+
 #API
     
 ##POST
