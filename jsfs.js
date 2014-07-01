@@ -240,18 +240,15 @@ function loadMetadata(){
 // print system stats
 function printStats(){
 	
-	// todo: make this make sense in a block-level dedupe world
 	var totalFiles = 0;
-	var totalSize = 0;
-	var totalSizeOnDisk = 0;
+	var totalBlocks = 0;
 	
 	for(var key in files){
 		
 		if(files[key]){
 			
 			totalFiles++;
-			totalSize = totalSize + files[key].contentSize;
-			totalSizeOnDisk = totalSizeOnDisk + files[key].onDiskSize;
+			totalBlocks = totalBlocks + files[key].hashblocks.length;
 			
 		}
 		
@@ -260,9 +257,7 @@ function printStats(){
 	console.log('\n---------------system stats----------------\n');
 	
 	console.log('Total number of files: ' + totalFiles);
-	console.log('Total number of bytes stored: ' + totalSize);
-	console.log('Total number of bytes on disk: ' + totalSizeOnDisk);
-	console.log('Deduplication rate: ' + ((totalSizeOnDisk / totalSize) * 100) + '%');
+	console.log('Total number of blocks: ' + totalBlocks + ' (' + ((totalBlocks * BLOCKSIZE) / 1048576) + 'MB)');
 	
 	console.log('\n-------------------------------------------\n');
 
