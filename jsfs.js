@@ -142,7 +142,7 @@ function getFile(filename){
 			
 		} else {
 			
-			console.log('no hasblocks found for file ' + filename);
+			console.log('no hashblocks found for file ' + filename);
 		}
 	}
 	
@@ -281,7 +281,6 @@ http.createServer(function(req, res){
 		
 		case 'OPTIONS':
 			
-			//res.setHeader('Access-Control-Allow-Origin', '*');
 			res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, DELETE');
 			res.setHeader('Access-Control-Allow-Headers', allowedHeaders.join(','));
 	
