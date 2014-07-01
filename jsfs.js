@@ -27,14 +27,8 @@ function storeFile(filename, contents){
 		var hashblocks = [];
 		var offset = 0;
 		
-		// debug
-		console.log('actual contents length: ' + contents.length);
-		
 		// slice and store contents
 		for(var i=0;i<contents.length;i = i + BLOCKSIZE){
-		
-			// debug
-			console.log('offset index i: ' + i);
 			
 			// grab a block of the contents
 			var block = contents.slice(i, i + BLOCKSIZE);
@@ -240,6 +234,8 @@ function deleteFile(filename){
 	var deleted = false;
 	
 	var contents = null;
+	
+	// todo: make delete work with block-level dedupe
 	var contentsHash = files[filename].hash;
 	
 	if(contentsHash){
@@ -291,6 +287,7 @@ function deleteFile(filename){
 // retreive an index of files
 function getIndex(){
 	
+	// todo: now that file meta is getting bigger, may want to slim this down
 	return JSON.stringify(files);
 	
 }
