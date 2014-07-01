@@ -188,10 +188,6 @@ function getFile(filename, callback){
 		
 			function updateContentsArray(index, content){
 				
-				// debug
-				console.log('index: ' + index);
-				//console.log('content: ' + content);
-				
 				contentsArray[index] = content;
 				
 				// debug
@@ -308,6 +304,10 @@ function getHashblock(hashblock){
 			
 			contents = fs.readFileSync(storageFile);
 					
+		} else {
+			
+			// debug
+			console.log('hashblock not found');
 		}
 	}
 	
