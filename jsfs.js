@@ -7,7 +7,7 @@ var fs = require('fs');
 
 // config
 var STORAGEPATH = './thebits/';
-var BLOCKSIZE = 1024;
+var BLOCKSIZE = 1048576; // 1 megabyte
 
 // globals
 files = {};
