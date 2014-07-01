@@ -231,54 +231,29 @@ function getHashblock(hashblock){
 
 function deleteFile(filename){
 	
+	// note: actually deleting files is too much work
+	// to do within a single HTTP request, so for now
+	// we just "unlink" the file by removing it from
+	// the index, but there is a todo: to create an
+	// out-of-band task that deals with orphaned blocks
+	// stored on disk
+	
 	var deleted = false;
 	
-	var contents = null;
-	
-	// todo: make delete work with block-level dedupe
-	var contentsHash = files[filename].hash;
-	
-	if(contentsHash){
+	// remove from index
+	try {
+
+		// todo: find a cleaner way to remove these references
+		files[filename] = null;
+
+		deleted = true;
 		
-		var storageFile = STORAGEPATH + contentsHash;
+		saveMetadata();
 		
-		if(fs.existsSync(storageFile)){
-			
-			try{
-				
-				// remove from index
-				// todo: find a cleaner way to remove these references
-				files[filename] = null;
-	
-				deleted = true;
-				
-				// if this is the last link, remove from filesystem
-				// todo: find a more efficient way to do this
-				var hashRefCount = 0;
-				for(var key in files){
-					
-					if(files[key]){
-						
-						if(files[key].hash === contentsHash){
-							hashRefCount++;
-						}
-						
-					}
-					
-				}
-				
-				if(hashRefCount < 1){
-					fs.unlinkSync(storageFile);
-				}
-				
-				saveMetadata();
-			
-			} catch(ex) {
-				
-				console.log(ex);
-				
-			}
-		}
+	} catch(ex) {
+		
+		console.log('error removing file from index: ' + ex);
+		
 	}
 	
 	return deleted;
