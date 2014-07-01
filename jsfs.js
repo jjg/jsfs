@@ -52,6 +52,9 @@ function storeFile(filename, contents){
 				
 				fs.writeFileSync(blockFile, block, 'binary');
 				
+			} else {
+				
+				console.log('duplicate block ' + blockHash + ' not stored');
 			}
 			
 			// add the block to the hashblock array
@@ -61,7 +64,7 @@ function storeFile(filename, contents){
 		// add the hashblock array to the file metadata
 		fileMetadata.hashblocks = hashblocks;
 		
-		// todo: add the file metadata to the index
+		// add the file metadata to the index
 		files[filename] = fileMetadata;
 		
 		saveMetadata();
@@ -118,6 +121,7 @@ function storeFile(filename, contents){
 	}
 }
 
+/*
 function storeHashblock(hashblock, contents){
 	
 	try{
@@ -154,6 +158,7 @@ function addToIndex(hashblock, contentSize, storageSize){
 	return 'OK';
 	
 }
+*/
 
 // retrieve a file
 function getFile(filename){
@@ -161,9 +166,38 @@ function getFile(filename){
 	// debug
 	console.log(filename);
 	 
-	var contents = null;
+	var contents = new Buffer('');
 	
 	if(typeof files[filename] != 'undefined'){
+		
+		// check for hashblocks
+		var hashblocks = files[filename].hashblocks
+		
+		if(hashblocks){
+		
+			// iterate over hashblocks
+			for(var i=0;i<hashblocks.length;i++){
+				
+				// append blocks to contents
+				var blockFile = STORAGEPATH + hashblocks[i];
+				
+				if(fs.existsSync(blockFile)){
+					
+					contents = contents + fs.readFileSync(blockFile);
+					
+				} else {
+					
+					// todo: this is where we'd check other nodes for the blockfile, for now, cry like baby
+					console.log('blockfile ' + blockFile + ' missing!');
+					
+				}
+			}
+		} else {
+			
+			console.log('no hasblocks found for file ' + filename);
+		}
+		
+		/*
 		var contentsHash = files[filename].hash;
 	
 		if(contentsHash){
@@ -176,6 +210,7 @@ function getFile(filename){
 						
 			}
 		}
+		*/
 	}
 	
 	return contents;
