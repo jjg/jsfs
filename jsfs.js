@@ -62,6 +62,57 @@ function storeFile(filename, contents){
 		
 		saveMetadata();
 		
+		// update peer metadata
+		if(config.peers.length > 0){
+			
+			var peers = config.peers;
+			var fileMetaJSON = JSON.stringify(fileMetadata);
+			
+			// debug
+			console.log(peers.length + ' peers configured, sending updates');
+			
+			// submit file metadata to each peer
+			for(var j=0;j<peers.length;j++){
+				
+				var req_options = {
+				host: peers[j].host,
+				path: '/filemeta/',
+				port: peers[j].port,
+				method: 'POST',
+				headers: {
+					'User-Agent': 'jsfs/0.0.1',
+					'Accept': '*/*',
+					'Content-Type': 'application/x-www-form-urlencoded',
+					'Content-Length': Buffer.byteLength(fileMetaJSON)
+				}};
+			
+				var peerClient = http.request(req_options, function(peerResponse){
+					
+					var buffer = '';
+					
+					peerResponse.on('data', function(chunk){
+						buffer += chunk;
+					});
+						
+					peerResponse.on('end', function(){
+					
+						// debug
+						console.log('got response from jsfs peer');
+						
+						console.log(buffer);
+				
+						// todo: maybe update peer list based on response (or lack of)?
+						
+					});
+				});
+				
+				// issue the service request
+				peerClient.write(fileMetaJSON);
+				peerClient.end();
+				
+			}
+		}
+		
 		return 'OK';
 		
 	} else {
@@ -93,22 +144,33 @@ function storeHashblock(hashblock, contents){
 		
 	}
 }
+*/
 
-// eventually may be used for replication, unused now
-function addToIndex(hashblock, contentSize, storageSize){
+// used for federation
+function addToIndex(fileMetadata){
 	
 	// add filename to index
-	console.log('adding file ' + filename + ' to index');
-	files[filename] = {hash:hashblock,contentSize:contentSize,onDiskSize:storageSize};
-			
-	console.log(files[filename]);
-			
-	saveMetadata();
-			
-	return 'OK';
+	console.log('adding file ' + fileMetadata.name + ' to index');
+	
+	// only if it's not already there
+	if(typeof files[fileMetadata.name] === 'undefined'){
+		
+		files[fileMetadata.name] = fileMetadata;
+				
+		console.log(files[fileMetadata.name]);
+				
+		saveMetadata();
+				
+		return 'OK';
+	
+	} else {
+		
+		return 'EXISTS';
+		
+	}
 	
 }
-*/
+
 
 // retrieve a file
 function getFile(filename){
@@ -351,6 +413,15 @@ http.createServer(function(req, res){
 					
 					storeResult = storeHashblock(hashblock, contents);
 					
+				} else if(filename.substring(0, 10) === '/filemeta/'){
+				
+					var fileMetadata = JSON.parse(contents);
+					
+					// debug
+					console.log('adding remote file ' + fileMetadata.name + ' to local index');
+					
+					storeResult = addToIndex(fileMetadata);
+				
 				} else {
 					
 					storeResult = storeFile(filename, contents);
