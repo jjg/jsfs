@@ -74,41 +74,60 @@ function storeFile(filename, contents){
 			// submit file metadata to each peer
 			for(var j=0;j<peers.length;j++){
 				
-				var req_options = {
-				host: peers[j].host,
-				path: '/filemeta/',
-				port: peers[j].port,
-				method: 'POST',
-				headers: {
-					'User-Agent': 'jsfs/0.0.1',
-					'Accept': '*/*',
-					'Content-Type': 'application/x-www-form-urlencoded',
-					'Content-Length': Buffer.byteLength(fileMetaJSON)
-				}};
-			
-				var peerClient = http.request(req_options, function(peerResponse){
-					
-					var buffer = '';
-					
-					peerResponse.on('data', function(chunk){
-						buffer += chunk;
-					});
-						
-					peerResponse.on('end', function(){
-					
-						// debug
-						console.log('got response from jsfs peer');
-						
-						console.log(buffer);
+				try{
+					var req_options = {
+					host: peers[j].host,
+					path: '/filemeta/',
+					port: peers[j].port,
+					method: 'POST',
+					headers: {
+						'User-Agent': 'jsfs/0.0.1',
+						'Accept': '*/*',
+						'Content-Type': 'application/x-www-form-urlencoded',
+						'Content-Length': Buffer.byteLength(fileMetaJSON)
+					}};
 				
-						// todo: maybe update peer list based on response (or lack of)?
+					var peerClient = http.request(req_options, function(peerResponse){
+						
+						var buffer = '';
+						
+						peerResponse.on('data', function(chunk){
+							buffer += chunk;
+						});
+							
+						peerResponse.on('end', function(){
+						
+							// debug
+							console.log('got response from jsfs peer');
+							
+							console.log(buffer);
+					
+							// todo: maybe update peer list based on response (or lack of)?
+							
+						});
+						
+						peerResponse.on('error', function(err){
+							console.log('got error updating peer');
+							console.log(err);
+						});
 						
 					});
-				});
-				
-				// issue the service request
-				peerClient.write(fileMetaJSON);
-				peerClient.end();
+					
+					peerClient.on('error', function(err){
+						console.log('got error updating peer');
+						console.log(err);
+					});
+					
+					// issue the service request
+					peerClient.write(fileMetaJSON);
+					peerClient.end();
+					
+				} catch(ex){
+					
+					console.log('an exception occured contacting configured peer');
+					console.log(ex);
+					
+				}
 				
 			}
 		}
