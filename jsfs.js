@@ -5,9 +5,8 @@ var http = require('http');
 var crypto = require('crypto');
 var fs = require('fs');
 
-// config
-var STORAGEPATH = './thebits/';
-var BLOCKSIZE = 1048576; // 1 megabyte
+// load config
+var config = require('./config.js');
 
 // globals
 files = {};
@@ -28,10 +27,10 @@ function storeFile(filename, contents){
 		var offset = 0;
 		
 		// slice and store contents
-		for(var i=0;i<contents.length;i = i + BLOCKSIZE){
+		for(var i=0;i<contents.length;i = i + config.blockSize){
 			
 			// grab a block of the contents
-			var block = contents.slice(i, i + BLOCKSIZE);
+			var block = contents.slice(i, i + config.blockSize);
 			
 			// generate a hash of the block
 			var blockHash = null;
@@ -40,7 +39,7 @@ function storeFile(filename, contents){
 			blockHash = shasum.digest('hex');
 		
 			// save the block to disk
-			var blockFile = STORAGEPATH + blockHash;
+			var blockFile = config.storagePath + blockHash;
 			
 			if(!fs.existsSync(blockFile)){
 				
@@ -127,7 +126,7 @@ function getFile(filename){
 			for(var i=0;i<hashblocks.length;i++){
 				
 				// append blocks to contents
-				var blockFile = STORAGEPATH + hashblocks[i];
+				var blockFile = config.storagePath + hashblocks[i];
 				
 				if(fs.existsSync(blockFile)){
 					
@@ -157,7 +156,7 @@ function getHashblock(hashblock){
 
 	if(hashblock){
 		
-		var storageFile = STORAGEPATH + hashblock;
+		var storageFile = config.storagePath + hashblock;
 		
 		if(fs.existsSync(storageFile)){
 			
@@ -209,7 +208,7 @@ function getIndex(){
 
 // persist metadata to disk
 function saveMetadata(){
-	fs.writeFile(STORAGEPATH + 'metadata.json', JSON.stringify(files), function(err){
+	fs.writeFile(config.storagePath + 'metadata.json', JSON.stringify(files), function(err){
 		if(err){
 			console.log('error updating metadata');
 		} else {
@@ -223,7 +222,7 @@ function loadMetadata(){
 	
 	try{
 		
-		files = JSON.parse(fs.readFileSync(STORAGEPATH + 'metadata.json'));
+		files = JSON.parse(fs.readFileSync(config.storagePath + 'metadata.json'));
 		
 		console.log('metadata loaded sucessfully');
 		
@@ -257,7 +256,7 @@ function printStats(){
 	console.log('\n---------------system stats----------------\n');
 	
 	console.log('Total number of files: ' + totalFiles);
-	console.log('Total number of blocks: ' + totalBlocks + ' (' + ((totalBlocks * BLOCKSIZE) / 1048576) + 'MB)');
+	console.log('Total number of blocks: ' + totalBlocks + ' (' + ((totalBlocks * config.blockSize) / 1048576) + 'MB)');
 	
 	console.log('\n-------------------------------------------\n');
 
