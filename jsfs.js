@@ -65,49 +65,6 @@ function storeFile(filename, contents){
 		
 		return 'OK';
 		
-		/*
-		// hash the contents
-		var contentsHash = null;
-		var shasum = crypto.createHash('sha1');
-		shasum.update(contents);
-		contentsHash = shasum.digest('hex');
-		
-		// write file to disk under hash-based filename
-		try{
-			
-			var storageFile = storagePath + contentsHash;
-			var storageSize = contents.length;
-			
-			if(!fs.existsSync(storageFile)){
-				
-				fs.writeFileSync(storageFile, contents, 'binary');
-				
-			} else {
-				
-				storageSize = 0;
-				
-			}
-			
-			// add file to index
-			console.log('adding file ' + filename + ' to index');
-			files[filename] = {hash:contentsHash,contentSize:contents.length,onDiskSize:storageSize};
-			
-			console.log(files[filename]);
-			
-			saveMetadata();
-			
-			return 'OK';
-				
-		} catch(ex){
-				
-			console.log(ex);
-				
-			return 'ERR';
-				
-		}
-		
-		*/
-		
 	} else {
 		
 		return 'EXISTS';
@@ -156,9 +113,6 @@ function addToIndex(hashblock, contentSize, storageSize){
 
 // retrieve a file
 function getFile(filename){
-
-	// debug
-	console.log(filename);
 	 
 	var contents = new Buffer('');
 	
@@ -186,25 +140,11 @@ function getFile(filename){
 					
 				}
 			}
+			
 		} else {
 			
 			console.log('no hasblocks found for file ' + filename);
 		}
-		
-		/*
-		var contentsHash = files[filename].hash;
-	
-		if(contentsHash){
-			
-			var storageFile = STORAGEPATH + contentsHash;
-			
-			if(fs.existsSync(storageFile)){
-				
-				contents = fs.readFileSync(storageFile);
-						
-			}
-		}
-		*/
 	}
 	
 	return contents;
@@ -300,6 +240,7 @@ function loadMetadata(){
 // print system stats
 function printStats(){
 	
+	// todo: make this make sense in a block-level dedupe world
 	var totalFiles = 0;
 	var totalSize = 0;
 	var totalSizeOnDisk = 0;
