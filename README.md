@@ -45,12 +45,26 @@ Index result:
 
 ````
 {
-    "/mycontainer/Brinstar.mp3": {
-        "hash": "e17417737a84c36ccc20f15086f14c4b29e5ceb2",
-        "contentSize": 14922579,
-        "onDiskSize": 14922579
+    "/666/t.tar": {
+        "name": "/666/t.tar",
+        "created": 1404226784502,
+        "hashblocks": [
+            "dc9f2f41ca71b5c85e684378c3b7d5395df2796e",
+            "a8e913304d8379521acbacd05cfd45bd4855ac96",
+            "9a7acc1e11e4038463667e43291a66622d3c1536"
+        ]
+    },
+    "/667/t.tar": {
+        "name": "/667/t.tar",
+        "created": 1404226815261,
+        "hashblocks": [
+            "dc9f2f41ca71b5c85e684378c3b7d5395df2796e",
+            "a8e913304d8379521acbacd05cfd45bd4855ac96",
+            "9a7acc1e11e4038463667e43291a66622d3c1536"
+        ]
     }
 }
+
 ````
     
 Specific File Request:
