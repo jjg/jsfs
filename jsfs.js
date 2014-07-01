@@ -173,43 +173,110 @@ function addToIndex(fileMetadata){
 
 
 // retrieve a file
-function getFile(filename){
-	 
+function getFile(filename, callback){
+	
 	var contents = new Buffer('');
 	
 	if(typeof files[filename] != 'undefined'){
 		
 		// check for hashblocks
-		var hashblocks = files[filename].hashblocks
+		var hashblocks = files[filename].hashblocks;
 		
 		if(hashblocks){
+			
+			var contentsArray = [];
 		
+			function updateContentsArray(index, content){
+				
+				// debug
+				console.log('index: ' + index);
+				//console.log('content: ' + content);
+				
+				contentsArray[index] = content;
+				
+				// debug
+				console.log('hashblocks.length: ' + hashblocks.length);
+				console.log('contentsArray.length: ' + contentsArray.length);
+				
+				// once we have all the blocks, lump them together and return
+				if((contentsArray.length - 1) === hashblocks.length){
+			
+					contents = contentsArray.join('');
+					
+					callback(contents);
+					
+				}
+			}
+			
 			// iterate over hashblocks
 			for(var i=0;i<hashblocks.length;i++){
 				
-				// append blocks to contents
+				// first check local filesystem
 				var blockFile = config.storagePath + hashblocks[i];
 				
 				if(fs.existsSync(blockFile)){
 					
-					contents = contents + fs.readFileSync(blockFile);
+					fs.readFile(blockFile, function(err, fileContents){
+						
+						updateContentsArray(i, fileContents);
+						
+					});
 					
 				} else {
 					
-					// todo: this is where we'd check other nodes for the blockfile, for now, cry like baby
-					console.log('blockfile ' + blockFile + ' missing!');
+					// this is where we check other nodes for the blockfile
+					if(config.peers.length > 0){
+			
+						var peers = config.peers;
+						
+						for(var j=0;j<peers.length;j++){
+							
+							http.get(peers[j].host + ':' + peers[j].port + '/hashblock/' + hashblocks[i], function(peerResponse){
+								
+								var buffer = '';
+								
+								peerResponse.on('data', function(chunk){
+									buffer += chunk;
+								});
+									
+								peerResponse.on('end', function(){
+								
+									// debug
+									console.log('got response from jsfs peer');
+									console.log('length: ' + buffer.length);
+									
+									updateContentsArray(i, buffer); //callback(buffer);
+									
+									// todo: maybe update peer list based on response (or lack of)?
+									
+								});
+							});
+						}
+						
+					} else {
 					
+						console.log('blockfile ' + blockFile + ' missing!');
+					
+					}
 				}
 			}
 			
 		} else {
 			
 			console.log('no hashblocks found for file ' + filename);
+			
+			callback(contents);
+			
 		}
+		
+	} else {
+		
+		console.log('file ' + filename + ' not found in index');
+		
+		callback(contents);
 	}
-	
-	return contents;
 }
+
 
 // retrieve a hashblock
 function getHashblock(hashblock){
@@ -365,6 +432,8 @@ http.createServer(function(req, res){
 			// if block is requested, use special block reader
 			if(filename.substring(0, 11) === '/hashblock/'){
 				
+				// todo: this might need attention...
+				
 				// extract the hashblock from the filename
 				var hashblock = filename.substring(11);
 				
@@ -372,19 +441,22 @@ http.createServer(function(req, res){
 				
 			} else {
 				
-				contents = getFile(filename);
+				getFile(filename, function(c){
+					
+					contents = c;
+					
+					if(contents && contents.length > 0){
 				
-			}
-			
-			if(contents && contents.length > 0){
-				
-				res.writeHead(200);
-				res.end(contents);
-				
-			} else {
-				
-				res.writeHead(404);
-				res.end('file not found');
+						res.writeHead(200);
+						res.end(contents);
+						
+					} else {
+						
+						res.writeHead(404);
+						res.end('file not found');
+						
+					}
+				});
 				
 			}
 			
