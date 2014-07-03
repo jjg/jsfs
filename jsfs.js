@@ -141,18 +141,23 @@ function storeFile(filename, contents){
 	}
 }
 
-/*
+
 function storeHashblock(hashblock, contents){
 	
 	try{
 		
-		var storageFile = STORAGEPATH + hashblock;
-		var storageSize = contents.length;
+		var storageFile = config.storagePath + hashblock;
 		
 		if(!fs.existsSync(storageFile)){
 			
+			console.log('storing hashblock ' + hashblock);
+			
 			fs.writeFileSync(storageFile, contents, 'binary');
 
+		} else {
+			
+			console.log('duplicate hashblock ' + hashblock + ' not stored');
+			
 		}
 		
 		return 'OK';
@@ -163,7 +168,7 @@ function storeHashblock(hashblock, contents){
 		
 	}
 }
-*/
+
 
 // used for federation
 function addToIndex(fileMetadata){
@@ -274,6 +279,9 @@ function getFile(filename, callback){
 									console.log('length: ' + buffer.length);
 									
 									updateContentsArray(i, buffer); //callback(buffer);
+									
+									// cache the retreived hashblock locally
+									storeHashblock(hashblocks[i], buffer);
 									
 									// todo: maybe update peer list based on response (or lack of)?
 									
