@@ -28,7 +28,7 @@
 				
 				var xhr = new XMLHttpRequest();
 				
-				xhr.open('GET', 'http://localhost:1313/', true);
+				xhr.open('GET', 'http://10.0.1.58:1313/', true);
 				xhr.onreadystatechange = renderFileList;
 				xhr.send();
 				
@@ -45,7 +45,7 @@
 							var fileName = key;
 							
 							var fileLink = document.createElement('a');
-							fileLink.setAttribute('href', 'http://localhost:1313' + fileName);
+							fileLink.setAttribute('href', 'http://10.0.1.58:1313' + fileName);
 							fileLink.innerHTML = fileName;
 							
 							var fileListItem = document.createElement('li');
@@ -69,7 +69,7 @@
 			
 			function uploadFile(file){
 				var xhr = new XMLHttpRequest();
-				xhr.open("POST", 'http://localhost:1313/' + uploadBucketInput.value + '/' + file.name, true);
+				xhr.open("POST", 'http://10.0.1.58:1313/' + uploadBucketInput.value + '/' + file.name, true);
 				xhr.setRequestHeader("X_FILENAME", file.name);
 				xhr.onreadystatechange = uploadStatus;
 				xhr.send(file);

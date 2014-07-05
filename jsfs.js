@@ -265,7 +265,7 @@ function getFile(filename, callback){
 								peerResponse.on('data', function(chunk){
 									
 									// debug
-									console.log('got data');
+									//console.log('got data');
 									
 									buffer += chunk;
 								});
@@ -599,4 +599,4 @@ http.createServer(function(req, res){
 	
 	printStats();
 	
-}).listen(1313, '127.0.0.1');
+}).listen(1313, '10.0.1.58');
