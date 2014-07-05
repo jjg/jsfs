@@ -118,7 +118,7 @@ function getFile(filename){
 	if(typeof files[filename] != 'undefined'){
 		
 		// check for hashblocks
-		var hashblocks = files[filename].hashblocks
+		var hashblocks = files[filename].hashblocks;
 		
 		if(hashblocks){
 		
@@ -130,7 +130,9 @@ function getFile(filename){
 				
 				if(fs.existsSync(blockFile)){
 					
-					contents = contents + fs.readFileSync(blockFile);
+					var blockFileList = [contents, fs.readFileSync(blockFile)];
+					
+					contents = Buffer.concat(blockFileList);
 					
 				} else {
 					
