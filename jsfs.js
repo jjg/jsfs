@@ -62,6 +62,76 @@ function storeFile(filename, contents){
 		
 		saveMetadata();
 		
+		// update peer metadata
+		if(config.peers.length > 0){
+			
+			var peers = config.peers;
+			var fileMetaJSON = JSON.stringify(fileMetadata);
+			
+			// debug
+			console.log(peers.length + ' peers configured, sending updates');
+			
+			// submit file metadata to each peer
+			for(var j=0;j<peers.length;j++){
+				
+				try{
+					var req_options = {
+					host: peers[j].host,
+					path: '/filemeta/',
+					port: peers[j].port,
+					method: 'POST',
+					headers: {
+						'User-Agent': 'jsfs/0.0.1',
+						'Accept': '*/*',
+						'Content-Type': 'application/x-www-form-urlencoded',
+						'Content-Length': Buffer.byteLength(fileMetaJSON)
+					}};
+				
+					var peerClient = http.request(req_options, function(peerResponse){
+						
+						var buffer = '';
+						
+						peerResponse.on('data', function(chunk){
+							buffer += chunk;
+						});
+							
+						peerResponse.on('end', function(){
+						
+							// debug
+							console.log('got response from jsfs peer');
+							
+							console.log(buffer);
+					
+							// todo: maybe update peer list based on response (or lack of)?
+							
+						});
+						
+						peerResponse.on('error', function(err){
+							console.log('got error updating peer');
+							console.log(err);
+						});
+						
+					});
+					
+					peerClient.on('error', function(err){
+						console.log('got error updating peer');
+						console.log(err);
+					});
+					
+					// issue the service request
+					peerClient.write(fileMetaJSON);
+					peerClient.end();
+					
+				} catch(ex){
+					
+					console.log('an exception occured contacting configured peer');
+					console.log(ex);
+					
+				}
+				
+			}
+		}
+		
 		return 'OK';
 		
 	} else {
@@ -71,18 +141,23 @@ function storeFile(filename, contents){
 	}
 }
 
-/*
+
 function storeHashblock(hashblock, contents){
 	
 	try{
 		
-		var storageFile = STORAGEPATH + hashblock;
-		var storageSize = contents.length;
+		var storageFile = config.storagePath + hashblock;
 		
 		if(!fs.existsSync(storageFile)){
 			
+			console.log('storing hashblock ' + hashblock);
+			
 			fs.writeFileSync(storageFile, contents, 'binary');
 
+		} else {
+			
+			console.log('duplicate hashblock ' + hashblock + ' not stored');
+			
 		}
 		
 		return 'OK';
@@ -94,25 +169,36 @@ function storeHashblock(hashblock, contents){
 	}
 }
 
-// eventually may be used for replication, unused now
-function addToIndex(hashblock, contentSize, storageSize){
+
+// used for federation
+function addToIndex(fileMetadata){
 	
 	// add filename to index
-	console.log('adding file ' + filename + ' to index');
-	files[filename] = {hash:hashblock,contentSize:contentSize,onDiskSize:storageSize};
-			
-	console.log(files[filename]);
-			
-	saveMetadata();
-			
-	return 'OK';
+	console.log('adding file ' + fileMetadata.name + ' to index');
+	
+	// only if it's not already there
+	if(typeof files[fileMetadata.name] === 'undefined'){
+		
+		files[fileMetadata.name] = fileMetadata;
+				
+		console.log(files[fileMetadata.name]);
+				
+		saveMetadata();
+				
+		return 'OK';
+	
+	} else {
+		
+		return 'EXISTS';
+		
+	}
 	
 }
-*/
+
 
 // retrieve a file
-function getFile(filename){
-	 
+function getFile(filename, callback){
+	
 	var contents = new Buffer('');
 	
 	if(typeof files[filename] != 'undefined'){
@@ -121,35 +207,117 @@ function getFile(filename){
 		var hashblocks = files[filename].hashblocks;
 		
 		if(hashblocks){
+			
+			var contentsArray = [];
 		
+			function updateContentsArray(index, content){
+				
+				contentsArray[index] = content;
+				
+				// debug
+				console.log('hashblocks.length: ' + hashblocks.length);
+				console.log('contentsArray.length: ' + contentsArray.length);
+				
+				// once we have all the blocks, lump them together and return
+				if((contentsArray.length - 1) === hashblocks.length){
+			
+					contents = Buffer.concat(contentsArray);
+					
+					callback(contents);
+					
+				}
+			}
+			
 			// iterate over hashblocks
 			for(var i=0;i<hashblocks.length;i++){
 				
-				// append blocks to contents
+				// first check local filesystem
 				var blockFile = config.storagePath + hashblocks[i];
 				
 				if(fs.existsSync(blockFile)){
 					
-					var blockFileList = [contents, fs.readFileSync(blockFile)];
+					//var blockFileList = [contents, fs.readFileSync(blockFile)];
 					
-					contents = Buffer.concat(blockFileList);
+					//contents = Buffer.concat(blockFileList);
+
+					fs.readFile(blockFile, function(err, fileContents){
+						
+						updateContentsArray(i, fileContents);
+						
+					});
 					
 				} else {
 					
-					// todo: this is where we'd check other nodes for the blockfile, for now, cry like baby
-					console.log('blockfile ' + blockFile + ' missing!');
+					// this is where we check other nodes for the blockfile
+					if(config.peers.length > 0){
+			
+						// debug
+						console.log('checking for block ' + hashblocks[i] + ' on peers');
+						
+						var peers = config.peers;
+						
+						for(var j=0;j<peers.length;j++){
+							
+							// debug
+							console.log('requesting:');
+							console.log('http://' + peers[j].host + ':' + peers[j].port + '/hashblock/' + hashblocks[i]);
+							
+							http.get('http://' + peers[j].host + ':' + peers[j].port + '/hashblock/' + hashblocks[i], function(peerResponse){
+								
+								var buffer = '';
+								
+								peerResponse.on('data', function(chunk){
+									
+									// debug
+									//console.log('got data');
+									
+									buffer += chunk;
+								});
+									
+								peerResponse.on('end', function(){
+								
+									// debug
+									console.log('got end');
+									
+									console.log('got response from jsfs peer');
+									console.log('length: ' + buffer.length);
+									
+									updateContentsArray(i, buffer); //callback(buffer);
+									
+									// cache the retreived hashblock locally
+									storeHashblock(hashblocks[i], buffer);
+									
+									// todo: maybe update peer list based on response (or lack of)?
+									
+								});
+								
+							});
+						}
+						
+					} else {
 					
+						console.log('blockfile ' + blockFile + ' missing!');
+					
+					}
 				}
 			}
 			
 		} else {
 			
 			console.log('no hashblocks found for file ' + filename);
+			
+			callback(contents);
+			
 		}
+		
+	} else {
+		
+		console.log('file ' + filename + ' not found in index');
+		
+		callback(contents);
 	}
-	
-	return contents;
 }
+
 
 // retrieve a hashblock
 function getHashblock(hashblock){
@@ -162,8 +330,15 @@ function getHashblock(hashblock){
 		
 		if(fs.existsSync(storageFile)){
 			
+			// debug
+			console.log('hashblock exists');
+			
 			contents = fs.readFileSync(storageFile);
 					
+		} else {
+			
+			// debug
+			console.log('hashblock not found');
 		}
 	}
 	
@@ -305,26 +480,46 @@ http.createServer(function(req, res){
 			// if block is requested, use special block reader
 			if(filename.substring(0, 11) === '/hashblock/'){
 				
+				// todo: this might need attention...response code is redundant
+				
 				// extract the hashblock from the filename
 				var hashblock = filename.substring(11);
 				
+				// debug
+				console.log('hasblock ' + hashblock + ' requested from peer');
+				
 				contents = getHashblock(hashblock);
 				
+				if(contents && contents.length > 0){
+				
+					res.writeHead(200);
+					res.end(contents);
+						
+				} else {
+					
+					res.writeHead(404);
+					res.end('file not found');
+					
+				}
+				
 			} else {
 				
-				contents = getFile(filename);
+				getFile(filename, function(c){
+					
+					contents = c;
+					
+					if(contents && contents.length > 0){
 				
-			}
-			
-			if(contents && contents.length > 0){
-				
-				res.writeHead(200);
-				res.end(contents);
-				
-			} else {
-				
-				res.writeHead(404);
-				res.end('file not found');
+						res.writeHead(200);
+						res.end(contents);
+						
+					} else {
+						
+						res.writeHead(404);
+						res.end('file not found');
+						
+					}
+				});
 				
 			}
 			
@@ -353,6 +548,15 @@ http.createServer(function(req, res){
 					
 					storeResult = storeHashblock(hashblock, contents);
 					
+				} else if(filename.substring(0, 10) === '/filemeta/'){
+				
+					var fileMetadata = JSON.parse(contents);
+					
+					// debug
+					console.log('adding remote file ' + fileMetadata.name + ' to local index');
+					
+					storeResult = addToIndex(fileMetadata);
+				
 				} else {
 					
 					storeResult = storeFile(filename, contents);
@@ -399,4 +603,4 @@ http.createServer(function(req, res){
 	
 	printStats();
 	
-}).listen(1313, '127.0.0.1');
+}).listen(1313, '10.0.1.58');
