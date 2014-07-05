@@ -219,7 +219,7 @@ function getFile(filename, callback){
 				console.log('contentsArray.length: ' + contentsArray.length);
 				
 				// once we have all the blocks, lump them together and return
-				if((contentsArray.length - 1) === hashblocks.length){
+				if(contentsArray.length === hashblocks.length){
 			
 					contents = Buffer.concat(contentsArray);
 					
@@ -235,16 +235,18 @@ function getFile(filename, callback){
 				var blockFile = config.storagePath + hashblocks[i];
 				
 				if(fs.existsSync(blockFile)){
-					
-					//var blockFileList = [contents, fs.readFileSync(blockFile)];
-					
-					//contents = Buffer.concat(blockFileList);
 
+					// todo: use non-sync read for this (sync fixes out-of-order bug,
+					// but has perf. penalties and won't work for federation)
+					updateContentsArray(i, fs.readFileSync(blockFile));
+					
+					/*
 					fs.readFile(blockFile, function(err, fileContents){
 						
 						updateContentsArray(i, fileContents);
 						
 					});
+					*/
 					
 				} else {
 					
