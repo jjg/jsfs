@@ -284,7 +284,7 @@ function getFile(filename, callback){
 									console.log('got response from jsfs peer');
 									console.log('length: ' + buffer.length);
 									
-									updateContentsArray(i, buffer); //callback(buffer);
+									updateContentsArray(i, buffer);
 									
 									// cache the retreived hashblock locally
 									storeHashblock(hashblocks[i], buffer);
