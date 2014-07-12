@@ -12,10 +12,10 @@ var config = require('./config.js');
 files = {};
 
 // store a file
-function storeFile(filename, contents){
+function storeFile(filename, contents, overwrite){
 	
 	// check for existing filename
-	if(typeof files[filename] === 'undefined'){
+	if(typeof files[filename] === 'undefined' || overwrite){
 		
 		// init file metadata
 		var fileMetadata = {};
@@ -561,7 +561,7 @@ http.createServer(function(req, res){
 				
 				} else {
 					
-					storeResult = storeFile(filename, contents);
+					storeResult = storeFile(filename, contents, true);
 					
 				}
 				
