@@ -69,7 +69,7 @@
 			
 			function uploadFile(file){
 				var xhr = new XMLHttpRequest();
-				xhr.open("POST", '/' + uploadBucketInput.value + '/' + file.name, true);
+				xhr.open("POST", uploadBucketInput.value + '/' + file.name, true);
 				xhr.setRequestHeader("X_FILENAME", file.name);
 				xhr.onreadystatechange = uploadStatus;
 				xhr.send(file);
