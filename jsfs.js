@@ -561,7 +561,7 @@ http.createServer(function(req, res){
 				
 				} else {
 					
-					storeResult = storeFile(filename, contents, true);
+					storeResult = storeFile(filename, contents, false);
 					
 				}
 				
