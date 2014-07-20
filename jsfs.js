@@ -15,7 +15,7 @@ files = {};
 function storeFile(filename, contents, overwrite){
 
 	// check for existing filename
-	if(typeof files[filename + '_0'] != 'undefined' || overwrite){
+	if(typeof files[filename + '_FV_0'] != 'undefined' || overwrite){
 
 		// debug
 		console.log('file ' + filename + ' exists');
@@ -23,10 +23,10 @@ function storeFile(filename, contents, overwrite){
 		// find most current revision
 		var newVersion = 0;
 
-		while(typeof files[filename + '_' + newVersion] != 'undefined'){
+		while(typeof files[filename + '_FV_' + newVersion] != 'undefined'){
 			
 			// debug
-			console.log(filename + '_' + newVersion + ' exists!');
+			console.log(filename + '_FV_' + newVersion + ' exists!');
 			
 			newVersion++;
 
@@ -36,7 +36,7 @@ function storeFile(filename, contents, overwrite){
 		console.log('new version is ' + newVersion);
 
 		// set filename to incremented revision
-		filename = filename + '_' + newVersion;
+		filename = filename + '_FV_' + newVersion;
 
 		// debug
 		console.log('new version filename is ' + filename);
@@ -44,7 +44,7 @@ function storeFile(filename, contents, overwrite){
 	} else {
 		
 		// add base version to filename
-		filename = filename + '_0';
+		filename = filename + '_FV_0';
 
 		// debug
 		console.log('file does not exist, versioned filename is ' + filename);
@@ -233,10 +233,10 @@ function getFile(filename, callback){
 	console.log('requested file ' + filename);
 	
 	// if a specific version is requested, try to return it
-	if(filename.lastIndexOf('_') > 0 && filename.substring(filename.lastIndexOf('_')).length > 0){
+	if(filename.lastIndexOf('_FV_') > 0 && filename.substring(filename.lastIndexOf('_FV_')).length > 0){
 		
 		// get specific version
-		filename + filename.substring(filename.lastIndexOf('_'));
+		filename + filename.substring(filename.lastIndexOf('_FV_'));
 		
 		// debug
 		console.log('loading specific version ' + filename);
@@ -244,16 +244,16 @@ function getFile(filename, callback){
 	} else {
 		
 		// get latest version
-		while(typeof files[filename + '_' + currentVersion] != 'undefined'){
+		while(typeof files[filename + '_FV_' + currentVersion] != 'undefined'){
 			
 			// debug
-			console.log('found version ' + filename + '_' + currentVersion);
+			console.log('found version ' + filename + '_FV_' + currentVersion);
 			
 			currentVersion++;
 	
 		}
 		
-		filename = filename + '_' + (currentVersion - 1);
+		filename = filename + '_FV_' + (currentVersion - 1);
 	}
 	
 	// debug
@@ -514,12 +514,21 @@ function upgradeMetadata(){
 		totalFiles++;
 		
 		// test each file for version extension
-		if(file.lastIndexOf('_') == -1){
+		if(file.lastIndexOf('_FV_') == -1){
 	
 			// add version 0 extension if none exists
 			console.log('upgrading file key ' + file);
 			
-			var upgradedFileKey = file + '_0';
+			var upgradedFileKey = file + '_FV_0';
+			
+			// upgrade depreciated version indicators
+			if(file.substring(file.lastIndexOf('_')) == '_0'){
+				
+				upgradedFileKey = file.substring(0,file.lastIndexOf('_')) + '_FV_0';
+				
+				console.log('depreciated version indicator trimmed: ' + upgradedFileKey);
+				
+			}
 			
 			console.log('upgraded filekey: ' + upgradedFileKey);
 			
