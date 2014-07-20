@@ -13,132 +13,164 @@ files = {};
 
 // store a file
 function storeFile(filename, contents, overwrite){
-	
+
 	// check for existing filename
-	if(typeof files[filename] === 'undefined' || overwrite){
-		
-		// init file metadata
-		var fileMetadata = {};
-		fileMetadata.name = filename;
-		fileMetadata.created = Date.now();
-		
-		// generate hashblocks
-		var hashblocks = [];
-		var offset = 0;
-		
-		// slice and store contents
-		for(var i=0;i<contents.length;i = i + config.blockSize){
+	if(typeof files[filename + '_0'] != 'undefined' || overwrite){
+
+		// debug
+		console.log('file ' + filename + ' exists');
+
+		// todo: find most current revision
+		var currentVersion = 0;
+
+		while(typeof files[filename + '_' + currentVersion] != 'undefined'){
 			
-			// grab a block of the contents
-			var block = contents.slice(i, i + config.blockSize);
-			
-			// generate a hash of the block
-			var blockHash = null;
-			var shasum = crypto.createHash('sha1');
-			shasum.update(block);
-			blockHash = shasum.digest('hex');
+			currentVersion++;
+
+			// debug
+			console.log(filename + '_' + currentVersion + ' exists!');
+
+		}
+
+		// debug
+		console.log('current version is ' + currentVersion);
 		
-			// save the block to disk
-			var blockFile = config.storagePath + blockHash;
+		// todo: increment revision
+		var newVersion = currentVersion + 1;
+
+		// debug
+		console.log('new version is ' + newVersion);
+
+		// todo: set filename to incremented revision
+		filename = filename + '_' + newVersion;
+
+		// debug
+		console.log('new version filename is ' + filename);
+
+	} else {
+		
+		// add base version to filename
+		filename = filename + '_0';
+
+		// debug
+		console.log('file does not exist, versioned filename is ' + filename);
+
+	}
+	
+	// init file metadata
+	var fileMetadata = {};
+	fileMetadata.name = filename;
+	fileMetadata.created = Date.now();
+		
+	// generate hashblocks
+	var hashblocks = [];
+	var offset = 0;
+		
+	// slice and store contents
+	for(var i=0;i<contents.length;i = i + config.blockSize){
+		
+		// grab a block of the contents
+		var block = contents.slice(i, i + config.blockSize);
+		
+		// generate a hash of the block
+		var blockHash = null;
+		var shasum = crypto.createHash('sha1');
+		shasum.update(block);
+		blockHash = shasum.digest('hex');
+	
+		// save the block to disk
+		var blockFile = config.storagePath + blockHash;
+		
+		if(!fs.existsSync(blockFile)){
 			
-			if(!fs.existsSync(blockFile)){
-				
-				fs.writeFileSync(blockFile, block, 'binary');
-				
-			} else {
-				
-				console.log('duplicate block ' + blockHash + ' not stored');
-			}
+			fs.writeFileSync(blockFile, block, 'binary');
 			
-			// add the block to the hashblock array
-			hashblocks.push(blockHash);
+		} else {
+			
+			console.log('duplicate block ' + blockHash + ' not stored');
 		}
 		
-		// add the hashblock array to the file metadata
-		fileMetadata.hashblocks = hashblocks;
+		// add the block to the hashblock array
+		hashblocks.push(blockHash);
+	}
+	
+	// add the hashblock array to the file metadata
+	fileMetadata.hashblocks = hashblocks;
+	
+	// add the file metadata to the index
+	files[filename] = fileMetadata;
+	
+	saveMetadata();
+
+	// update peer metadata
+	if(config.peers.length > 0){
 		
-		// add the file metadata to the index
-		files[filename] = fileMetadata;
+		var peers = config.peers;
+		var fileMetaJSON = JSON.stringify(fileMetadata);
 		
-		saveMetadata();
+		// debug
+		console.log(peers.length + ' peers configured, sending updates');
 		
-		// update peer metadata
-		if(config.peers.length > 0){
+		// submit file metadata to each peer
+		for(var j=0;j<peers.length;j++){
 			
-			var peers = config.peers;
-			var fileMetaJSON = JSON.stringify(fileMetadata);
-			
-			// debug
-			console.log(peers.length + ' peers configured, sending updates');
-			
-			// submit file metadata to each peer
-			for(var j=0;j<peers.length;j++){
+			try{
+				var req_options = {
+				host: peers[j].host,
+				path: '/filemeta/',
+				port: peers[j].port,
+				method: 'POST',
+				headers: {
+					'User-Agent': 'jsfs/0.0.1',
+					'Accept': '*/*',
+					'Content-Type': 'application/x-www-form-urlencoded',
+					'Content-Length': Buffer.byteLength(fileMetaJSON)
+				}};
 				
-				try{
-					var req_options = {
-					host: peers[j].host,
-					path: '/filemeta/',
-					port: peers[j].port,
-					method: 'POST',
-					headers: {
-						'User-Agent': 'jsfs/0.0.1',
-						'Accept': '*/*',
-						'Content-Type': 'application/x-www-form-urlencoded',
-						'Content-Length': Buffer.byteLength(fileMetaJSON)
-					}};
-				
-					var peerClient = http.request(req_options, function(peerResponse){
-						
-						var buffer = '';
-						
-						peerResponse.on('data', function(chunk){
-							buffer += chunk;
-						});
-							
-						peerResponse.on('end', function(){
-						
-							// debug
-							console.log('got response from jsfs peer');
-							
-							console.log(buffer);
+				var peerClient = http.request(req_options, function(peerResponse){
 					
-							// todo: maybe update peer list based on response (or lack of)?
-							
-						});
+					var buffer = '';
+					
+					peerResponse.on('data', function(chunk){
+						buffer += chunk;
+					});
 						
-						peerResponse.on('error', function(err){
-							console.log('got error updating peer');
-							console.log(err);
-						});
+					peerResponse.on('end', function(){
+					
+						// debug
+						console.log('got response from jsfs peer');
+						
+						console.log(buffer);
+				
+						// todo: maybe update peer list based on response (or lack of)?
 						
 					});
 					
-					peerClient.on('error', function(err){
+					peerResponse.on('error', function(err){
 						console.log('got error updating peer');
 						console.log(err);
 					});
 					
-					// issue the service request
-					peerClient.write(fileMetaJSON);
-					peerClient.end();
-					
-				} catch(ex){
-					
-					console.log('an exception occured contacting configured peer');
-					console.log(ex);
-					
-				}
+				});
+				
+				peerClient.on('error', function(err){
+					console.log('got error updating peer');
+					console.log(err);
+				});
+				
+				// issue the service request
+				peerClient.write(fileMetaJSON);
+				peerClient.end();
+				
+			} catch(ex){
+				
+				console.log('an exception occured contacting configured peer');
+				console.log(ex);
 				
 			}
 		}
-		
-		return 'OK';
-		
-	} else {
-		
-		return 'EXISTS';
-		
-	}
+
+	return 'OK';
 }
 
 
