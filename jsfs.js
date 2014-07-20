@@ -450,7 +450,7 @@ http.createServer(function(req, res){
 	var allowedHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With','Range','X_FILENAME'];
 			
 	// file name is the full path (simulates containers)
-	var filename = req.url;
+	var filename = require('url').parse(req.url).pathname;
 	var contents = null;
 	
 	res.setHeader('Access-Control-Allow-Origin', '*');
