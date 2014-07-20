@@ -20,7 +20,7 @@ function storeFile(filename, contents, overwrite){
 		// debug
 		console.log('file ' + filename + ' exists');
 
-		// todo: find most current revision
+		// find most current revision
 		var newVersion = 0;
 
 		while(typeof files[filename + '_' + newVersion] != 'undefined'){
@@ -33,15 +33,9 @@ function storeFile(filename, contents, overwrite){
 		}
 
 		// debug
-		//console.log('current version is ' + newVersion);
-		
-		// todo: increment revision
-		//var newVersion = currentVersion + 1;
-
-		// debug
 		console.log('new version is ' + newVersion);
 
-		// todo: set filename to incremented revision
+		// set filename to incremented revision
 		filename = filename + '_' + newVersion;
 
 		// debug
@@ -232,6 +226,26 @@ function addToIndex(fileMetadata){
 // retrieve a file
 function getFile(filename, callback){
 	
+	// find most current revision
+	var currentVersion = 0;
+
+	// debug
+	console.log('requested file ' + filename);
+	
+	while(typeof files[filename + '_' + currentVersion] != 'undefined'){
+		
+		// debug
+		console.log('found version ' + filename + '_' + currentVersion);
+		
+		currentVersion++;
+
+	}
+	
+	filename = filename + '_' + (currentVersion - 1);
+	
+	// debug
+	console.log('loading file ' + filename);
+		
 	var contents = new Buffer('');
 	
 	if(typeof files[filename] != 'undefined'){
