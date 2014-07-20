@@ -698,6 +698,7 @@ http.createServer(function(req, res){
 			
 		case 'DELETE':
 			
+			/*
 			if(deleteFile(filename)){
 				res.writeHead(200);
 				res.end('file deleted');
@@ -705,6 +706,10 @@ http.createServer(function(req, res){
 				res.writeHead(500);
 				res.end('error deleting file');
 			}
+			*/
+			
+			res.writeHead(500);
+			res.end('unsupported');
 			
 			break;
 			
