@@ -232,16 +232,29 @@ function getFile(filename, callback){
 	// debug
 	console.log('requested file ' + filename);
 	
-	while(typeof files[filename + '_' + currentVersion] != 'undefined'){
+	// if a specific version is requested, try to return it
+	if(filename.lastIndexOf('_') > 0 && filename.substring(filename.lastIndexOf('_')).length > 0){
+		
+		// get specific version
+		filename + filename.substring(filename.lastIndexOf('_'));
 		
 		// debug
-		console.log('found version ' + filename + '_' + currentVersion);
+		console.log('loading specific version ' + filename);
 		
-		currentVersion++;
-
-	}
+	} else {
+		
+		// get latest version
+		while(typeof files[filename + '_' + currentVersion] != 'undefined'){
+			
+			// debug
+			console.log('found version ' + filename + '_' + currentVersion);
+			
+			currentVersion++;
 	
-	filename = filename + '_' + (currentVersion - 1);
+		}
+		
+		filename = filename + '_' + (currentVersion - 1);
+	}
 	
 	// debug
 	console.log('loading file ' + filename);
