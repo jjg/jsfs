@@ -21,22 +21,22 @@ function storeFile(filename, contents, overwrite){
 		console.log('file ' + filename + ' exists');
 
 		// todo: find most current revision
-		var currentVersion = 0;
+		var newVersion = 0;
 
-		while(typeof files[filename + '_' + currentVersion] != 'undefined'){
+		while(typeof files[filename + '_' + newVersion] != 'undefined'){
 			
-			currentVersion++;
-
 			// debug
-			console.log(filename + '_' + currentVersion + ' exists!');
+			console.log(filename + '_' + newVersion + ' exists!');
+			
+			newVersion++;
 
 		}
 
 		// debug
-		console.log('current version is ' + currentVersion);
+		//console.log('current version is ' + newVersion);
 		
 		// todo: increment revision
-		var newVersion = currentVersion + 1;
+		//var newVersion = currentVersion + 1;
 
 		// debug
 		console.log('new version is ' + newVersion);
@@ -169,6 +169,7 @@ function storeFile(filename, contents, overwrite){
 				
 			}
 		}
+	}
 
 	return 'OK';
 }
