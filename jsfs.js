@@ -513,9 +513,6 @@ function upgradeMetadata(){
 		
 		totalFiles++;
 		
-		// debug
-		console.log('file key: ' + file);
-		
 		// test each file for version extension
 		if(file.lastIndexOf('_') == -1){
 	
