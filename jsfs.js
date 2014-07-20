@@ -13,132 +13,159 @@ files = {};
 
 // store a file
 function storeFile(filename, contents, overwrite){
-	
+
 	// check for existing filename
-	if(typeof files[filename] === 'undefined' || overwrite){
-		
-		// init file metadata
-		var fileMetadata = {};
-		fileMetadata.name = filename;
-		fileMetadata.created = Date.now();
-		
-		// generate hashblocks
-		var hashblocks = [];
-		var offset = 0;
-		
-		// slice and store contents
-		for(var i=0;i<contents.length;i = i + config.blockSize){
-			
-			// grab a block of the contents
-			var block = contents.slice(i, i + config.blockSize);
-			
-			// generate a hash of the block
-			var blockHash = null;
-			var shasum = crypto.createHash('sha1');
-			shasum.update(block);
-			blockHash = shasum.digest('hex');
-		
-			// save the block to disk
-			var blockFile = config.storagePath + blockHash;
-			
-			if(!fs.existsSync(blockFile)){
-				
-				fs.writeFileSync(blockFile, block, 'binary');
-				
-			} else {
-				
-				console.log('duplicate block ' + blockHash + ' not stored');
-			}
-			
-			// add the block to the hashblock array
-			hashblocks.push(blockHash);
-		}
-		
-		// add the hashblock array to the file metadata
-		fileMetadata.hashblocks = hashblocks;
-		
-		// add the file metadata to the index
-		files[filename] = fileMetadata;
-		
-		saveMetadata();
-		
-		// update peer metadata
-		if(config.peers.length > 0){
-			
-			var peers = config.peers;
-			var fileMetaJSON = JSON.stringify(fileMetadata);
+	if(typeof files[filename + '_0'] != 'undefined' || overwrite){
+
+		// debug
+		console.log('file ' + filename + ' exists');
+
+		// find most current revision
+		var newVersion = 0;
+
+		while(typeof files[filename + '_' + newVersion] != 'undefined'){
 			
 			// debug
-			console.log(peers.length + ' peers configured, sending updates');
+			console.log(filename + '_' + newVersion + ' exists!');
 			
-			// submit file metadata to each peer
-			for(var j=0;j<peers.length;j++){
+			newVersion++;
+
+		}
+
+		// debug
+		console.log('new version is ' + newVersion);
+
+		// set filename to incremented revision
+		filename = filename + '_' + newVersion;
+
+		// debug
+		console.log('new version filename is ' + filename);
+
+	} else {
+		
+		// add base version to filename
+		filename = filename + '_0';
+
+		// debug
+		console.log('file does not exist, versioned filename is ' + filename);
+
+	}
+	
+	// init file metadata
+	var fileMetadata = {};
+	fileMetadata.name = filename;
+	fileMetadata.created = Date.now();
+		
+	// generate hashblocks
+	var hashblocks = [];
+	var offset = 0;
+		
+	// slice and store contents
+	for(var i=0;i<contents.length;i = i + config.blockSize){
+		
+		// grab a block of the contents
+		var block = contents.slice(i, i + config.blockSize);
+		
+		// generate a hash of the block
+		var blockHash = null;
+		var shasum = crypto.createHash('sha1');
+		shasum.update(block);
+		blockHash = shasum.digest('hex');
+	
+		// save the block to disk
+		var blockFile = config.storagePath + blockHash;
+		
+		if(!fs.existsSync(blockFile)){
+			
+			fs.writeFileSync(blockFile, block, 'binary');
+			
+		} else {
+			
+			console.log('duplicate block ' + blockHash + ' not stored');
+		}
+		
+		// add the block to the hashblock array
+		hashblocks.push(blockHash);
+	}
+	
+	// add the hashblock array to the file metadata
+	fileMetadata.hashblocks = hashblocks;
+	
+	// add the file metadata to the index
+	files[filename] = fileMetadata;
+	
+	saveMetadata();
+
+	// update peer metadata
+	if(config.peers.length > 0){
+		
+		var peers = config.peers;
+		var fileMetaJSON = JSON.stringify(fileMetadata);
+		
+		// debug
+		console.log(peers.length + ' peers configured, sending updates');
+		
+		// submit file metadata to each peer
+		for(var j=0;j<peers.length;j++){
+			
+			try{
+				var req_options = {
+				host: peers[j].host,
+				path: '/filemeta/',
+				port: peers[j].port,
+				method: 'POST',
+				headers: {
+					'User-Agent': 'jsfs/0.0.1',
+					'Accept': '*/*',
+					'Content-Type': 'application/x-www-form-urlencoded',
+					'Content-Length': Buffer.byteLength(fileMetaJSON)
+				}};
 				
-				try{
-					var req_options = {
-					host: peers[j].host,
-					path: '/filemeta/',
-					port: peers[j].port,
-					method: 'POST',
-					headers: {
-						'User-Agent': 'jsfs/0.0.1',
-						'Accept': '*/*',
-						'Content-Type': 'application/x-www-form-urlencoded',
-						'Content-Length': Buffer.byteLength(fileMetaJSON)
-					}};
-				
-					var peerClient = http.request(req_options, function(peerResponse){
-						
-						var buffer = '';
-						
-						peerResponse.on('data', function(chunk){
-							buffer += chunk;
-						});
-							
-						peerResponse.on('end', function(){
-						
-							// debug
-							console.log('got response from jsfs peer');
-							
-							console.log(buffer);
+				var peerClient = http.request(req_options, function(peerResponse){
 					
-							// todo: maybe update peer list based on response (or lack of)?
-							
-						});
+					var buffer = '';
+					
+					peerResponse.on('data', function(chunk){
+						buffer += chunk;
+					});
 						
-						peerResponse.on('error', function(err){
-							console.log('got error updating peer');
-							console.log(err);
-						});
+					peerResponse.on('end', function(){
+					
+						// debug
+						console.log('got response from jsfs peer');
+						
+						console.log(buffer);
+				
+						// todo: maybe update peer list based on response (or lack of)?
 						
 					});
 					
-					peerClient.on('error', function(err){
+					peerResponse.on('error', function(err){
 						console.log('got error updating peer');
 						console.log(err);
 					});
 					
-					// issue the service request
-					peerClient.write(fileMetaJSON);
-					peerClient.end();
-					
-				} catch(ex){
-					
-					console.log('an exception occured contacting configured peer');
-					console.log(ex);
-					
-				}
+				});
+				
+				peerClient.on('error', function(err){
+					console.log('got error updating peer');
+					console.log(err);
+				});
+				
+				// issue the service request
+				peerClient.write(fileMetaJSON);
+				peerClient.end();
+				
+			} catch(ex){
+				
+				console.log('an exception occured contacting configured peer');
+				console.log(ex);
 				
 			}
 		}
-		
-		return 'OK';
-		
-	} else {
-		
-		return 'EXISTS';
-		
 	}
+
+	return 'OK';
 }
 
 
@@ -199,6 +226,39 @@ function addToIndex(fileMetadata){
 // retrieve a file
 function getFile(filename, callback){
 	
+	// find most current revision
+	var currentVersion = 0;
+
+	// debug
+	console.log('requested file ' + filename);
+	
+	// if a specific version is requested, try to return it
+	if(filename.lastIndexOf('_') > 0 && filename.substring(filename.lastIndexOf('_')).length > 0){
+		
+		// get specific version
+		filename + filename.substring(filename.lastIndexOf('_'));
+		
+		// debug
+		console.log('loading specific version ' + filename);
+		
+	} else {
+		
+		// get latest version
+		while(typeof files[filename + '_' + currentVersion] != 'undefined'){
+			
+			// debug
+			console.log('found version ' + filename + '_' + currentVersion);
+			
+			currentVersion++;
+	
+		}
+		
+		filename = filename + '_' + (currentVersion - 1);
+	}
+	
+	// debug
+	console.log('loading file ' + filename);
+		
 	var contents = new Buffer('');
 	
 	if(typeof files[filename] != 'undefined'){
@@ -405,6 +465,9 @@ function loadMetadata(){
 		
 		console.log('metadata loaded sucessfully');
 		
+		console.log('upgrading metadata');
+		upgradeMetadata();
+		
 		printStats();
 		
 	} catch(ex) {
@@ -439,6 +502,52 @@ function printStats(){
 	
 	console.log('\n-------------------------------------------\n');
 
+}
+
+function upgradeMetadata(){
+	
+	var totalFiles = 0;
+	var upgradedFiles = 0;
+	
+	for(var file in files){
+		
+		totalFiles++;
+		
+		// debug
+		console.log('file key: ' + file);
+		
+		// test each file for version extension
+		if(file.lastIndexOf('_') == -1){
+	
+			// add version 0 extension if none exists
+			console.log('upgrading file key ' + file);
+			
+			var upgradedFileKey = file + '_0';
+			
+			console.log('upgraded filekey: ' + upgradedFileKey);
+			
+			files[upgradedFileKey] = files[file];
+			
+			delete files[file];
+			
+			upgradedFiles++;
+			
+		} else {
+			
+			console.log('no upgrade needed for filekey ' + file);
+			
+		}
+	
+	}
+	
+	// print results
+	console.log('total files: ' + totalFiles);
+	console.log('upgraded files: ' + upgradedFiles);
+	
+	// save updated metadata
+	if(upgradedFiles > 0){
+		saveMetadata();
+	}
 }
 
 // load the fs metadata
@@ -561,7 +670,7 @@ http.createServer(function(req, res){
 				
 				} else {
 					
-					storeResult = storeFile(filename, contents, true);
+					storeResult = storeFile(filename, contents, false);
 					
 				}
 				
