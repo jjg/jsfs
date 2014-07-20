@@ -465,6 +465,9 @@ function loadMetadata(){
 		
 		console.log('metadata loaded sucessfully');
 		
+		console.log('upgrading metadata');
+		upgradeMetadata();
+		
 		printStats();
 		
 	} catch(ex) {
@@ -499,6 +502,52 @@ function printStats(){
 	
 	console.log('\n-------------------------------------------\n');
 
+}
+
+function upgradeMetadata(){
+	
+	var totalFiles = 0;
+	var upgradedFiles = 0;
+	
+	for(var file in files){
+		
+		totalFiles++;
+		
+		// debug
+		console.log('file key: ' + file);
+		
+		// test each file for version extension
+		if(file.lastIndexOf('_') == -1){
+	
+			// add version 0 extension if none exists
+			console.log('upgrading file key ' + file);
+			
+			var upgradedFileKey = file + '_0';
+			
+			console.log('upgraded filekey: ' + upgradedFileKey);
+			
+			files[upgradedFileKey] = files[file];
+			
+			delete files[file];
+			
+			upgradedFiles++;
+			
+		} else {
+			
+			console.log('no upgrade needed for filekey ' + file);
+			
+		}
+	
+	}
+	
+	// print results
+	console.log('total files: ' + totalFiles);
+	console.log('upgraded files: ' + upgradedFiles);
+	
+	// save updated metadata
+	if(upgradedFiles > 0){
+		saveMetadata();
+	}
 }
 
 // load the fs metadata
