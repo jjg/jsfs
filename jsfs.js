@@ -534,7 +534,7 @@ function upgradeMetadata(){
 			
 		} else {
 			
-			console.log('no upgrade needed for filekey ' + file);
+			//console.log('no upgrade needed for filekey ' + file);
 			
 		}
 	
