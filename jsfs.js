@@ -602,18 +602,36 @@ function hashStore(requestedAddress){
 			console.log('begin input buffer size: ' + this.inputBuffer.length + ', pointer: ' + this.bufferPointer);
 			
 			// todo: read next block
+			var block = this.inputBuffer.slice(0, this.blockSize);
 			
-			// todo: generate hash
+			// generate a hash of the block
+			var blockHash = null;
+			var shasum = crypto.createHash('sha1');
+			shasum.update(block);
+			blockHash = shasum.digest('hex');
+		
+			// save the block to disk
+			var blockFile = config.storagePath + blockHash;  // todo: again, config globals probably don't belong here
 			
-			// todo: store hashblock
+			if(!fs.existsSync(blockFile)){
+				
+				// debug
+				console.log('storing block ' + blockFile);
+				
+				fs.writeFileSync(blockFile, block, 'binary');
+				
+			} else {
+				
+				console.log('duplicate block ' + blockHash + ' not stored');
+			}
 			
 			// todo: update index
 			
-			// todo: update pointer
-			this.bufferPointer = this.bufferPointer + this.blockSize;
+			// update pointer
+			//this.bufferPointer = this.bufferPointer + this.blockSize;
 			
-			// todo: trim input buffer
-			this.inputBuffer = this.inputBuffer.slice(this.bufferPointer);
+			// trim input buffer
+			this.inputBuffer = this.inputBuffer.slice(this.blockSize);
 			
 			// debug
 			console.log('end input buffer size: ' + this.inputBuffer.length + ', pointer: ' + this.bufferPointer);
