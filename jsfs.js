@@ -11,97 +11,6 @@ var config = require('./config.js');
 // globals
 files = {};
 
-/*
-// store a file
-function storeFile(filename, contents, overwrite){
-
-	// check for existing filename
-	if(typeof files[filename + '_FV_0'] != 'undefined' || overwrite){
-
-		// debug
-		console.log('file ' + filename + ' exists');
-
-		// find most current revision
-		var newVersion = 0;
-
-		while(typeof files[filename + '_FV_' + newVersion] != 'undefined'){
-			
-			// debug
-			console.log(filename + '_FV_' + newVersion + ' exists!');
-			
-			newVersion++;
-
-		}
-
-		// debug
-		console.log('new version is ' + newVersion);
-
-		// set filename to incremented revision
-		filename = filename + '_FV_' + newVersion;
-
-		// debug
-		console.log('new version filename is ' + filename);
-
-	} else {
-		
-		// add base version to filename
-		filename = filename + '_FV_0';
-
-		// debug
-		console.log('file does not exist, versioned filename is ' + filename);
-
-	}
-	
-	// init file metadata
-	var fileMetadata = {};
-	fileMetadata.name = filename;
-	fileMetadata.created = Date.now();
-		
-	// generate hashblocks
-	var hashblocks = [];
-	var offset = 0;
-		
-	// slice and store contents
-	for(var i=0;i<contents.length;i = i + config.blockSize){
-		
-		// grab a block of the contents
-		var block = contents.slice(i, i + config.blockSize);
-		
-		// generate a hash of the block
-		var blockHash = null;
-		var shasum = crypto.createHash('sha1');
-		shasum.update(block);
-		blockHash = shasum.digest('hex');
-	
-		// save the block to disk
-		var blockFile = config.storagePath + blockHash;
-		
-		if(!fs.existsSync(blockFile)){
-			
-			fs.writeFileSync(blockFile, block, 'binary');
-			
-		} else {
-			
-			console.log('duplicate block ' + blockHash + ' not stored');
-		}
-		
-		// add the block to the hashblock array
-		hashblocks.push(blockHash);
-	}
-	
-	// add the hashblock array to the file metadata
-	fileMetadata.hashblocks = hashblocks;
-	
-	// add the file metadata to the index
-	files[filename] = fileMetadata;
-	
-	saveMetadata();
-
-	return 'OK';
-}
-
-*/
-
 function storeHashblock(hashblock, contents){
 	
 	try{
@@ -155,6 +64,7 @@ function addToIndex(fileMetadata){
 	
 }
 
+// todo: review this function and either update or discard
 function updatePeers(){
 	// update peer metadata
 	if(config.peers.length > 0){
@@ -276,10 +186,6 @@ function getFile(filename, callback){
 			function updateContentsArray(index, content){
 				
 				contentsArray[index] = content;
-				
-				// debug
-				console.log('hashblocks.length: ' + hashblocks.length);
-				console.log('contentsArray.length: ' + contentsArray.length);
 				
 				// once we have all the blocks, lump them together and return
 				if(contentsArray.length === hashblocks.length){
@@ -770,34 +676,11 @@ http.createServer(function(req, res){
 			req.on('end', function(){
 				
 				var storeResult = null;
-				/*
-				// skip hashing if storing a block directly
-				if(filename.substring(0, 11) === '/hashblock/'){
-					
-					// extract the hashblock from the filename
-					var hashblock = filename.substring(11);
-					
-					storeResult = storeHashblock(hashblock, contents);
-					
-				} else if(filename.substring(0, 10) === '/filemeta/'){
 				
-					var fileMetadata = JSON.parse(contents);
-					
-					// debug
-					console.log('adding remote file ' + fileMetadata.name + ' to local index');
-					
-					storeResult = addToIndex(fileMetadata);
+				contents.close();
 				
-				} else {
-				*/
-					contents.close();
-					
-					// todo: return a legit result
-					storeResult = "OK";
-					
-					//storeResult = storeFile(filename, contents, false);
-					
-				//}
+				// todo: return a legit result
+				storeResult = "OK";
 				
 				if(storeResult === 'OK'){
 					//res.setHeader('Access-Control-Allow-Origin', '*');
