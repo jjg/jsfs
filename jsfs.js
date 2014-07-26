@@ -556,21 +556,70 @@ function upgradeMetadata(){
 	}
 }
 
+function getVersionedFilename(filename){
+	
+	// check for existing filename
+	if(typeof files[filename + '_FV_0'] != 'undefined'){
+
+		// debug
+		console.log('file ' + filename + ' exists');
+
+		// find most current revision
+		var newVersion = 0;
+
+		while(typeof files[filename + '_FV_' + newVersion] != 'undefined'){
+			
+			// debug
+			console.log(filename + '_FV_' + newVersion + ' exists!');
+			
+			newVersion++;
+
+		}
+
+		// debug
+		console.log('new version is ' + newVersion);
+
+		// set filename to incremented revision
+		filename = filename + '_FV_' + newVersion;
+
+		// debug
+		console.log('new version filename is ' + filename);
+
+	} else {
+		
+		// add base version to filename
+		filename = filename + '_FV_0';
+
+		// debug
+		console.log('file does not exist, versioned filename is ' + filename);
+
+	}
+	
+	return filename;
+}
+
 // "class" definitions
 function hashStore(requestedAddress){
 	
 	// declare class-global properties
 	this.address = null;
 	this.inputBuffer = null;
-	this.bufferPointer = null;
 	this.blockSize = null;
+	this.fileMetadata = {};
 	
-	// initialize global properties
+	// initialize class-global properties
 	this.init = function(requestedAddress){
-		this.address = requestedAddress;
+		this.address = getVersionedFilename(requestedAddress);
+		
+		// debug
+		console.log('versioned filename: ' + this.address);
+		
 		this.inputBuffer = new Buffer('');
-		this.bufferPointer = 0;
 		this.blockSize = parseInt(config.blockSize);  // todo: consider not referecing global stuff in here...
+		
+		this.fileMetadata.name = this.address;
+		this.fileMetadata.created = Date.now();
+		this.fileMetadata.hashblocks = [];
 	};
 	
 	// reinitialize for a new file
@@ -587,6 +636,11 @@ function hashStore(requestedAddress){
 	// flush any remaining buffer data into blocks
 	this.close = function(){
 		this.processBuffer(true);
+		
+		// todo: add file metadata to index
+		files[this.address] = this.fileMetadata;
+		saveMetadata();								// todo: again, consider not using global stuff in here...
+		
 	};
 	
 	this.processBuffer = function(flush){
@@ -599,9 +653,9 @@ function hashStore(requestedAddress){
 			}
 			
 			// debug
-			console.log('begin input buffer size: ' + this.inputBuffer.length + ', pointer: ' + this.bufferPointer);
+			console.log('begin input buffer size: ' + this.inputBuffer.length);
 			
-			// todo: read next block
+			// read next block
 			var block = this.inputBuffer.slice(0, this.blockSize);
 			
 			// generate a hash of the block
@@ -625,16 +679,14 @@ function hashStore(requestedAddress){
 				console.log('duplicate block ' + blockHash + ' not stored');
 			}
 			
-			// todo: update index
-			
-			// update pointer
-			//this.bufferPointer = this.bufferPointer + this.blockSize;
+			// add the block to the metadata hashblock array
+			this.fileMetadata.hashblocks.push(blockHash);
 			
 			// trim input buffer
 			this.inputBuffer = this.inputBuffer.slice(this.blockSize);
 			
 			// debug
-			console.log('end input buffer size: ' + this.inputBuffer.length + ', pointer: ' + this.bufferPointer);
+			console.log('end input buffer size: ' + this.inputBuffer.length);
 			
 		} else {
 			
