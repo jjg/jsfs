@@ -556,6 +556,66 @@ function upgradeMetadata(){
 	}
 }
 
+// "class" definitions
+function hashStore(requestedAddress){
+	
+	// declare class-global properties
+	this.address = null;
+	this.inputBuffer = null;
+	this.bufferPointer = null;
+	
+	// initialize global properties
+	this.init = function(requestedAddress){
+		this.address = requestedAddress;
+		this.inputBuffer = new Buffer('');
+		this.bufferPointer = 0;
+	};
+	
+	// reinitialize for a new file
+	this.open = function(requestedAddress){
+		this.init(requestedAddress);
+	};
+	
+	// add data to the buffer
+	this.write = function(chunk){
+		this.inputBuffer = new Buffer.concat([this.inputBuffer, chunk]);
+		this.processBuffer();
+	};
+	
+	// flush any remaining buffer data into blocks
+	this.close = function(){
+		this.processBuffer();
+	};
+	
+	this.processBuffer = function(){
+		
+		// debug
+		console.log('begin input buffer size: ' + this.inputBuffer.length);
+		
+		// todo: read next block
+		
+		// todo: generate hash
+		
+		// todo: store hashblock
+		
+		// todo: update pointer
+		
+		// todo: update index
+		
+		// todo: trim input buffer
+		
+		// debug
+		console.log('end input buffer size: ' + this.inputBuffer.length);
+	};
+	
+	// call init
+	this.init(requestedAddress);
+	
+}
+
+
+// here's where the action starts...
+
 // load the fs metadata
 loadMetadata();
 
@@ -645,11 +705,14 @@ http.createServer(function(req, res){
 		case 'POST':
 			
 			// extract file contents
-			contents = new Buffer('');
+			//contents = new Buffer('');
+			
+			var contents = new hashStore(filename);
 			
 			req.on('data', function(data){
 				
-				contents = new Buffer.concat([contents, data]);
+				//contents = new Buffer.concat([contents, data]);
+				contents.write(data);
 				
 			});
 			
@@ -676,7 +739,12 @@ http.createServer(function(req, res){
 				
 				} else {
 					
-					storeResult = storeFile(filename, contents, false);
+					contents.close();
+					
+					// todo: return a legit result
+					storeResult = "OK";
+					
+					//storeResult = storeFile(filename, contents, false);
 					
 				}
 				
