@@ -563,12 +563,14 @@ function hashStore(requestedAddress){
 	this.address = null;
 	this.inputBuffer = null;
 	this.bufferPointer = null;
+	this.blockSize = null;
 	
 	// initialize global properties
 	this.init = function(requestedAddress){
 		this.address = requestedAddress;
 		this.inputBuffer = new Buffer('');
 		this.bufferPointer = 0;
+		this.blockSize = parseInt(config.blockSize);  // todo: consider not referecing global stuff in here...
 	};
 	
 	// reinitialize for a new file
@@ -584,28 +586,45 @@ function hashStore(requestedAddress){
 	
 	// flush any remaining buffer data into blocks
 	this.close = function(){
-		this.processBuffer();
+		this.processBuffer(true);
 	};
 	
-	this.processBuffer = function(){
+	this.processBuffer = function(flush){
 		
-		// debug
-		console.log('begin input buffer size: ' + this.inputBuffer.length);
-		
-		// todo: read next block
-		
-		// todo: generate hash
-		
-		// todo: store hashblock
-		
-		// todo: update pointer
-		
-		// todo: update index
-		
-		// todo: trim input buffer
-		
-		// debug
-		console.log('end input buffer size: ' + this.inputBuffer.length);
+		if(this.inputBuffer.length > this.blockSize || flush){
+			
+			if(flush){
+				// debug
+				console.log('flushing remaining buffer');
+			}
+			
+			// debug
+			console.log('begin input buffer size: ' + this.inputBuffer.length + ', pointer: ' + this.bufferPointer);
+			
+			// todo: read next block
+			
+			// todo: generate hash
+			
+			// todo: store hashblock
+			
+			// todo: update index
+			
+			// todo: update pointer
+			this.bufferPointer = this.bufferPointer + this.blockSize;
+			
+			// todo: trim input buffer
+			this.inputBuffer = this.inputBuffer.slice(this.bufferPointer);
+			
+			// debug
+			console.log('end input buffer size: ' + this.inputBuffer.length + ', pointer: ' + this.bufferPointer);
+			
+		} else {
+			
+			// debug
+			console.log('buffer doesnt contain a full block yet, waiting for more data');
+			
+		}
+
 	};
 	
 	// call init
