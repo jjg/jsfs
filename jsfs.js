@@ -11,6 +11,7 @@ var config = require('./config.js');
 // globals
 files = {};
 
+/*
 // store a file
 function storeFile(filename, contents, overwrite){
 
@@ -96,6 +97,65 @@ function storeFile(filename, contents, overwrite){
 	
 	saveMetadata();
 
+	return 'OK';
+}
+
+*/
+
+function storeHashblock(hashblock, contents){
+	
+	try{
+		
+		var storageFile = config.storagePath + hashblock;
+		
+		if(!fs.existsSync(storageFile)){
+			
+			console.log('storing hashblock ' + hashblock);
+			
+			fs.writeFileSync(storageFile, contents, 'binary');
+
+		} else {
+			
+			console.log('duplicate hashblock ' + hashblock + ' not stored');
+			
+		}
+		
+		return 'OK';
+		
+	} catch(ex) {
+		
+		return 'ERR';
+		
+	}
+}
+
+
+// used for federation
+function addToIndex(fileMetadata){
+	
+	// add filename to index
+	console.log('adding file ' + fileMetadata.name + ' to index');
+	
+	// only if it's not already there
+	if(typeof files[fileMetadata.name] === 'undefined'){
+		
+		files[fileMetadata.name] = fileMetadata;
+				
+		console.log(files[fileMetadata.name]);
+				
+		saveMetadata();
+				
+		return 'OK';
+	
+	} else {
+		
+		return 'EXISTS';
+		
+	}
+	
+}
+
+function updatePeers(){
 	// update peer metadata
 	if(config.peers.length > 0){
 		
@@ -164,64 +224,7 @@ function storeFile(filename, contents, overwrite){
 			}
 		}
 	}
-
-	return 'OK';
 }
-
-
-function storeHashblock(hashblock, contents){
-	
-	try{
-		
-		var storageFile = config.storagePath + hashblock;
-		
-		if(!fs.existsSync(storageFile)){
-			
-			console.log('storing hashblock ' + hashblock);
-			
-			fs.writeFileSync(storageFile, contents, 'binary');
-
-		} else {
-			
-			console.log('duplicate hashblock ' + hashblock + ' not stored');
-			
-		}
-		
-		return 'OK';
-		
-	} catch(ex) {
-		
-		return 'ERR';
-		
-	}
-}
-
-
-// used for federation
-function addToIndex(fileMetadata){
-	
-	// add filename to index
-	console.log('adding file ' + fileMetadata.name + ' to index');
-	
-	// only if it's not already there
-	if(typeof files[fileMetadata.name] === 'undefined'){
-		
-		files[fileMetadata.name] = fileMetadata;
-				
-		console.log(files[fileMetadata.name]);
-				
-		saveMetadata();
-				
-		return 'OK';
-	
-	} else {
-		
-		return 'EXISTS';
-		
-	}
-	
-}
-
 
 // retrieve a file
 function getFile(filename, callback){
@@ -561,38 +564,19 @@ function getVersionedAddress(address){
 	// check for existing address
 	if(typeof files[address + '_FV_0'] != 'undefined'){
 
-		// debug
-		//console.log('file ' + filename + ' exists');
-
 		// find most current revision
 		var newVersion = 0;
 
 		while(typeof files[address + '_FV_' + newVersion] != 'undefined'){
-			
-			// debug
-			//console.log(filename + '_FV_' + newVersion + ' exists!');
-			
 			newVersion++;
-
 		}
-
-		// debug
-		//console.log('new version is ' + newVersion);
-
+		
 		// set filename to incremented revision
 		address = address + '_FV_' + newVersion;
-
-		// debug
-		//console.log('new version filename is ' + filename);
-
-	} else {
 		
+	} else {
 		// add base version to filename
 		address = address + '_FV_0';
-
-		// debug
-		//console.log('file does not exist, versioned filename is ' + filename);
-
 	}
 	
 	return address;
@@ -610,13 +594,8 @@ function hashStore(requestedAddress){
 	// initialize class-global properties
 	this.init = function(requestedAddress){
 		this.address = getVersionedAddress(requestedAddress);
-		
-		// debug
-		console.log('versioned address: ' + this.address);
-		
 		this.inputBuffer = new Buffer('');
 		this.blockSize = parseInt(config.blockSize);  // todo: consider not referecing global stuff in here...
-		
 		this.fileMetadata.name = this.address;
 		this.fileMetadata.created = Date.now();
 		this.fileMetadata.hashblocks = [];
@@ -648,12 +627,8 @@ function hashStore(requestedAddress){
 		if(this.inputBuffer.length > this.blockSize || flush){
 			
 			if(flush){
-				// debug
 				console.log('flushing remaining buffer');
 			}
-			
-			// debug
-			//console.log('begin input buffer size: ' + this.inputBuffer.length);
 			
 			// read next block
 			var block = this.inputBuffer.slice(0, this.blockSize);
@@ -669,7 +644,6 @@ function hashStore(requestedAddress){
 			
 			if(!fs.existsSync(blockFile)){
 				
-				// debug
 				console.log('storing block ' + blockFile);
 				
 				fs.writeFileSync(blockFile, block, 'binary');
@@ -685,16 +659,9 @@ function hashStore(requestedAddress){
 			// trim input buffer
 			this.inputBuffer = this.inputBuffer.slice(this.blockSize);
 			
-			// debug
-			//console.log('end input buffer size: ' + this.inputBuffer.length);
-			
 		} else {
-			
-			// debug
-			console.log('buffer doesnt contain a full block yet, waiting for more data');
-			
+			console.log('received chunk');
 		}
-
 	};
 	
 	// call init
@@ -794,21 +761,16 @@ http.createServer(function(req, res){
 		case 'POST':
 			
 			// extract file contents
-			//contents = new Buffer('');
-			
 			var contents = new hashStore(filename);
 			
 			req.on('data', function(data){
-				
-				//contents = new Buffer.concat([contents, data]);
 				contents.write(data);
-				
 			});
 			
 			req.on('end', function(){
 				
 				var storeResult = null;
-				
+				/*
 				// skip hashing if storing a block directly
 				if(filename.substring(0, 11) === '/hashblock/'){
 					
@@ -827,7 +789,7 @@ http.createServer(function(req, res){
 					storeResult = addToIndex(fileMetadata);
 				
 				} else {
-					
+				*/
 					contents.close();
 					
 					// todo: return a legit result
@@ -835,7 +797,7 @@ http.createServer(function(req, res){
 					
 					//storeResult = storeFile(filename, contents, false);
 					
-				}
+				//}
 				
 				if(storeResult === 'OK'){
 					//res.setHeader('Access-Control-Allow-Origin', '*');
