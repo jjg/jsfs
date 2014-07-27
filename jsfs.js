@@ -551,17 +551,20 @@ function getFile(address, result, block, end){
 		
 	} else {
 		
+		console.log('file not found locally, checking peers...');
+		
+		// todo: seems like all this peer stuff could be refactored elsewhere.
 		// if peers are configured, check them
 		if(config.peers.length > 0){
 			
 			// debug
-			console.log('searching peers for requested address ' + address);
+			console.log('searching peers for requested address ' + requestedAddress);
 			
 			for(var j=0;j<config.peers.length;j++){
 				
 				var peer = config.peers[j];
 				
-				console.log('requesting address ' + address + ' from ' + peer);
+				console.log('requesting address ' + requestedAddress + ' from ' + peer);
 				
 				http.get('http://' + config.peers[j].host + ':' + config.peers[j].port + requestedAddress, function(peerResponse){
 					
@@ -595,6 +598,7 @@ function getFile(address, result, block, end){
 			}
 			
 		} else {
+			console.log('no peers configured, giving up');
 			result(404);
 			end('no file at this address');
 		}
