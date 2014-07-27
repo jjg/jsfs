@@ -1,5 +1,5 @@
 module.exports = {
-	storagePath:  './blocks',
+	storagePath:  './blocks/',
 	blockSize: '1048576',
 	peers:[]
 };
