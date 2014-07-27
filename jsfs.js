@@ -508,9 +508,6 @@ function getFile(address, result, block, end){
 		address = address + '_FV_' + (currentVersion - 1);
 	}
 	
-	// debug
-	console.log('loading file ' + address);
-	
 	if(typeof files[address] != 'undefined'){
 		
 		// check for hashblocks
@@ -658,7 +655,6 @@ http.createServer(function(req, res){
 			
 	// file name is the full path (simulates containers)
 	var filename = require('url').parse(req.url).pathname;
-	var contents = null;
 	
 	res.setHeader('Access-Control-Allow-Origin', '*');
 	
@@ -688,7 +684,7 @@ http.createServer(function(req, res){
 			
 			// if block is requested, use special block reader
 			if(filename.substring(0, 11) === '/hashblock/'){
-				
+				/*
 				// todo: this might need attention...response code is redundant
 				
 				// extract the hashblock from the filename
@@ -710,7 +706,7 @@ http.createServer(function(req, res){
 					res.end('file not found');
 					
 				}
-				
+				*/
 			} else {
 				
 				getFile(filename, function(result){
@@ -762,12 +758,6 @@ http.createServer(function(req, res){
 					res.writeHead(500);
 					res.end('file exists');
 				}
-				
-				/*
-				// if all else fails
-				res.writeHead(500);
-				res.end('unknown error');
-				*/
 				
 			});
 
