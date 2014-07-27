@@ -136,6 +136,7 @@ function updatePeers(){
 	}
 }
 
+/*
 // retrieve a file
 function getFile(filename, callback){
 	
@@ -209,13 +210,13 @@ function getFile(filename, callback){
 					// but has perf. penalties and won't work for federation)
 					updateContentsArray(i, fs.readFileSync(blockFile));
 					
-					/*
-					fs.readFile(blockFile, function(err, fileContents){
+					
+					//fs.readFile(blockFile, function(err, fileContents){
 						
-						updateContentsArray(i, fileContents);
+					//	updateContentsArray(i, fileContents);
 						
-					});
-					*/
+					//});
+					
 					
 				} else {
 					
@@ -288,7 +289,7 @@ function getFile(filename, callback){
 		callback(contents);
 	}
 }
-
+*/
 
 // retrieve a hashblock
 function getHashblock(hashblock){
@@ -488,6 +489,85 @@ function getVersionedAddress(address){
 	return address;
 }
 
+// pipelined reader
+function getFile(address, block, end){
+	
+	// find most current revision
+	var currentVersion = 0;
+
+	// debug
+	console.log('requested file ' + address);
+	
+	// if a specific version is requested, try to return it
+	if(address.lastIndexOf('_FV_') > 0 && address.substring(address.lastIndexOf('_FV_')).length > 0){
+		
+		// get specific version
+		address + address.substring(address.lastIndexOf('_FV_'));
+		
+		// debug
+		console.log('loading specific version ' + address);
+		
+	} else {
+		
+		// get latest version
+		while(typeof files[address + '_FV_' + currentVersion] != 'undefined'){
+			
+			// debug
+			console.log('found version ' + address + '_FV_' + currentVersion);
+			
+			currentVersion++;
+	
+		}
+		
+		address = address + '_FV_' + (currentVersion - 1);
+	}
+	
+	// debug
+	console.log('loading file ' + address);
+	
+	if(typeof files[address] != 'undefined'){
+		
+		// check for hashblocks
+		var hashblocks = files[address].hashblocks;
+		
+		if(hashblocks){
+			
+			// iterate over hashblocks
+			for(var i=0;i<hashblocks.length;i++){
+				
+				// first check local filesystem
+				var blockFile = config.storagePath + hashblocks[i];
+				
+				if(fs.existsSync(blockFile)){
+
+					var aBlock = fs.readFileSync(blockFile);
+			
+					// return block
+					block(aBlock);
+					
+				} else {
+					
+					console.log('block ' + hashblock[i] + ' missing!');
+				}
+			}
+			
+			end(200);
+			
+		} else {
+			
+			console.log('no hashblocks for ' + address);
+			
+			end(500);
+			
+		}
+		
+	} else {
+		
+		end(404);
+		
+	}
+}
+
 // "class" definitions
 function hashStore(requestedAddress){
 	
@@ -643,8 +723,16 @@ http.createServer(function(req, res){
 				
 			} else {
 				
-				getFile(filename, function(c){
+				res.writeHead(200);
+				
+				getFile(filename, function(block){
 					
+					// debug
+					console.log('sending block');
+					
+					res.write(block);
+					
+					/*
 					contents = c;
 					
 					if(contents && contents.length > 0){
@@ -658,6 +746,14 @@ http.createServer(function(req, res){
 						res.end('file not found');
 						
 					}
+					*/
+					
+				}, function(result){
+					
+					console.log('end response with ' + result + ' result');
+					
+					// end response
+					res.end();
 				});
 				
 			}
