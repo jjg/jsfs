@@ -490,35 +490,21 @@ function getVersionedAddress(address){
 }
 
 // pipelined reader
-function getFile(address, block, end){
+function getFile(address, result, block, end){
 	
+	// todo: refactor all this version stuff into shared code...
 	// find most current revision
 	var currentVersion = 0;
-
-	// debug
-	console.log('requested file ' + address);
 	
 	// if a specific version is requested, try to return it
 	if(address.lastIndexOf('_FV_') > 0 && address.substring(address.lastIndexOf('_FV_')).length > 0){
-		
 		// get specific version
 		address + address.substring(address.lastIndexOf('_FV_'));
-		
-		// debug
-		console.log('loading specific version ' + address);
-		
 	} else {
-		
 		// get latest version
 		while(typeof files[address + '_FV_' + currentVersion] != 'undefined'){
-			
-			// debug
-			console.log('found version ' + address + '_FV_' + currentVersion);
-			
 			currentVersion++;
-	
 		}
-		
 		address = address + '_FV_' + (currentVersion - 1);
 	}
 	
@@ -531,6 +517,8 @@ function getFile(address, block, end){
 		var hashblocks = files[address].hashblocks;
 		
 		if(hashblocks){
+			
+			result(200);
 			
 			// iterate over hashblocks
 			for(var i=0;i<hashblocks.length;i++){
@@ -551,19 +539,21 @@ function getFile(address, block, end){
 				}
 			}
 			
-			end(200);
+			end();
 			
 		} else {
 			
-			console.log('no hashblocks for ' + address);
+			console.log('no hashblocks for ' + address + '!');
 			
-			end(500);
+			result(500);
+			end('no hashblocks found for this address');
 			
 		}
 		
 	} else {
 		
-		end(404);
+		result(404);
+		end('no file at this address');
 		
 	}
 }
@@ -723,37 +713,20 @@ http.createServer(function(req, res){
 				
 			} else {
 				
-				res.writeHead(200);
-				
-				getFile(filename, function(block){
+				getFile(filename, function(result){
 					
-					// debug
-					console.log('sending block');
+					// send result
+					res.writeHead(result);
 					
+				}, function(block){
+					
+					// send block
 					res.write(block);
 					
-					/*
-					contents = c;
-					
-					if(contents && contents.length > 0){
-				
-						res.writeHead(200);
-						res.end(contents);
-						
-					} else {
-						
-						res.writeHead(404);
-						res.end('file not found');
-						
-					}
-					*/
-					
-				}, function(result){
-					
-					console.log('end response with ' + result + ' result');
+				}, function(message){
 					
 					// end response
-					res.end();
+					res.end(message);
 				});
 				
 			}
