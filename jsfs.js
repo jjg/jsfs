@@ -493,6 +493,8 @@ function getVersionedAddress(address){
 function getFile(address, result, block, end){
 	
 	// todo: refactor all this version stuff into shared code...
+	var requestedAddress = address;
+	
 	// find most current revision
 	var currentVersion = 0;
 	
@@ -549,8 +551,53 @@ function getFile(address, result, block, end){
 		
 	} else {
 		
-		result(404);
-		end('no file at this address');
+		// if peers are configured, check them
+		if(config.peers.length > 0){
+			
+			// debug
+			console.log('searching peers for requested address ' + address);
+			
+			for(var j=0;j<config.peers.length;j++){
+				
+				var peer = config.peers[j];
+				
+				console.log('requesting address ' + address + ' from ' + peer);
+				
+				http.get('http://' + config.peers[j].host + ':' + config.peers[j].port + requestedAddress, function(peerResponse){
+					
+					peerResponse.on('header', function(header){
+						
+						// debug
+						console.log('peer request status: ' + header.status);
+						
+						result(header.status);
+						
+					});
+					
+					peerResponse.on('data', function(chunk){
+						
+						// debug
+						console.log('received data from peer');
+						
+						block(chunk);
+						
+					});
+						
+					peerResponse.on('error', function(error){
+						end('error receiving data from peer: ' + error);
+					});
+					
+					peerResponse.on('end', function(){
+						end();
+					});
+					
+				});
+			}
+			
+		} else {
+			result(404);
+			end('no file at this address');
+		}
 		
 	}
 }
