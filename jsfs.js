@@ -564,18 +564,17 @@ function getFile(address, result, block, end){
 				
 				var peer = config.peers[j];
 				
-				console.log('requesting address ' + requestedAddress + ' from ' + peer);
+				console.log('requesting address ' + requestedAddress + ' from ' + peer.host);
+				
+				// create a local copy if we find the file
+				var localCopy = new hashStore(requestedAddress);
 				
 				http.get('http://' + config.peers[j].host + ':' + config.peers[j].port + requestedAddress, function(peerResponse){
 					
-					peerResponse.on('header', function(header){
+					// debug
+					console.log('peer request status: ' + peerResponse.statusCode);
 						
-						// debug
-						console.log('peer request status: ' + header.status);
-						
-						result(header.status);
-						
-					});
+					result(peerResponse.statusCode);
 					
 					peerResponse.on('data', function(chunk){
 						
@@ -583,6 +582,10 @@ function getFile(address, result, block, end){
 						console.log('received data from peer');
 						
 						block(chunk);
+						
+						if(peerResponse.statusCode == 200){
+							localCopy.write(chunk);
+						}
 						
 					});
 						
@@ -592,6 +595,10 @@ function getFile(address, result, block, end){
 					
 					peerResponse.on('end', function(){
 						end();
+						
+						if(peerResponse.statusCode == 200){
+							localCopy.close();
+						}
 					});
 					
 				});
