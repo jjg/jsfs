@@ -233,17 +233,17 @@ function getFile(address, result, block, end){
 				// create a local copy if we find the file
 				var localCopy = new hashStore(requestedAddress);
 				
-				http.get('http://' + config.peers[j].host + ':' + config.peers[j].port + requestedAddress, function(peerResponse){
+				http.get('http://' + peer.host + ':' + peer.port + requestedAddress, function(peerResponse){
 					
 					// debug
-					console.log('peer request status: ' + peerResponse.statusCode);
+					console.log('peer ' + peer.host + ' request status: ' + peerResponse.statusCode);
 						
 					result(peerResponse.statusCode);
 					
 					peerResponse.on('data', function(chunk){
 						
 						// debug
-						console.log('received data from peer');
+						console.log('received data from peer ' + peer.host);
 						
 						block(chunk);
 						
@@ -254,7 +254,7 @@ function getFile(address, result, block, end){
 					});
 						
 					peerResponse.on('error', function(error){
-						end('error receiving data from peer: ' + error);
+						end('error receiving data from peer ' + peer.host + ' : ' + error);
 					});
 					
 					peerResponse.on('end', function(){
