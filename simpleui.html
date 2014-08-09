@@ -40,18 +40,33 @@
 						
 						var uploadedFiles = JSON.parse(this.responseText);
 						
+						// don't show multiple versions of the same file
+						var lastFileName = null;
+						
 						for(var key in uploadedFiles){
 							
 							var fileName = key;
 							
-							var fileLink = document.createElement('a');
-							fileLink.setAttribute('href', fileName);
-							fileLink.innerHTML = fileName;
+							// remove versioning from filename
+							var versionIndicatorIndex = fileName.indexOf('_FV_');
 							
-							var fileListItem = document.createElement('li');
-							fileListItem.appendChild(fileLink);
+							if(versionIndicatorIndex > 0){
+								fileName = fileName.substring(0, versionIndicatorIndex);
+							}
 							
-							uploadedFileList.appendChild(fileListItem);
+							if(fileName != lastFileName){
+								
+								lastFileName = fileName;
+							
+								var fileLink = document.createElement('a');
+								fileLink.setAttribute('href', fileName);
+								fileLink.innerHTML = fileName;
+								
+								var fileListItem = document.createElement('li');
+								fileListItem.appendChild(fileLink);
+								
+								uploadedFileList.appendChild(fileListItem);
+							}
 						}
 					}
 				}

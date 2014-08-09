@@ -238,7 +238,7 @@ function getFile(address, result, block, end){
 					// debug
 					console.log('peer ' + peer.host + ' request status: ' + peerResponse.statusCode);
 						
-					result(peerResponse.statusCode);
+					//result(peerResponse.statusCode);
 					
 					peerResponse.on('data', function(chunk){
 						
