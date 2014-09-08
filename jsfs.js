@@ -364,6 +364,24 @@ function hashStore(requestedAddress){
 	
 }
 
+// validate authentication credentials
+function authorized(req){
+	
+	var authenticated = false;
+	
+	var header=req.headers['authorization']||'',        // get the header
+		token=header.split(/\s+/).pop()||'',            // and the encoded auth token
+		auth=new Buffer(token, 'base64').toString(),    // convert from base64
+		parts=auth.split(/:/),                          // split on colon
+		username=parts[0],
+		password=parts[1];
+	
+	if(username === config.username && password === config.password){
+		authenticated = true;
+	}
+	
+	return authenticated;
+}
 
 // here's where the action starts...
 
@@ -424,36 +442,48 @@ http.createServer(function(req, res){
 			
 		case 'POST':
 			
-			// extract file contents
-			var contents = new hashStore(filename);
+			// authorize request
+			if(authorized(req)){
 			
-			req.on('data', function(data){
-				contents.write(data);
-			});
-			
-			req.on('end', function(){
+				// extract file contents
+				var contents = new hashStore(filename);
 				
-				var storeResult = null;
+				req.on('data', function(data){
+					contents.write(data);
+				});
 				
-				contents.close();
-				
-				// todo: return a legit result
-				storeResult = "OK";
-				
-				if(storeResult === 'OK'){
-					//res.setHeader('Access-Control-Allow-Origin', '*');
-					res.writeHead(200);
-					res.end();
-				}
-				
-				if(storeResult === 'EXISTS'){
-					//res.setHeader('Access-Control-Allow-Origin', '*');
-					res.writeHead(500);
-					res.end('file exists');
-				}
-				
-			});
+				req.on('end', function(){
+					
+					var storeResult = null;
+					
+					contents.close();
+					
+					// todo: return a legit result
+					storeResult = "OK";
+					
+					if(storeResult === 'OK'){
+						//res.setHeader('Access-Control-Allow-Origin', '*');
+						res.writeHead(200);
+						res.end();
+					}
+					
+					if(storeResult === 'EXISTS'){
+						//res.setHeader('Access-Control-Allow-Origin', '*');
+						res.writeHead(500);
+						res.end('file exists');
+					}
+					
+				});
 
+			} else {
+				
+				// request authorization
+				res.setHeader('WWW-Authenticate', 'Basic');
+				res.writeHead(401);
+				res.end('authorization required to POST');
+				
+			}
+			
 			break;
 			
 		case 'DELETE':
