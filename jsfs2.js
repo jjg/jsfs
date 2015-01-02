@@ -52,6 +52,12 @@ var file_store = {
 		stored_files[this.url] = this.file_metadata;
 
 		// todo: signal write of storage metadata to disk
+
+		// return token for PUT, DELETE operations
+		shasum = crypto.createHash("sha1");
+		shasum.update(JSON.stringify(this.file_metadata));
+		return shasum.digest("hex");
+
 	},
 	process_buffer: function(flush){
 		if(this.input_buffer.length > this.block_size || flush){
@@ -87,20 +93,21 @@ var file_store = {
 // *** CONFIGURATION ***
 // configuration values will be stored in an external module once we know what they all are
 var SERVER_PORT = 7302;		// the port the HTTP server listens on
-var STORAGE_PATH = "./blocks";
+var STORAGE_PATH = "./blocks/";
 var BLOCK_SIZE = 1024;
 log.level = 0;				// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
 
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
 http.createServer(function(req, res){
 
-	log.message(log.INFO, "Received " + req.method + " requeset.");
+	var target_url = require("url").parse(req.url).pathname;
+  log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
 
 	switch(req.method){
 
 		case "GET":
 
-			// todo: return the file at the requested path
+			// todo:  return the file located at the requested URL 
 
 			res.end();
 
@@ -108,15 +115,25 @@ http.createServer(function(req, res){
 
 		case "POST":
 
-			// todo: store the posted data at the specified path
+			// store the posted data at the specified URL
+			var file_token = null; 
+      var new_file = Object.create(file_store);
+      new_file.init(target_url);
 
-			res.end();
+      req.on("data", function(chunk){
+        new_file.write(chunk);
+      });
 
+      req.on("end", function(){
+        file_token = new_file.close();
+	      res.end(file_token);
+      });
+	
 			break;
 
 		case "PUT":
 
-			// todo: update the stored data at the specified path
+			// todo: update the stored data at the specified URL 
 
 			res.end();
 
@@ -124,7 +141,7 @@ http.createServer(function(req, res){
 
 		case "DELETE":
 
-			// todo: remove the data stored at the specified path
+			// todo: remove the data stored at the specified URL 
 
 			res.end();
 
