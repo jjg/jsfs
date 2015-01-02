@@ -66,32 +66,14 @@ var file_store = {
 
 		if(flush){
 
+			log.message(0, "flushing remaining buffer");
+
 			// update original file size
       this.file_metadata.file_size = this.file_metadata.file_size + this.input_buffer.length;
 
 			// empty the remainder of the buffer
 			while(this.input_buffer.length > 0){
-
-				// debug
-				console.log("draining");
-
-        var block = this.input_buffer.slice(0, this.block_size);
-
-        var block_hash = null;
-        shasum = crypto.createHash("sha1");
-        shasum.update(block);
-        block_hash = shasum.digest("hex");
-
-        var block_file = STORAGE_PATH + block_hash;
-        if(!fs.existsSync(block_file)){
-        log.message(log.INFO, "storing block " + block_file);
-        fs.writeFileSync(block_file, block, "binary");
-        } else {
-          log.message(log.INFO, "duplicate block " + block_hash + " not stored");
-        }
-
-        this.file_metadata.blocks.push(block_hash);
-        this.input_buffer = this.input_buffer.slice(this.block_size);
+				this.store_block();
 			}
 
 		} else {
@@ -101,25 +83,28 @@ var file_store = {
 				// update original file size
 				this.file_metadata.file_size = this.file_metadata.file_size + this.block_size;
 
-				var block = this.input_buffer.slice(0, this.block_size);
-
-				var block_hash = null;
-				shasum = crypto.createHash("sha1");
-				shasum.update(block);
-				block_hash = shasum.digest("hex");
-
-				var block_file = STORAGE_PATH + block_hash;
-				if(!fs.existsSync(block_file)){
-				log.message(log.INFO, "storing block " + block_file);
-				fs.writeFileSync(block_file, block, "binary");
-				} else {
-					log.message(log.INFO, "duplicate block " + block_hash + " not stored");
-				}
-
-				this.file_metadata.blocks.push(block_hash);
-				this.input_buffer = this.input_buffer.slice(this.block_size);
+				this.store_block();
 			}
 		}
+	},
+	store_block: function(){
+   	var block = this.input_buffer.slice(0, this.block_size);
+
+   	var block_hash = null;
+   	shasum = crypto.createHash("sha1");
+   	shasum.update(block);
+   	block_hash = shasum.digest("hex");
+
+   	var block_file = STORAGE_PATH + block_hash;
+   	if(!fs.existsSync(block_file)){
+			log.message(log.INFO, "storing block " + block_file);
+			fs.writeFileSync(block_file, block, "binary");
+   	} else {
+	  	 log.message(log.INFO, "duplicate block " + block_hash + " not stored");
+   	}
+
+   	this.file_metadata.blocks.push(block_hash);
+		this.input_buffer = this.input_buffer.slice(this.block_size);
 	}
 };
 
