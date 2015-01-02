@@ -35,6 +35,7 @@ var file_store = {
 		this.file_metadata = {};
 		this.file_metadata.created = (new Date()).getTime();
 		this.file_metadata.version = 0;	// todo: use a function to check for previous versions
+		this.file_metadata.private = false;
 		this.file_metadata.encrypted = false;
 		this.file_metadata.content_type = "application/octet-stream";
 		this.file_metadata.file_size = 0;
@@ -51,7 +52,7 @@ var file_store = {
 		// add signature to metadata (used as auth token for update operations)
     shasum = crypto.createHash("sha1");
     shasum.update(JSON.stringify(this.file_metadata));
-    this.file_metadata.update_token =  shasum.digest("hex");
+    this.file_metadata.access_token =  shasum.digest("hex");
 
 		// add file to storage metadata
 		stored_files[this.url] = this.file_metadata;
@@ -120,6 +121,8 @@ http.createServer(function(req, res){
 
 	var target_url = require("url").parse(req.url).pathname;
 	var content_type = req.headers["content-type"];
+	var access_token = req.headers["x-access-token"];
+	var private = req.headers["x-private"];
 
   log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
 
@@ -138,22 +141,29 @@ http.createServer(function(req, res){
 				// return status 200
 				res.statusCode = 200;
 
-      	// todo: check authorization of URL
+      	// check authorization of URL
+				if(!requested_file.private || (requested_file.private && requested_file.access_token === access_token)){
 
-	      // return file metadata as HTTP headers
-				res.setHeader("Content-Type", requested_file.content_type);
+		      // return file metadata as HTTP headers
+					res.setHeader("Content-Type", requested_file.content_type);
 	
-				// return file blocks
-				for(var i=0; i < requested_file.blocks.length; i++){
-					var block_filename = STORAGE_PATH + requested_file.blocks[i];
-					var block_data = fs.readFileSync(block_filename);
+					// return file blocks
+					for(var i=0; i < requested_file.blocks.length; i++){
+						var block_filename = STORAGE_PATH + requested_file.blocks[i];
+						var block_data = fs.readFileSync(block_filename);
 	
-					// send block to caller
-					res.write(block_data);
+						// send block to caller
+						res.write(block_data);
+					}
+	
+					// finish request
+					res.end();
+
+				} else {
+					// return status 401
+					res.statusCode = 401;
+					res.end();
 				}
-	
-				// finish request
-				res.end();
 
 			} else {
 
@@ -176,6 +186,10 @@ http.createServer(function(req, res){
 			if(content_type){
 				log.message(log.INFO, "Content-Type: " + content_type);
 				new_file.file_metadata.content_type = content_type;
+			}
+
+			if(private){
+				new_file.file_metadata.private = true;
 			}
 
       req.on("data", function(chunk){
