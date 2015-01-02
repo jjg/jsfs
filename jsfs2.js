@@ -141,7 +141,7 @@ http.createServer(function(req, res){
       var new_file = Object.create(file_store);
       new_file.init(target_url);
 
-			// todo: set additional file properties (content-type, etc.)
+			// set additional file properties (content-type, etc.)
 			if(content_type){	
 				new_file.file_metadata.content_type = content_type;
 			}
