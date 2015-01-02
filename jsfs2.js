@@ -48,15 +48,18 @@ var file_store = {
 	close: function(){
 		this.process_buffer(true);
 
+		// add signature to metadata (used as auth token for update operations)
+    shasum = crypto.createHash("sha1");
+    shasum.update(JSON.stringify(this.file_metadata));
+    this.file_metadata.update_token =  shasum.digest("hex");
+
 		// add file to storage metadata
 		stored_files[this.url] = this.file_metadata;
 
 		// todo: signal write of storage metadata to disk
 
-		// return token for PUT, DELETE operations
-		shasum = crypto.createHash("sha1");
-		shasum.update(JSON.stringify(this.file_metadata));
-		return shasum.digest("hex");
+		// return metadata for future operations
+		return this.file_metadata;
 
 	},
 	process_buffer: function(flush){
@@ -116,7 +119,7 @@ http.createServer(function(req, res){
 		case "POST":
 
 			// store the posted data at the specified URL
-			var file_token = null; 
+			var file_metadata = null; 
       var new_file = Object.create(file_store);
       new_file.init(target_url);
 
@@ -125,8 +128,8 @@ http.createServer(function(req, res){
       });
 
       req.on("end", function(){
-        file_token = new_file.close();
-	      res.end(file_token);
+        file_metadata = new_file.close();
+	      res.end(JSON.stringify(file_metadata));
       });
 	
 			break;
