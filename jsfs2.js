@@ -119,7 +119,10 @@ log.level = 0;				// the minimum level of log messages to record: 0 = info, 1 = 
 http.createServer(function(req, res){
 
 	var target_url = require("url").parse(req.url).pathname;
+	var content_type = req.headers["content-type"];
+
   log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
+	log.message(log.INFO, "Content-Type: " + content_type);
 
 	switch(req.method){
 
@@ -137,6 +140,11 @@ http.createServer(function(req, res){
 			var file_metadata = null; 
       var new_file = Object.create(file_store);
       new_file.init(target_url);
+
+			// todo: set additional file properties (content-type, etc.)
+			if(content_type){	
+				new_file.file_metadata.content_type = content_type;
+			}
 
       req.on("data", function(chunk){
         new_file.write(chunk);
