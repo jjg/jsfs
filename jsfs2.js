@@ -122,15 +122,46 @@ http.createServer(function(req, res){
 	var content_type = req.headers["content-type"];
 
   log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
-	log.message(log.INFO, "Content-Type: " + content_type);
 
 	switch(req.method){
 
 		case "GET":
 
-			// todo:  return the file located at the requested URL 
+			// return the file located at the requested URL 
+			var requested_file = null;
+	
+			// check for existance of requested URL
+			if(typeof stored_files[target_url] != "undefined"){
 
-			res.end();
+				requested_file = stored_files[target_url];
+
+				// return status 200
+				res.statusCode = 200;
+
+      	// todo: check authorization of URL
+
+	      // return file metadata as HTTP headers
+				res.setHeader("Content-Type", requested_file.content_type);
+	
+				// return file blocks
+				for(var i=0; i < requested_file.blocks.length; i++){
+					var block_filename = STORAGE_PATH + requested_file.blocks[i];
+					var block_data = fs.readFileSync(block_filename);
+	
+					// send block to caller
+					res.write(block_data);
+				}
+	
+				// finish request
+				res.end();
+
+			} else {
+
+				// return status 404
+				res.statusCode = 404;
+				res.end();
+
+			}
 
 			break;
 
@@ -142,7 +173,8 @@ http.createServer(function(req, res){
       new_file.init(target_url);
 
 			// set additional file properties (content-type, etc.)
-			if(content_type){	
+			if(content_type){
+				log.message(log.INFO, "Content-Type: " + content_type);
 				new_file.file_metadata.content_type = content_type;
 			}
 
@@ -190,5 +222,8 @@ http.createServer(function(req, res){
 			res.writeHead(405);
 			res.end("method " + req.method + " is not supported");
 	}
+
+	// log the result of the request
+	log.message(log.INFO, "Result: " + res.statusCode);
 
 }).listen(SERVER_PORT);
