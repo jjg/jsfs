@@ -26,6 +26,25 @@ var log = {
 	}
 };
 
+function save_metadata(){
+	fs.writeFile(STORAGE_PATH + "metadata.json", JSON.stringify(stored_files), function(err){
+		if(err){
+			log.message(log.ERROR, "error saving metadata to disk");
+		} else {
+			log.message(log.INFO, "metadata saved to disk");
+		}
+	});
+}
+
+function load_metadata(){
+	try{
+		stored_files = JSON.parse(fs.readFileSync(STORAGE_PATH + "metadata.json"));
+		log.message(log.INFO, "metadata loaded from disk");
+	} catch(ex) {
+		log.message(log.WARN, "unable to load metadata from disk: " + ex);
+	}
+}
+
 // base storage object
 var file_store = {
 	init: function(url){
@@ -57,7 +76,8 @@ var file_store = {
 		// add file to storage metadata
 		stored_files[this.url] = this.file_metadata;
 
-		// todo: signal write of storage metadata to disk
+		// write updated metadata to disk
+		save_metadata();
 
 		// return metadata for future operations
 		return this.file_metadata;
@@ -109,12 +129,18 @@ var file_store = {
 	}
 };
 
+
 // *** CONFIGURATION ***
 // configuration values will be stored in an external module once we know what they all are
 var SERVER_PORT = 7302;		// the port the HTTP server listens on
 var STORAGE_PATH = "./blocks/";
 var BLOCK_SIZE = 1048576;	// 1MB
 log.level = 0;				// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
+
+
+// *** INIT ***
+load_metadata();
+
 
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
 http.createServer(function(req, res){
@@ -166,11 +192,9 @@ http.createServer(function(req, res){
 				}
 
 			} else {
-
 				// return status 404
 				res.statusCode = 404;
 				res.end();
-
 			}
 
 			break;
