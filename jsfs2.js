@@ -189,51 +189,70 @@ http.createServer(function(req, res){
 
 		case "GET":
 
-			// return the file located at the requested URL 
-			var requested_file = null;
-	
-			// check for existance of requested URL
-			if(typeof stored_files[target_url] != "undefined"){
+			// if url ends in "/", return a list of public files 
+			if(target_url.slice(-1) == "/"){
 
-				requested_file = stored_files[target_url];
+				var public_directory = [];
 
-				// return status 200
-				res.statusCode = 200;
-
-      	// check authorization of URL
-				if(!requested_file.private || (requested_file.private && requested_file.access_token === access_token)){
-
-		      // return file metadata as HTTP headers
-					res.setHeader("Content-Type", requested_file.content_type);
-	
-					// return file blocks
-					for(var i=0; i < requested_file.blocks.length; i++){
-						var block_filename = STORAGE_PATH + requested_file.blocks[i];
-						var block_data = fs.readFileSync(block_filename);
-
-						if(requested_file.encrypted){
-							log.message(log.INFO, "decrypting block");
-							block_data = decrypt(block_data, requested_file.blocks[i]);
+				for(var file in stored_files){
+					if(stored_files.hasOwnProperty(file)){
+						if(!stored_files[file].private && (file.indexOf(target_url) > -1)){
+							public_directory.push(file);
 						}
-	
-						// send block to caller
-						res.write(block_data);
 					}
-	
-					// finish request
-					res.end();
-
-				} else {
-					// return status 401
-					res.statusCode = 401;
-					res.end();
 				}
 
-			} else {
-				// return status 404
-				res.statusCode = 404;
+				res.write(JSON.stringify(public_directory));
 				res.end();
-			}
+
+			} else {
+
+				// return the file located at the requested URL 
+				var requested_file = null;
+		
+				// check for existance of requested URL
+				if(typeof stored_files[target_url] != "undefined"){
+
+					requested_file = stored_files[target_url];
+
+					// return status 200
+					res.statusCode = 200;
+
+					// check authorization of URL
+					if(!requested_file.private || (requested_file.private && requested_file.access_token === access_token)){
+
+						 // return file metadata as HTTP headers
+						res.setHeader("Content-Type", requested_file.content_type);
+		
+						// return file blocks
+						for(var i=0; i < requested_file.blocks.length; i++){
+							var block_filename = STORAGE_PATH + requested_file.blocks[i];
+							var block_data = fs.readFileSync(block_filename);
+
+							if(requested_file.encrypted){
+								log.message(log.INFO, "decrypting block");
+								block_data = decrypt(block_data, requested_file.blocks[i]);
+							}
+		
+							// send block to caller
+							res.write(block_data);
+						}
+		
+						// finish request
+						res.end();
+
+					} else {
+						// return status 401
+						res.statusCode = 401;
+						res.end();
+					}
+
+				} else {
+					// return status 404
+					res.statusCode = 404;
+					res.end();
+				}
+				}
 
 			break;
 
