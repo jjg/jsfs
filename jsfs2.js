@@ -48,15 +48,15 @@ function load_metadata(){
 // simple encrypt-decrypt functions
 function encrypt(text){
 	var cipher = crypto.createCipher('aes-256-cbc','d6F3Efeq')
-	var crypted = cipher.update(text,'utf8','hex')
-	crypted += cipher.final('hex');
+	var crypted = cipher.update(text)
+	crypted += cipher.final();
 	return crypted;
 }
  
 function decrypt(text){
 	var decipher = crypto.createDecipher('aes-256-cbc','d6F3Efeq')
-	var dec = decipher.update(text,'hex','utf8')
-	dec += decipher.final('utf8');
+	var dec = decipher.update(text)
+	dec += decipher.final();
 	return dec;
 } 
 
@@ -200,6 +200,11 @@ http.createServer(function(req, res){
 					for(var i=0; i < requested_file.blocks.length; i++){
 						var block_filename = STORAGE_PATH + requested_file.blocks[i];
 						var block_data = fs.readFileSync(block_filename);
+
+						if(requested_file.encrypted){
+							log.message(log.INFO, "decrypting block");
+							block_data = decrypt(block_data);
+						}
 	
 						// send block to caller
 						res.write(block_data);
