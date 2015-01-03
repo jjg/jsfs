@@ -45,6 +45,21 @@ function load_metadata(){
 	}
 }
 
+// simple encrypt-decrypt functions
+function encrypt(text){
+	var cipher = crypto.createCipher('aes-256-cbc','d6F3Efeq')
+	var crypted = cipher.update(text,'utf8','hex')
+	crypted += cipher.final('hex');
+	return crypted;
+}
+ 
+function decrypt(text){
+	var decipher = crypto.createDecipher('aes-256-cbc','d6F3Efeq')
+	var dec = decipher.update(text,'hex','utf8')
+	dec += decipher.final('utf8');
+	return dec;
+} 
+
 // base storage object
 var file_store = {
 	init: function(url){
@@ -109,7 +124,14 @@ var file_store = {
 		}
 	},
 	store_block: function(){
-   	var block = this.input_buffer.slice(0, this.block_size);
+
+		var block = this.input_buffer.slice(0, this.block_size);
+
+		if(this.file_metadata.encrypted){
+			log.message(log.INFO, "encrypting block");
+
+			block = encrypt(block);
+		}
 
    	var block_hash = null;
    	shasum = crypto.createHash("sha1");
@@ -149,6 +171,7 @@ http.createServer(function(req, res){
 	var content_type = req.headers["content-type"];
 	var access_token = req.headers["x-access-token"];
 	var private = req.headers["x-private"];
+	var encrypted = req.headers["x-encrypted"];
 
   log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
 
@@ -214,6 +237,10 @@ http.createServer(function(req, res){
 
 			if(private){
 				new_file.file_metadata.private = true;
+			}
+
+			if(encrypted){
+				new_file.file_metadata.encrypted = true;
 			}
 
       req.on("data", function(chunk){
