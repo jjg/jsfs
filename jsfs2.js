@@ -34,6 +34,9 @@ function save_metadata(){
 			log.message(log.INFO, "metadata saved to disk");
 		}
 	});
+
+	var stats = system_stats();
+	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks");
 }
 
 function load_metadata(){
@@ -43,6 +46,28 @@ function load_metadata(){
 	} catch(ex) {
 		log.message(log.WARN, "unable to load metadata from disk: " + ex);
 	}
+
+	var stats = system_stats();
+	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks");
+}
+
+function system_stats(){
+
+	var stats = {};
+	stats.file_count = 0;
+	stats.block_count = 0;
+
+	for(var file in stored_files){
+		if(stored_files.hasOwnProperty(file)){	
+			// count blocks
+			stats.block_count = stats.block_count + stored_files[file].blocks.length;
+
+			// increment file count
+			stats.file_count++;
+		}
+	}
+
+	return stats;
 }
 
 // simple encrypt-decrypt functions
