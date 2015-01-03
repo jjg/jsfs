@@ -233,33 +233,43 @@ http.createServer(function(req, res){
 
 		case "POST":
 
-			// store the posted data at the specified URL
-			var file_metadata = null; 
-      var new_file = Object.create(file_store);
-      new_file.init(target_url);
+			// make sure the URL isn't already taken
+			if(typeof stored_files[target_url] === "undefined"){
 
-			// set additional file properties (content-type, etc.)
-			if(content_type){
-				log.message(log.INFO, "Content-Type: " + content_type);
-				new_file.file_metadata.content_type = content_type;
+				// store the posted data at the specified URL
+				var file_metadata = null; 
+				var new_file = Object.create(file_store);
+				new_file.init(target_url);
+	
+				// set additional file properties (content-type, etc.)
+				if(content_type){
+					log.message(log.INFO, "Content-Type: " + content_type);
+					new_file.file_metadata.content_type = content_type;
+				}
+	
+				if(private){
+					new_file.file_metadata.private = true;
+				}
+	
+				if(encrypted){
+					new_file.file_metadata.encrypted = true;
+				}
+	
+				req.on("data", function(chunk){
+					new_file.write(chunk);
+				});
+	
+				req.on("end", function(){
+					file_metadata = new_file.close();
+					res.end(JSON.stringify(file_metadata));
+				});
+
+			} else {
+
+				// if file exists at this URL, return 405 "Method not allowed"
+				res.statusCode = 405;
+				res.end();
 			}
-
-			if(private){
-				new_file.file_metadata.private = true;
-			}
-
-			if(encrypted){
-				new_file.file_metadata.encrypted = true;
-			}
-
-      req.on("data", function(chunk){
-        new_file.write(chunk);
-      });
-
-      req.on("end", function(){
-        file_metadata = new_file.close();
-	      res.end(JSON.stringify(file_metadata));
-      });
 	
 			break;
 
