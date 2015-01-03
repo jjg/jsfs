@@ -137,7 +137,7 @@ var file_store = {
    	shasum.update(block);
    	block_hash = shasum.digest("hex");
 
-		// if encryption is set, encrypt using the hash above
+    // if encryption is set, encrypt using the hash above
     if(this.file_metadata.encrypted){
       log.message(log.INFO, "encrypting block");
 
@@ -146,12 +146,15 @@ var file_store = {
 
 		// save the block to disk
    	var block_file = STORAGE_PATH + block_hash;
-   	if(!fs.existsSync(block_file)){
-			log.message(log.INFO, "storing block " + block_file);
-			fs.writeFileSync(block_file, block, "binary");
-   	} else {
-	  	 log.message(log.INFO, "duplicate block " + block_hash + " not stored");
-   	}
+    if(!fs.existsSync(block_file)){
+      log.message(log.INFO, "storing block " + block_file);
+      //fs.writeFileSync(block_file, block, "binary");
+    } else {
+       log.message(log.INFO, "duplicate block " + block_hash);
+    }
+
+		fs.writeFileSync(block_file, block, "binary");
+
 
    	this.file_metadata.blocks.push(block_hash);
 		this.input_buffer = this.input_buffer.slice(this.block_size);
