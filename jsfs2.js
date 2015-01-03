@@ -275,9 +275,61 @@ http.createServer(function(req, res){
 
 		case "PUT":
 
-			// todo: update the stored data at the specified URL 
+			// make sure there's a file to update
+			if(typeof stored_files[target_url] != "undefined"){
 
-			res.end();
+				var original_file = stored_files[target_url];
+
+				// check authorization
+				if(original_file.access_token === access_token){
+
+					// update the posted data at the specified URL
+					var new_file = Object.create(file_store);
+					new_file.init(target_url);
+	
+					// copy original file properties
+					new_file.file_metadata.created = original_file.created;
+					new_file.file_metadata.updated = (new Date()).getTime();
+					new_file.file_metadata.content_type = original_file.content_type;
+					new_file.file_metadata.private = original_file.private;
+					new_file.file_metadata.encrypted = original_file.encrypted;
+
+					// update file properties (if requested)
+					if(content_type){
+						log.message(log.INFO, "Content-Type: " + content_type);
+						new_file.file_metadata.content_type = content_type;
+					}
+
+					if(private){
+						new_file.file_metadata.private = true;
+					}
+	
+					if(encrypted){
+						new_file.file_metadata.encrypted = true;
+					}
+
+					req.on("data", function(chunk){
+						new_file.write(chunk);
+					});
+	
+					req.on("end", function(){
+						var new_file_metadata = new_file.close();
+						res.end(JSON.stringify(new_file_metadata));
+ 					});
+		
+					} else {
+	
+						// if token is invalid, return unauthorized
+						res.statusCode = 401;
+						res.end();
+					}					
+	
+      } else {
+	
+        // if file dosen't exist at this URL, return 405 "Method not allowed"
+        res.statusCode = 405;
+        res.end();
+      }
 
 			break;
 
