@@ -347,8 +347,6 @@ http.createServer(function(req, res){
 					// unlink the url
 					delete stored_files[target_url];
 
-					// todo: remove blocks?
-					
 					save_metadata();
 					res.end();
 
