@@ -1,502 +1,468 @@
-// jsfs - deduplicating filesystem with a REST interface
+// jsfs - Javascript filesystem with a REST interface
 
-// includes
-var http = require('http');
-var crypto = require('crypto');
-var fs = require('fs');
+// *** CONVENTIONS ***
+// strings are double-quoted, variables use underscores, constants are ALL CAPS
 
-// load config
-var config = require('./config.js');
+// *** GLOBALS ***
+// the plan is to eliminate these eventually...
+var stored_files = {};
 
-// globals
-files = {};
+// *** UTILITIES  & MODULES ***
+var http = require("http");
+var crypto = require("crypto");
+var fs = require("fs");
 
-// retreive an index of files
-function getIndex(){
-	
-	// todo: now that file meta is getting bigger, may want to slim this down
-	return JSON.stringify(files);
-	
-}
+// these may be broken-out into individual files once they have been debugged
+// general-purpose logging facility
+var log = {
+	INFO: 0,
+	WARN: 1,
+	ERROR: 2,
+	level: 0, // default log level
+	message: function(severity, log_message){
+		if(severity >= this.level){
+			console.log(Date() + "\t" + severity + "\t" + log_message);
+		}
+	}
+};
 
-// persist metadata to disk
-function saveMetadata(){
-	fs.writeFile(config.storagePath + 'metadata.json', JSON.stringify(files), function(err){
+function save_metadata(){
+	fs.writeFile(STORAGE_PATH + "metadata.json", JSON.stringify(stored_files), function(err){
 		if(err){
-			console.log('error updating metadata');
+			log.message(log.ERROR, "error saving metadata to disk");
 		} else {
-			console.log('metadata stored sucessfully');
+			log.message(log.INFO, "metadata saved to disk");
 		}
 	});
+
+	var stats = system_stats();
+	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks");
 }
 
-// load metadata from disk
-function loadMetadata(){
-	
+function load_metadata(){
 	try{
-		
-		files = JSON.parse(fs.readFileSync(config.storagePath + 'metadata.json'));
-		
-		console.log('metadata loaded sucessfully');
-		
-		console.log('upgrading metadata');
-		upgradeMetadata();
-		
-		printStats();
-		
+		stored_files = JSON.parse(fs.readFileSync(STORAGE_PATH + "metadata.json"));
+		log.message(log.INFO, "metadata loaded from disk");
 	} catch(ex) {
-		
-		console.log('error loading metadata, ');
-		console.log(ex);
-		
+		log.message(log.WARN, "unable to load metadata from disk: " + ex);
 	}
+
+	var stats = system_stats();
+	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks");
 }
 
-// print system stats
-function printStats(){
-	
-	var totalFiles = 0;
-	var totalBlocks = 0;
-	
-	for(var key in files){
-		
-		if(files[key]){
-			
-			totalFiles++;
-			totalBlocks = totalBlocks + files[key].hashblocks.length;
-			
+function system_stats(){
+
+	var stats = {};
+	stats.file_count = 0;
+	stats.block_count = 0;
+
+	for(var file in stored_files){
+		if(stored_files.hasOwnProperty(file)){	
+			// count blocks
+			stats.block_count = stats.block_count + stored_files[file].blocks.length;
+
+			// increment file count
+			stats.file_count++;
 		}
-		
 	}
-	
-	console.log('\n---------------system stats----------------\n');
-	
-	console.log('Total number of files: ' + totalFiles);
-	console.log('Total number of blocks: ' + totalBlocks + ' (' + ((totalBlocks * config.blockSize) / 1048576) + 'MB)');
-	
-	console.log('\n-------------------------------------------\n');
 
+	return stats;
 }
 
-function upgradeMetadata(){
-	
-	var totalFiles = 0;
-	var upgradedFiles = 0;
-	
-	for(var file in files){
-		
-		totalFiles++;
-		
-		// test each file for version extension
-		if(file.lastIndexOf('_FV_') == -1){
-	
-			// add version 0 extension if none exists
-			console.log('upgrading file key ' + file);
-			
-			var upgradedFileKey = file + '_FV_0';
-			
-			// upgrade depreciated version indicators
-			if(file.substring(file.lastIndexOf('_')) == '_0'){
-				
-				upgradedFileKey = file.substring(0,file.lastIndexOf('_')) + '_FV_0';
-				
-				console.log('depreciated version indicator trimmed: ' + upgradedFileKey);
-				
+// simple encrypt-decrypt functions
+function encrypt(block, key){
+	var cipher = crypto.createCipher("aes-256-cbc", key);
+	cipher.write(block);
+	cipher.end();
+	return cipher.read();
+}
+ 
+function decrypt(block, key){
+	var decipher = crypto.createDecipher("aes-256-cbc", key);
+	decipher.write(block);
+	decipher.end();
+	return decipher.read();
+} 
+
+// base storage object
+var file_store = {
+	init: function(url){
+		this.url = url;
+		this.input_buffer = new Buffer("");
+		this.block_size = BLOCK_SIZE;
+		this.file_metadata = {};
+		this.file_metadata.created = (new Date()).getTime();
+		this.file_metadata.version = 0;	// todo: use a function to check for previous versions
+		this.file_metadata.private = false;
+		this.file_metadata.encrypted = false;
+		this.file_metadata.access_token = null;
+		this.file_metadata.content_type = "application/octet-stream";
+		this.file_metadata.file_size = 0;
+		this.file_metadata.block_size = this.block_size;
+		this.file_metadata.blocks = [];
+	},
+	write: function(chunk){
+		this.input_buffer = new Buffer.concat([this.input_buffer, chunk]);
+		this.process_buffer();
+	},
+	close: function(){
+		this.process_buffer(true);
+
+		// add signature to metadata (used as auth token for update operations)
+		if(!this.file_metadata.access_token){
+    	shasum = crypto.createHash("sha1");
+    	shasum.update(JSON.stringify(this.file_metadata));
+    	this.file_metadata.access_token =  shasum.digest("hex");
+		}
+
+		// add file to storage metadata
+		stored_files[this.url] = this.file_metadata;
+
+		// write updated metadata to disk
+		save_metadata();
+
+		// return metadata for future operations
+		return this.file_metadata;
+
+	},
+	process_buffer: function(flush){
+
+		if(flush){
+
+			log.message(0, "flushing remaining buffer");
+
+			// update original file size
+      this.file_metadata.file_size = this.file_metadata.file_size + this.input_buffer.length;
+
+			// empty the remainder of the buffer
+			while(this.input_buffer.length > 0){
+				this.store_block();
 			}
-			
-			console.log('upgraded filekey: ' + upgradedFileKey);
-			
-			files[upgradedFileKey] = files[file];
-			
-			delete files[file];
-			
-			upgradedFiles++;
-			
+
 		} else {
-			
-			//console.log('no upgrade needed for filekey ' + file);
-			
-		}
-	
-	}
-	
-	// print results
-	console.log('total files: ' + totalFiles);
-	console.log('upgraded files: ' + upgradedFiles);
-	
-	// save updated metadata
-	if(upgradedFiles > 0){
-		saveMetadata();
-	}
-}
 
-function getVersionedAddress(address){
-	
-	// check for existing address
-	if(typeof files[address + '_FV_0'] != 'undefined'){
+			while(this.input_buffer.length > this.block_size){
 
-		// find most current revision
-		var newVersion = 0;
+				// update original file size
+				this.file_metadata.file_size = this.file_metadata.file_size + this.block_size;
 
-		while(typeof files[address + '_FV_' + newVersion] != 'undefined'){
-			newVersion++;
-		}
-		
-		// set filename to incremented revision
-		address = address + '_FV_' + newVersion;
-		
-	} else {
-		// add base version to filename
-		address = address + '_FV_0';
-	}
-	
-	return address;
-}
-
-// pipelined reader
-function getFile(address, result, block, end){
-	
-	// todo: refactor all this version stuff into shared code...
-	var requestedAddress = address;
-	
-	// find most current revision
-	var currentVersion = 0;
-	
-	// if a specific version is requested, try to return it
-	if(address.lastIndexOf('_FV_') > 0 && address.substring(address.lastIndexOf('_FV_')).length > 0){
-		// get specific version
-		address + address.substring(address.lastIndexOf('_FV_'));
-	} else {
-		// get latest version
-		while(typeof files[address + '_FV_' + currentVersion] != 'undefined'){
-			currentVersion++;
-		}
-		address = address + '_FV_' + (currentVersion - 1);
-	}
-	
-	if(typeof files[address] != 'undefined'){
-		
-		// check for hashblocks
-		var hashblocks = files[address].hashblocks;
-		
-		if(hashblocks){
-			
-			result(200);
-			
-			// iterate over hashblocks
-			for(var i=0;i<hashblocks.length;i++){
-				
-				// first check local filesystem
-				var blockFile = config.storagePath + hashblocks[i];
-				
-				if(fs.existsSync(blockFile)){
-
-					var aBlock = fs.readFileSync(blockFile);
-			
-					// return block
-					block(aBlock);
-					
-				} else {
-					
-					console.log('block ' + hashblock[i] + ' missing!');
-				}
+				this.store_block();
 			}
-			
-			end();
-			
-		} else {
-			
-			console.log('no hashblocks for ' + address + '!');
-			
-			result(500);
-			end('no hashblocks found for this address');
-			
 		}
-		
-	} else {
-		
-		console.log('file not found locally, checking peers...');
-		
-		// todo: seems like all this peer stuff could be refactored elsewhere.
-		// if peers are configured, check them
-		if(config.peers.length > 0){
-			
-			// debug
-			console.log('searching peers for requested address ' + requestedAddress);
-			
-			for(var j=0;j<config.peers.length;j++){
-				
-				var peer = config.peers[j];
-				
-				console.log('requesting address ' + requestedAddress + ' from ' + peer.host);
-				
-				// create a local copy if we find the file
-				var localCopy = new hashStore(requestedAddress);
-				
-				http.get('http://' + peer.host + ':' + peer.port + requestedAddress, function(peerResponse){
-					
-					// debug
-					console.log('peer ' + peer.host + ' request status: ' + peerResponse.statusCode);
-						
-					//result(peerResponse.statusCode);
-					
-					peerResponse.on('data', function(chunk){
-						
-						// debug
-						console.log('received data from peer ' + peer.host);
-						
-						block(chunk);
-						
-						if(peerResponse.statusCode == 200){
-							localCopy.write(chunk);
-						}
-						
-					});
-						
-					peerResponse.on('error', function(error){
-						end('error receiving data from peer ' + peer.host + ' : ' + error);
-					});
-					
-					peerResponse.on('end', function(){
-						end();
-						
-						if(peerResponse.statusCode == 200){
-							localCopy.close();
-						}
-					});
-					
-				});
-			}
-			
-		} else {
-			console.log('no peers configured, giving up');
-			result(404);
-			end('no file at this address');
-		}
-		
+	},
+	store_block: function(){
+
+		// grab the next block
+		var block = this.input_buffer.slice(0, this.block_size);
+
+		// generate a hash of the block to use as a handle/filename
+   	var block_hash = null;
+   	shasum = crypto.createHash("sha1");
+   	shasum.update(block);
+   	block_hash = shasum.digest("hex");
+
+    // if encryption is set, encrypt using the hash above
+    if(this.file_metadata.encrypted){
+      log.message(log.INFO, "encrypting block");
+
+      block = encrypt(block, block_hash);
+    }
+
+		// save the block to disk
+   	var block_file = STORAGE_PATH + block_hash;
+    if(!fs.existsSync(block_file)){
+      log.message(log.INFO, "storing block " + block_file);
+      //fs.writeFileSync(block_file, block, "binary");
+    } else {
+       log.message(log.INFO, "duplicate block " + block_hash);
+    }
+
+		fs.writeFileSync(block_file, block, "binary");
+
+
+   	this.file_metadata.blocks.push(block_hash);
+		this.input_buffer = this.input_buffer.slice(this.block_size);
 	}
-}
+};
 
-// "class" definitions
-function hashStore(requestedAddress){
-	
-	// declare class-global properties
-	this.address = null;
-	this.inputBuffer = null;
-	this.blockSize = null;
-	this.fileMetadata = {};
-	
-	// initialize class-global properties
-	this.init = function(requestedAddress){
-		this.address = getVersionedAddress(requestedAddress);
-		this.inputBuffer = new Buffer('');
-		this.blockSize = parseInt(config.blockSize);  // todo: consider not referecing global stuff in here...
-		this.fileMetadata.name = this.address;
-		this.fileMetadata.created = Date.now();
-		this.fileMetadata.hashblocks = [];
-	};
-	
-	// reinitialize for a new file
-	this.open = function(requestedAddress){
-		this.init(requestedAddress);
-	};
-	
-	// add data to the buffer
-	this.write = function(chunk){
-		this.inputBuffer = new Buffer.concat([this.inputBuffer, chunk]);
-		this.processBuffer();
-	};
-	
-	// flush any remaining buffer and add to index
-	this.close = function(){
-		
-		this.processBuffer(true);
-		
-		files[this.address] = this.fileMetadata;
-		saveMetadata();								// todo: again, consider not using global stuff in here...
-		
-	};
-	
-	this.processBuffer = function(flush){
-		
-		if(this.inputBuffer.length > this.blockSize || flush){
-			
-			if(flush){
-				console.log('flushing remaining buffer');
-			}
-			
-			// read next block
-			var block = this.inputBuffer.slice(0, this.blockSize);
-			
-			// generate a hash of the block
-			var blockHash = null;
-			var shasum = crypto.createHash('sha1');
-			shasum.update(block);
-			blockHash = shasum.digest('hex');
-		
-			// save the block to disk
-			var blockFile = config.storagePath + blockHash;  // todo: again, config globals probably don't belong here
-			
-			if(!fs.existsSync(blockFile)){
-				
-				console.log('storing block ' + blockFile);
-				
-				fs.writeFileSync(blockFile, block, 'binary');
-				
-			} else {
-				
-				console.log('duplicate block ' + blockHash + ' not stored');
-			}
-			
-			// add the block to the metadata hashblock array
-			this.fileMetadata.hashblocks.push(blockHash);
-			
-			// trim input buffer
-			this.inputBuffer = this.inputBuffer.slice(this.blockSize);
-			
-		} else {
-			console.log('received chunk');
-		}
-	};
-	
-	// call init
-	this.init(requestedAddress);
-	
-}
 
-// validate authentication credentials
-function authorized(req){
-	
-	var authenticated = false;
-	
-	var header=req.headers['authorization']||'',        // get the header
-		token=header.split(/\s+/).pop()||'',            // and the encoded auth token
-		auth=new Buffer(token, 'base64').toString(),    // convert from base64
-		parts=auth.split(/:/),                          // split on colon
-		username=parts[0],
-		password=parts[1];
-	
-	if(username === config.username && password === config.password){
-		authenticated = true;
-	}
-	
-	return authenticated;
-}
+// *** CONFIGURATION ***
+// configuration values will be stored in an external module once we know what they all are
+var SERVER_PORT = 7302;		// the port the HTTP server listens on
+var STORAGE_PATH = "./blocks/";
+var BLOCK_SIZE = 1048576;	// 1MB
+log.level = 0;				// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
 
-// here's where the action starts...
 
-// load the fs metadata
-loadMetadata();
+// *** INIT ***
+load_metadata();
 
-// start the server
+
+// at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
 http.createServer(function(req, res){
-	
-	var allowedHeaders = ['Accept', 'Accept-Version', 'Content-Type', 'Api-Version', 'Origin', 'X-Requested-With','Range','X_FILENAME'];
-			
-	// file name is the full path (simulates containers)
-	var filename = require('url').parse(req.url).pathname;
-	
-	res.setHeader('Access-Control-Allow-Origin', '*');
-	
-	// determine and route request
+
+	var target_url = require("url").parse(req.url).pathname;
+	var content_type = req.headers["content-type"];
+	var access_token = req.headers["x-access-token"];
+	var private = req.headers["x-private"];
+	var encrypted = req.headers["x-encrypted"];
+
+  log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
+
 	switch(req.method){
+
+		case "GET":
+
+			// if url ends in "/", return a list of public files 
+			if(target_url.slice(-1) == "/"){
+
+				var public_directory = [];
+
+				for(var file in stored_files){
+					if(stored_files.hasOwnProperty(file)){
+						if(!stored_files[file].private && (file.indexOf(target_url) > -1)){
+							
+							// remove leading path from filename 
+							file = file.slice(target_url.length);
+
+							// remove trailing path from subdirectories
+							if(file.indexOf("/") > -1){
+								file = file.slice(0,(file.indexOf("/") + 1));
+							}
+
+							public_directory.push(file);
+						}
+					}
+				}
+
+				res.write(JSON.stringify(public_directory));
+				res.end();
+
+			} else {
+
+				// return the file located at the requested URL 
+				var requested_file = null;
 		
-		case 'OPTIONS':
-			
-			res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, DELETE');
-			res.setHeader('Access-Control-Allow-Headers', allowedHeaders.join(','));
-	
-			res.writeHead(204);
-			res.end();
-			
-			break;
+				// check for existance of requested URL
+				if(typeof stored_files[target_url] != "undefined"){
+
+					requested_file = stored_files[target_url];
+
+					// return status 200
+					res.statusCode = 200;
+
+					// check authorization of URL
+					if(!requested_file.private || (requested_file.private && requested_file.access_token === access_token)){
+
+						 // return file metadata as HTTP headers
+						res.setHeader("Content-Type", requested_file.content_type);
 		
-		case 'GET':
-			
-			// if root is requested, return index
-			if(req.url === '/'){
-				
-				res.writeHead(200);
-				res.end(getIndex());
-				
-				break;
-			}
-				
-			getFile(filename, function(result){
-				
-				// send result
-				res.writeHead(result);
-				
-			}, function(block){
-				
-				// send block
-				res.write(block);
-				
-			}, function(message){
-				
-				// end response
-				res.end(message);
-			});
-			
-			break;
-			
-		case 'POST':
-			
-			// authorize request
-			if(authorized(req)){
-			
-				// extract file contents
-				var contents = new hashStore(filename);
-				
-				req.on('data', function(data){
-					contents.write(data);
-				});
-				
-				req.on('end', function(){
-					
-					var storeResult = null;
-					
-					contents.close();
-					
-					// todo: return a legit result
-					storeResult = "OK";
-					
-					if(storeResult === 'OK'){
-						//res.setHeader('Access-Control-Allow-Origin', '*');
-						res.writeHead(200);
+						// return file blocks
+						for(var i=0; i < requested_file.blocks.length; i++){
+							var block_filename = STORAGE_PATH + requested_file.blocks[i];
+							var block_data = fs.readFileSync(block_filename);
+
+							if(requested_file.encrypted){
+								log.message(log.INFO, "decrypting block");
+								block_data = decrypt(block_data, requested_file.blocks[i]);
+							}
+		
+							// send block to caller
+							res.write(block_data);
+						}
+		
+						// finish request
+						res.end();
+
+					} else {
+						// return status 401
+						res.statusCode = 401;
 						res.end();
 					}
-					
-					if(storeResult === 'EXISTS'){
-						//res.setHeader('Access-Control-Allow-Origin', '*');
-						res.writeHead(500);
-						res.end('file exists');
-					}
-					
+
+				} else {
+					// return status 404
+					res.statusCode = 404;
+					res.end();
+				}
+				}
+
+			break;
+
+		case "POST":
+
+			// make sure the URL isn't already taken
+			if(typeof stored_files[target_url] === "undefined"){
+
+				// store the posted data at the specified URL
+				var file_metadata = null; 
+				var new_file = Object.create(file_store);
+				new_file.init(target_url);
+	
+				// set additional file properties (content-type, etc.)
+				if(content_type){
+					log.message(log.INFO, "Content-Type: " + content_type);
+					new_file.file_metadata.content_type = content_type;
+				}
+	
+				if(private){
+					new_file.file_metadata.private = true;
+				}
+	
+				if(encrypted){
+					new_file.file_metadata.encrypted = true;
+				}
+	
+				req.on("data", function(chunk){
+					new_file.write(chunk);
+				});
+	
+				req.on("end", function(){
+					file_metadata = new_file.close();
+					res.end(JSON.stringify(file_metadata));
 				});
 
 			} else {
-				
-				// request authorization
-				res.setHeader('WWW-Authenticate', 'Basic');
-				res.writeHead(401);
-				res.end('authorization required to POST');
-				
+
+				// if file exists at this URL, return 405 "Method not allowed"
+				res.statusCode = 405;
+				res.end();
 			}
-			
+	
 			break;
-			
-		case 'DELETE':
-			
-			res.writeHead(500);
-			res.end('unsupported');
-			
+
+		case "PUT":
+
+			// make sure there's a file to update
+			if(typeof stored_files[target_url] != "undefined"){
+
+				var original_file = stored_files[target_url];
+
+				// check authorization
+				if(original_file.access_token === access_token){
+
+					// update the posted data at the specified URL
+					var new_file = Object.create(file_store);
+					new_file.init(target_url);
+	
+					// copy original file properties
+					new_file.file_metadata.created = original_file.created;
+					new_file.file_metadata.updated = (new Date()).getTime();
+					new_file.file_metadata.access_token = access_token;
+					new_file.file_metadata.content_type = original_file.content_type;
+					new_file.file_metadata.private = original_file.private;
+					new_file.file_metadata.encrypted = original_file.encrypted;
+
+					// update file properties (if requested)
+					if(content_type){
+						log.message(log.INFO, "Content-Type: " + content_type);
+						new_file.file_metadata.content_type = content_type;
+					}
+
+					if(private){
+						new_file.file_metadata.private = true;
+					}
+	
+					if(encrypted){
+						new_file.file_metadata.encrypted = true;
+					}
+
+					req.on("data", function(chunk){
+						new_file.write(chunk);
+					});
+	
+					req.on("end", function(){
+						var new_file_metadata = new_file.close();
+						res.end(JSON.stringify(new_file_metadata));
+ 					});
+		
+					} else {
+	
+						// if token is invalid, return unauthorized
+						res.statusCode = 401;
+						res.end();
+					}					
+	
+      } else {
+	
+        // if file dosen't exist at this URL, return 405 "Method not allowed"
+        res.statusCode = 405;
+        res.end();
+      }
+
 			break;
-			
+
+		case "DELETE":
+
+			// remove the data stored at the specified URL 
+      // make sure there's a file to remove 
+      if(typeof stored_files[target_url] != "undefined"){
+
+        var original_file = stored_files[target_url];
+
+        // check authorization
+        if(original_file.access_token === access_token){
+
+					// unlink the url
+					delete stored_files[target_url];
+
+					save_metadata();
+					res.end();
+
+				} else {
+					// if token is invalid, return unauthorized
+					res.statusCode = 401;
+					res.end();
+				}
+			} else {
+				// if file doesn't exist, return method not allowed
+				res.statusCode = 405;
+				res.end();
+			}
+
+			break;
+
+		case "HEAD":
+
+			if(typeof stored_files[target_url] != "undefined"){
+				var requested_file = stored_files[target_url];
+				if(!requested_file.private || (requested_file.access_token === access_token)){
+					res.writeHead(200,{
+						"Content-Type": requested_file.content_type,
+						"Content-Length": requested_file.file_size
+					});
+					res.end();
+				} else {
+					res.statusCode = 401;
+					res.end();
+				}
+			} else {
+				res.statusCode = 404;
+				res.end();
+			}
+
+			break;
+
+    case "OPTIONS":
+
+      // support for OPTIONS is required to support cross-domain requests (CORS)
+      var allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
+      var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME"];
+
+      res.setHeader("Access-Control-Allow-Methods", allowed_methods.join(","));
+      res.setHeader("Access-Control-Allow-Headers", allowed_headers.join(","));
+      res.writeHead(204);
+      res.end();
+
+			break;
+
 		default:
-			res.end('???');
+			res.writeHead(405);
+			res.end("method " + req.method + " is not supported");
 	}
-	
-	printStats();
-	
-}).listen(7302);
+
+	// log the result of the request
+	log.message(log.INFO, "Result: " + res.statusCode);
+
+}).listen(SERVER_PORT);
