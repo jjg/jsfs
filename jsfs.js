@@ -11,6 +11,7 @@ var stored_files = {};
 var http = require("http");
 var crypto = require("crypto");
 var fs = require("fs");
+var config = require('./config.js');
 
 // these may be broken-out into individual files once they have been debugged
 // general-purpose logging facility
@@ -27,7 +28,7 @@ var log = {
 };
 
 function save_metadata(){
-	fs.writeFile(STORAGE_PATH + "metadata.json", JSON.stringify(stored_files), function(err){
+	fs.writeFile(config.STORAGE_PATH + "metadata.json", JSON.stringify(stored_files), function(err){
 		if(err){
 			log.message(log.ERROR, "error saving metadata to disk");
 		} else {
@@ -41,7 +42,7 @@ function save_metadata(){
 
 function load_metadata(){
 	try{
-		stored_files = JSON.parse(fs.readFileSync(STORAGE_PATH + "metadata.json"));
+		stored_files = JSON.parse(fs.readFileSync(config.STORAGE_PATH + "metadata.json"));
 		log.message(log.INFO, "metadata loaded from disk");
 	} catch(ex) {
 		log.message(log.WARN, "unable to load metadata from disk: " + ex);
@@ -90,7 +91,7 @@ var file_store = {
 	init: function(url){
 		this.url = url;
 		this.input_buffer = new Buffer("");
-		this.block_size = BLOCK_SIZE;
+		this.block_size = config.BLOCK_SIZE;
 		this.file_metadata = {};
 		this.file_metadata.created = (new Date()).getTime();
 		this.file_metadata.version = 0;	// todo: use a function to check for previous versions
@@ -170,7 +171,7 @@ var file_store = {
     }
 
 		// save the block to disk
-   	var block_file = STORAGE_PATH + block_hash;
+   	var block_file = config.STORAGE_PATH + block_hash;
     if(!fs.existsSync(block_file)){
       log.message(log.INFO, "storing block " + block_file);
       //fs.writeFileSync(block_file, block, "binary");
@@ -188,11 +189,7 @@ var file_store = {
 
 
 // *** CONFIGURATION ***
-// configuration values will be stored in an external module once we know what they all are
-var SERVER_PORT = 7302;		// the port the HTTP server listens on
-var STORAGE_PATH = "./blocks/";
-var BLOCK_SIZE = 1048576;	// 1MB
-log.level = 0;				// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
+log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
 
 
 // *** INIT ***
@@ -465,4 +462,4 @@ http.createServer(function(req, res){
 	// log the result of the request
 	log.message(log.INFO, "Result: " + res.statusCode);
 
-}).listen(SERVER_PORT);
+}).listen(config.SERVER_PORT);
