@@ -335,9 +335,33 @@ http.createServer(function(req, res){
 
 		case "DELETE":
 
-			// todo: remove the data stored at the specified URL 
+			// remove the data stored at the specified URL 
+      // make sure there's a file to remove 
+      if(typeof stored_files[target_url] != "undefined"){
 
-			res.end();
+        var original_file = stored_files[target_url];
+
+        // check authorization
+        if(original_file.access_token === access_token){
+
+					// unlink the url
+					delete stored_files[target_url];
+
+					// todo: remove blocks?
+					
+					save_metadata();
+					res.end();
+
+				} else {
+					// if token is invalid, return unauthorized
+					res.statusCode = 401;
+					res.end();
+				}
+			} else {
+				// if file doesn't exist, return method not allowed
+				res.statusCode = 405;
+				res.end();
+			}
 
 			break;
 
