@@ -197,6 +197,15 @@ http.createServer(function(req, res){
 				for(var file in stored_files){
 					if(stored_files.hasOwnProperty(file)){
 						if(!stored_files[file].private && (file.indexOf(target_url) > -1)){
+							
+							// remove leading path from filename 
+							file = file.slice(target_url.length);
+
+							// remove trailing path from subdirectories
+							if(file.indexOf("/") > -1){
+								file = file.slice(0,(file.indexOf("/") + 1));
+							}
+
 							public_directory.push(file);
 						}
 					}
