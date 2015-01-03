@@ -46,18 +46,26 @@ function load_metadata(){
 }
 
 // simple encrypt-decrypt functions
-function encrypt(text){
-	var cipher = crypto.createCipher('aes-256-cbc','d6F3Efeq')
-	var crypted = cipher.update(text)
-	crypted += cipher.final();
-	return crypted;
+function encrypt(block){
+	var cipher = crypto.createCipher("aes-256-cbc","d6F3Efeq");
+	cipher.write(block);
+	cipher.end();
+	return cipher.read();
+
+	//var crypted = cipher.update(block)
+	//crypted += cipher.final();
+	//return crypted;
 }
  
-function decrypt(text){
-	var decipher = crypto.createDecipher('aes-256-cbc','d6F3Efeq')
-	var dec = decipher.update(text)
-	dec += decipher.final();
-	return dec;
+function decrypt(block){
+	var decipher = crypto.createDecipher("aes-256-cbc","d6F3Efeq");
+	decipher.write(block);
+	decipher.end();
+	return decipher.read();
+
+	//var dec = decipher.update(block)
+	//dec += decipher.final();
+	//return dec;
 } 
 
 // base storage object
