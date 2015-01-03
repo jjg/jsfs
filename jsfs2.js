@@ -370,6 +370,27 @@ http.createServer(function(req, res){
 
 			break;
 
+		case "HEAD":
+
+			if(typeof stored_files[target_url] != "undefined"){
+				var requested_file = stored_files[target_url];
+				if(!requested_file.private || (requested_file.access_token === access_token)){
+					res.writeHead(200,{
+						"Content-Type": requested_file.content_type,
+						"Content-Length": requested_file.file_size
+					});
+					res.end();
+				} else {
+					res.statusCode = 401;
+					res.end();
+				}
+			} else {
+				res.statusCode = 404;
+				res.end();
+			}
+
+			break;
+
     case "OPTIONS":
 
       // support for OPTIONS is required to support cross-domain requests (CORS)
