@@ -71,6 +71,7 @@ var file_store = {
 		this.file_metadata.version = 0;	// todo: use a function to check for previous versions
 		this.file_metadata.private = false;
 		this.file_metadata.encrypted = false;
+		this.file_metadata.access_token = null;
 		this.file_metadata.content_type = "application/octet-stream";
 		this.file_metadata.file_size = 0;
 		this.file_metadata.block_size = this.block_size;
@@ -84,9 +85,11 @@ var file_store = {
 		this.process_buffer(true);
 
 		// add signature to metadata (used as auth token for update operations)
-    shasum = crypto.createHash("sha1");
-    shasum.update(JSON.stringify(this.file_metadata));
-    this.file_metadata.access_token =  shasum.digest("hex");
+		if(!this.file_metadata.access_token){
+    	shasum = crypto.createHash("sha1");
+    	shasum.update(JSON.stringify(this.file_metadata));
+    	this.file_metadata.access_token =  shasum.digest("hex");
+		}
 
 		// add file to storage metadata
 		stored_files[this.url] = this.file_metadata;
@@ -290,6 +293,7 @@ http.createServer(function(req, res){
 					// copy original file properties
 					new_file.file_metadata.created = original_file.created;
 					new_file.file_metadata.updated = (new Date()).getTime();
+					new_file.file_metadata.access_token = access_token;
 					new_file.file_metadata.content_type = original_file.content_type;
 					new_file.file_metadata.private = original_file.private;
 					new_file.file_metadata.encrypted = original_file.encrypted;
