@@ -1,7 +1,10 @@
 jsfs
 ====
 
-A general-purpose deduplicating filesystem with a REST interface.
+A general-purpose deduplicating filesystem with a REST interface.  jsfs is intended to provide low-level filesystem functions for Javascript applications.  Additional functionality (private file indexes, token lockers, centralized authentication, etc.) are deliberately avoided here and will be implemented in a modular fashion on top of jsfs.
+
+#STATUS
+jsfs 2 is a from-scratch rewrite of the original jsfs filesystem.  In its current for it lacks the versioning and distributed functions of the original jsfs however these features will return in later builds.  Additionally the API for jsfs2 has been simplified while providing more functionality and an effort has been made to better comply with HTTP conventions.
 
 #REQUIREMENTS
 * node.js
