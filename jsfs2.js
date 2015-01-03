@@ -46,26 +46,18 @@ function load_metadata(){
 }
 
 // simple encrypt-decrypt functions
-function encrypt(block){
-	var cipher = crypto.createCipher("aes-256-cbc","d6F3Efeq");
+function encrypt(block, key){
+	var cipher = crypto.createCipher("aes-256-cbc", key);
 	cipher.write(block);
 	cipher.end();
 	return cipher.read();
-
-	//var crypted = cipher.update(block)
-	//crypted += cipher.final();
-	//return crypted;
 }
  
-function decrypt(block){
-	var decipher = crypto.createDecipher("aes-256-cbc","d6F3Efeq");
+function decrypt(block, key){
+	var decipher = crypto.createDecipher("aes-256-cbc", key);
 	decipher.write(block);
 	decipher.end();
 	return decipher.read();
-
-	//var dec = decipher.update(block)
-	//dec += decipher.final();
-	//return dec;
 } 
 
 // base storage object
@@ -133,19 +125,23 @@ var file_store = {
 	},
 	store_block: function(){
 
+		// grab the next block
 		var block = this.input_buffer.slice(0, this.block_size);
 
-		if(this.file_metadata.encrypted){
-			log.message(log.INFO, "encrypting block");
-
-			block = encrypt(block);
-		}
-
+		// generate a hash of the block to use as a handle/filename
    	var block_hash = null;
    	shasum = crypto.createHash("sha1");
    	shasum.update(block);
    	block_hash = shasum.digest("hex");
 
+		// if encryption is set, encrypt using the hash above
+    if(this.file_metadata.encrypted){
+      log.message(log.INFO, "encrypting block");
+
+      block = encrypt(block, block_hash);
+    }
+
+		// save the block to disk
    	var block_file = STORAGE_PATH + block_hash;
    	if(!fs.existsSync(block_file)){
 			log.message(log.INFO, "storing block " + block_file);
@@ -211,7 +207,7 @@ http.createServer(function(req, res){
 
 						if(requested_file.encrypted){
 							log.message(log.INFO, "decrypting block");
-							block_data = decrypt(block_data);
+							block_data = decrypt(block_data, requested_file.blocks[i]);
 						}
 	
 						// send block to caller
