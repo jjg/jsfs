@@ -1,20 +1,21 @@
 jsfs
 ====
 
-A general-purpose deduplicating filesystem with a REST interface.  jsfs is intended to provide low-level filesystem functions for Javascript applications.  Additional functionality (private file indexes, token lockers, centralized authentication, etc.) are deliberately avoided here and will be implemented in a modular fashion on top of jsfs.
+A general-purpose, deduplicating filesystem with a REST interface, jsfs is intended to provide low-level filesystem functions for Javascript applications.  Additional functionality (private file indexes, token lockers, centralized authentication, etc.) are deliberately avoided here and will be implemented in a modular fashion on top of jsfs.
 
 #STATUS
-jsfs 2 is a from-scratch rewrite of the original jsfs filesystem.  In its current for it lacks the versioning and distributed functions of the original jsfs however these features will return in later builds.  Additionally the API for jsfs2 has been simplified while providing more functionality and an effort has been made to better comply with HTTP conventions.
+jsfs 2.x is a from-scratch rewrite of the original jsfs filesystem.  In its current form, it lacks the versioning and distributed functions of the original jsfs, however these features will return in later builds.  Additionally, the API for jsfs 2.x has been simplified while providing more functionality and an effort has been made to better comply with HTTP conventions.
 
 #REQUIREMENTS
-* node.js
+* Node.js
 
 #CONFIGURATION
 *  Clone this repository
 *  Copy config.ex to config.js
-*  Start the server with `node jsfs.js` (or foreman, pm2, etc.)
+*  Create the `blocks` directory (`mkdir blocks`)
+*  Start the server (`node jsfs.js` foreman, pm2, etc.)
 
-Edit config.js to change the location where data (blocks) are stored and restart jsfs for the changes to take effect (if you've already stored data in jsfs you'll want to move the contenst of the existing `blocks` directory to the new location or you'll loose the data).
+If you don't like storing the data in the same directory as the code (smart), edit config.js to change the location where data (blocks) are stored and restart jsfs for the changes to take effect. If you've already stored data in jsfs, you'll want to move the contents of the existing `blocks` directory to the new location or you'll loose the data.
 
 #API
 
@@ -22,7 +23,7 @@ Edit config.js to change the location where data (blocks) are stored and restart
 jsfs uses several custom headers to control access to data and how it is stored.
 
 ###x-private
-Set this header to `true` to mark files as private (won't show up in directory listings).  *NOTE:* since private files don't show up in directory listings you'll have to keep track of the URL's yourself.  Additionally, to access private files a valid `x-access-token` header must be supplied with the `GET` request.
+Set this header to `true` to mark files as private (they won't show up in directory listings).  *NOTE:* since private files don't show up in directory listings you'll have to keep track of the URL's yourself.  Additionally, to access private files a valid `x-access-token` header must be supplied with the `GET` request.
 
 ###x-encrypted
 Set this header to `true` to encrypt stored data before it is stored on-disk.  Once enabled decryption happens automatically on `GET` requests and additional modifications via `PUT` will be encrypted as well. *NOTE:* encryption increases CPU utilization and reduces deduplication performance so use only when necissary.

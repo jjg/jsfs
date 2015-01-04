@@ -257,7 +257,7 @@ http.createServer(function(req, res){
 		
 						// return file blocks
 						for(var i=0; i < requested_file.blocks.length; i++){
-							var block_filename = STORAGE_PATH + requested_file.blocks[i];
+							var block_filename = config.STORAGE_PATH + requested_file.blocks[i];
 							var block_data = fs.readFileSync(block_filename);
 
 							if(requested_file.encrypted){
