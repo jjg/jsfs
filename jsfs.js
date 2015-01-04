@@ -112,9 +112,9 @@ var file_store = {
 
 		// add signature to metadata (used as auth token for update operations)
 		if(!this.file_metadata.access_token){
-    	shasum = crypto.createHash("sha1");
-    	shasum.update(JSON.stringify(this.file_metadata));
-    	this.file_metadata.access_token =  shasum.digest("hex");
+			shasum = crypto.createHash("sha1");
+			shasum.update(JSON.stringify(this.file_metadata));
+			this.file_metadata.access_token =  shasum.digest("hex");
 		}
 
 		// add file to storage metadata
@@ -125,7 +125,6 @@ var file_store = {
 
 		// return metadata for future operations
 		return this.file_metadata;
-
 	},
 	process_buffer: function(flush){
 
@@ -134,7 +133,7 @@ var file_store = {
 			log.message(0, "flushing remaining buffer");
 
 			// update original file size
-      this.file_metadata.file_size = this.file_metadata.file_size + this.input_buffer.length;
+			this.file_metadata.file_size = this.file_metadata.file_size + this.input_buffer.length;
 
 			// empty the remainder of the buffer
 			while(this.input_buffer.length > 0){
@@ -158,31 +157,27 @@ var file_store = {
 		var block = this.input_buffer.slice(0, this.block_size);
 
 		// generate a hash of the block to use as a handle/filename
-   	var block_hash = null;
-   	shasum = crypto.createHash("sha1");
-   	shasum.update(block);
-   	block_hash = shasum.digest("hex");
+		var block_hash = null;
+		shasum = crypto.createHash("sha1");
+		shasum.update(block);
+		block_hash = shasum.digest("hex");
 
-    // if encryption is set, encrypt using the hash above
-    if(this.file_metadata.encrypted){
-      log.message(log.INFO, "encrypting block");
-
-      block = encrypt(block, block_hash);
-    }
+		// if encryption is set, encrypt using the hash above
+		if(this.file_metadata.encrypted){
+			log.message(log.INFO, "encrypting block");
+			block = encrypt(block, block_hash);
+		}
 
 		// save the block to disk
-   	var block_file = config.STORAGE_PATH + block_hash;
-    if(!fs.existsSync(block_file)){
-      log.message(log.INFO, "storing block " + block_file);
-      //fs.writeFileSync(block_file, block, "binary");
-    } else {
-       log.message(log.INFO, "duplicate block " + block_hash);
-    }
+		var block_file = config.STORAGE_PATH + block_hash;
+		if(!fs.existsSync(block_file)){
+			log.message(log.INFO, "storing block " + block_file);
+		} else {
+			log.message(log.INFO, "duplicate block " + block_hash);
+		}
 
 		fs.writeFileSync(block_file, block, "binary");
-
-
-   	this.file_metadata.blocks.push(block_hash);
+		this.file_metadata.blocks.push(block_hash);
 		this.input_buffer = this.input_buffer.slice(this.block_size);
 	}
 };
