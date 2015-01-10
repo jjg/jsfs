@@ -305,6 +305,11 @@ http.createServer(function(req, res){
 				if(encrypted){
 					new_file.file_metadata.encrypted = true;
 				}
+
+				// if access_token is supplied with POST, don't generate a new one
+				if(access_token){
+					new_file.file_metadata.access_token = access_token;
+				}
 	
 				req.on("data", function(chunk){
 					new_file.write(chunk);
