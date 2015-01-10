@@ -194,13 +194,22 @@ load_metadata();
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
 http.createServer(function(req, res){
 
+	// all responses include these headers to support cross-domain requests
+	var allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
+	var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME","X-Access-Token", "X-Encrypted", "X-Private"];
+
+	res.setHeader("Access-Control-Allow-Methods", allowed_methods.join(","));
+	res.setHeader("Access-Control-Allow-Headers", allowed_headers.join(","));
+	res.setHeader("Access-Control-Allow-Origin", "*");
+
+	// all requests are interrorgated for these values
 	var target_url = require("url").parse(req.url).pathname;
 	var content_type = req.headers["content-type"];
 	var access_token = req.headers["x-access-token"];
 	var private = req.headers["x-private"];
 	var encrypted = req.headers["x-encrypted"];
 
-  log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
+	log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
 
 	switch(req.method){
 
@@ -381,14 +390,14 @@ http.createServer(function(req, res){
 						res.end();
 					}					
 	
-      } else {
+				} else {
 	
-        // if file dosen't exist at this URL, return 405 "Method not allowed"
-        res.statusCode = 405;
-        res.end();
-      }
+					// if file dosen't exist at this URL, return 405 "Method not allowed"
+					res.statusCode = 405;
+					res.end();
+				}
 
-			break;
+				break;
 
 		case "DELETE":
 
@@ -441,16 +450,11 @@ http.createServer(function(req, res){
 
 			break;
 
-    case "OPTIONS":
+		 case "OPTIONS":
 
-      // support for OPTIONS is required to support cross-domain requests (CORS)
-      var allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
-      var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME"];
-
-      res.setHeader("Access-Control-Allow-Methods", allowed_methods.join(","));
-      res.setHeader("Access-Control-Allow-Headers", allowed_headers.join(","));
-      res.writeHead(204);
-      res.end();
+			// support for OPTIONS is required to support cross-domain requests (CORS)
+			res.writeHead(204);
+			res.end();
 
 			break;
 
