@@ -18,7 +18,7 @@
 			<input type="file" id="selected_file" value="upload"><input type="button" onclick="upload_file()" value="send">
 
 		<script>
-
+/*
             // utility hash function
             function hashit(value) {
                 var hash = 0, i, chr, len;
@@ -32,10 +32,117 @@
 
                 return hash;
             };
+*/
+			// keychain utility object
+			var jsos_keychain = {
+				keychain_root:  "/keychains",
+				keys: null,
+				hashed_email: null,
+				hashed_passphrase: null,
+				open: function(email,passphrase,callback){
 
-			// where to store keychains
-			var keychain_root = "http://localhost:7302/keychains";	// remove the host when hosting this inside jsfs
-			var keychain = null;
+	                // use hashes of email and passphrase to access keychain 
+		            this.hashed_email = this.hashit(email);
+			        this.hashed_passphrase = this.hashit(passphrase);
+
+					// try to load keychain
+					var xhr = new XMLHttpRequest();
+					xhr.open("GET", this.keychain_root + "/" + this.hashed_email, true);
+					xhr.setRequestHeader("x-access-token", this.hashed_passphrase);
+					xhr.onreadystatechange = parse_response;
+					xhr.send();
+
+					function parse_response(){
+						if(this.readyState === 4){
+							console.log("load keychain request status: " + this.status);
+							if(this.status === 200){
+								// sucess!
+								this.keys = JSON.parse(this.responseText).keys;
+								console.log("keychain with " + this.keys.length + " keys loaded");
+								callback();
+							} else {
+								// failure!
+								console.log("unable to load keychain for these credentials, HTTP " + this.status);
+								create_keychain();
+							}
+						}
+					}
+
+					// if keychain isn't found, create a new one
+					function create_keychain(){
+						console.log("got create_keychain()");
+						var keychain = {};
+						keychain.keys = [];
+						xhr.open("POST", this.keychain_root + "/" + this.hashed_email, true);
+						xhr.setRequestHeader("Content-type","application/json");
+						xhr.setRequestHeader("x-access-token", this.hashed_passphrase);
+						xhr.setRequestHeader("x-private", "true");
+						xhr.setRequestHeader("x-encrypted", "true");
+						xhr.onreadystatechange = parse_response;
+						xhr.send(JSON.stringify(keychain));
+
+						function parse_response(){
+							if(this.readyState == 4){
+								if(this.status === 200){
+									console.log("keychain created");
+									this.keys = keychain.keys;
+									callback;
+								} else {
+									console.log("keychain creation failed, HTTP " + this.status);
+									callback;
+								}
+							}
+						}
+					}
+				},
+				add_key: function(url,access_token,callback){
+                    // add new key to keychain
+                    var new_key = {};
+                    new_key.access_token = access_token;
+                    new_key.url = url;
+                    this.keys.push(new_key);
+					this.save_keychain(callback);
+				},
+				remove_key: function(url){
+				},
+				save_keychain: function(callback){
+                    xhr.open("PUT", this.keychain_root + "/" + this.hashed_email, true);
+                    xhr.setRequestHeader("x-access-token", this.hashed_passphrase);
+                    //xhr.setRequestHeader("x-private", "true");
+                    //xhr.setRequestHeader("x-encrypted", "true");
+                    xhr.onreadystatechange = parse_response;
+					var keychain = {};
+					keychain.keys = this.keys;
+                    xhr.send(JSON.stringify(keychain));
+
+                    function parse_response(){
+                        if(this.readyState == 4){
+                            if(this.status === 200){
+                                console.log("keychain updated");
+
+                                // update file list
+								callback; 
+
+                            } else {
+                                console.log("keychain update failed, HTTP " + this.status);
+								callback;
+                            }
+                        }
+                    }
+				},
+				hashit: function(value){
+					var hash = 0, i, chr, len;
+					if (value == 0){
+						return hash;
+					}
+					for (i = 0, len = value.length; i < len; i++) {
+						chr   = value.charCodeAt(i);
+						hash  = ((hash << 5) - hash) + chr;
+						hash |= 0; // Convert to 32bit integer
+					}
+					return hash;
+				}
+			};
 
 			function login(){
 
@@ -44,6 +151,8 @@
 				console.log("email: " + email.value);
 				console.log("passphrase: " + passphrase.value);
 
+				jsos_keychain.open(email.value, passphrase.value, load_file_list());
+/*
 				// use hashes of email and passphrase to access keychain 
 				var hashed_email = hashit(email.value);
 				var hashed_passphrase = hashit(passphrase.value);
@@ -106,6 +215,7 @@
 						}
 					}
 				}
+*/
 			}
 
 			function load_file_list(){
@@ -117,8 +227,8 @@
 				file_list.innerHTML = null;
 
 				// add each file from keychain to the file list
-				for(key in keychain.keys){
-					a_key = keychain.keys[key];
+				for(key in jsos_keychain.keys){
+					a_key = jsos_keychain.keys[key];
 					var file_option = document.createElement("option");
 					file_option.value = a_key.access_token;
 					file_option.innerHTML = a_key.url;
@@ -134,7 +244,7 @@
 
 				var file = selected_file.files[0];
 
-				// todo POST file to path
+				// POST file to path
                 var xhr = new XMLHttpRequest();
                 xhr.open("POST", path.value + '/' + file.name, true);
                 xhr.setRequestHeader("X_FILENAME", file.name);
@@ -157,7 +267,7 @@
 						}
                     }
                 }
-
+/*
 				function add_to_keychain(url, access_token){
 					// add new key to keychain
 					var new_key = {};
@@ -196,6 +306,7 @@
                         }
                     }
 				}
+*/
 			}
 
 		</script>
