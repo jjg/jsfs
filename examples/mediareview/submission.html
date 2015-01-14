@@ -1,0 +1,95 @@
+<html>
+	<head>
+		<title>media submission</title>
+	</head>
+	<body>
+		<div id="artist_infobox">
+			Artist Info: <input type="text" id="artist_info">
+		</div>
+		<div id="media_infobox">
+			Media Info: <input type="text" id="media_info">
+		</div>
+		<div id="media_uploads_box">
+			<input type="file" id="selected_media" multiple value="select files"><input type="button" onclick="upload_files()" value="upload files">
+			<ol id="file_list"></ol>
+		</div>
+		<div id="submission_controls">
+			<input type="button" onclick="submit_media()" value="Submit Media">
+		</div>
+
+		<script>
+
+			var upload_bucket = "/jsfs/examples/mediareview/media";
+			var submission = {};
+			submission.files = [];
+
+			function upload_files(){
+
+				// loop through selected files
+				for(var i=0;i< selected_media.files.length;i++){
+					//if(selected_media.files.hasOwnProperty(file)){
+						var a_file = selected_media.files[i];
+
+						var new_media_file = {};
+						new_media_file.name = a_file.name;
+						new_media_file.url = upload_bucket + "/" + a_file.name;
+
+						// debug
+						console.log(a_file);
+
+						// POST file (public, unencrypted)
+						var xhr = new XMLHttpRequest();
+						xhr.open("POST", new_media_file.url, true);
+						xhr.setRequestHeader("X_FILENAME", a_file.name);
+						xhr.setRequestHeader("Content-type", a_file.type);
+						xhr.onreadystatechange = uploadStatus;
+						xhr.send(a_file);
+                
+						function uploadStatus(){
+							if(this.readyState == 4){
+								var uploaded_file_info = JSON.parse(this.responseText);
+
+								add_file_to_submission(uploaded_file_info);
+
+								//console.log(uploaded_file_info);
+								//console.log("Done uploading " + new_media_file.name);
+								//console.log(new_media_file);
+
+								//new_media_file.access_token = uploaded_file_info.access_token;
+								//submission.files.push(new_media_file);
+								//render_file_list();				
+							}
+						}
+
+					function add_file_to_submission(uploaded_file_result){
+						console.log("adding " + new_media_file.name + " to submission");
+						new_media_file.access_token = uploaded_file_result.access_token;
+						submission.files.push(new_media_file);
+						render_file_list();
+					}
+					//}
+				}
+			}
+
+			function submit_media(){
+				submission.artist = artist_info.value;
+				submission.media = media_info.value;
+
+				// debug
+				console.log(submission);
+
+				// todo: POST submission document
+			}
+
+			function render_file_list(){
+				for(file in submission.files){
+					a_file = submission.files[file];
+					var file_list_item = document.createElement("li");
+					file_list_item.innerHTML = a_file.name;
+					file_list.appendChild(file_list_item);
+				}
+			}
+
+		</script>
+	</body>
+</html>
