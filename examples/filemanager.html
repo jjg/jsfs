@@ -57,10 +57,12 @@
 				
 				function add_key(url,access_token){
                     // add new key to keychain
-                    var new_key = {};
-                    new_key.access_token = access_token;
-                    new_key.url = url;
-                    _keychain.keys.push(new_key);
+                    _keychain.keys[url] = {};
+                    _keychain.keys[url].access_token = access_token;
+                    //var new_key = {};
+                    //new_key.access_token = access_token;
+                    //new_key.url = url;
+                    //_keychain.keys.push(new_key);
 					save_keychain();
 				}
 				
@@ -88,10 +90,11 @@
 					},
 					create_keychain: function(uid, token, create_keychain_callback){
 						console.log("got create_keychain()");
+						
 						_hashed_uid = hashit(uid);
 						_hashed_token = hashit(token);
 						_keychain = {};
-						_keychain.keys = [];
+						_keychain.keys = {};
 						var xhr = new XMLHttpRequest();
 						xhr.open("POST", _keychain_root + "/" + _hashed_uid, true);
 						xhr.setRequestHeader("Content-type","application/json");
@@ -114,6 +117,7 @@
 						}
 					},
 					open_keychain: function(uid, token, open_result_callback){
+						console.log("got open_keychain()");
 						
 						_hashed_uid = hashit(uid);
 						_hashed_token = hashit(token);
@@ -144,12 +148,14 @@
 							}
 						}
 					},
-					store_object: function(obj, url, private, encrypted, result_callback){
-						
+					store_object: function(obj, url, private, encrypted, result_callback, overwrite){
+			
 						console.log("got store_object()");
 						
-						var xhr = new XMLHttpRequest();
+						// this is a hack
+						var self = this;
 						
+						var xhr = new XMLHttpRequest();
 						xhr.open("POST", url, true);
 						xhr.setRequestHeader("Content-type","application/json");
 						
@@ -172,15 +178,43 @@
 									var post_result = JSON.parse(this.responseText);
 									add_key(url, post_result.access_token);
 									result_callback(true);
+								} else if(this.status === 405 && overwrite){
+									// try to find an access token for this url
+									kc = self.get_keychain();
+									if(kc.keys[url]){
+										console.log("overwriting existing object " + url)
+										overwrite_existing(kc.keys[url].access_token);
+									} else {
+										console.log("no access token to overwrite " + url);
+										result_callback(false);
+									}
 								} else {
 									console.log("store object failed, HTTP " + this.status);
 									result_callback(false);
 								}
 							}
 						}
+						
+						function overwrite_existing(access_token){
+							
+							xhr.open("PUT", url, true);
+							xhr.setRequestHeader("Content-type","application/json");
+							xhr.setRequestHeader("x-access-token", access_token);
+							
+							// add optional jsfs-specific headers if requested
+							if(private){
+								xhr.setRequestHeader("x-private", "true");
+							}
+							
+							if(encrypted){
+								xhr.setRequestHeader("x-encrypted", "true");
+							}
+							
+							xhr.onreadystatechange = parse_response;
+							xhr.send(JSON.stringify(obj));
+						}
 					},
 					load_object: function(url, result_callback){
-						// try to load object
 						
 						console.log("got load_object()");
 						
@@ -208,7 +242,7 @@
 							}
 						}
 					},
-					store_file: function(file, url, private, encrypted, progress_callback){
+					store_file: function(file, url, private, encrypted, progress_callback, overwrite){
 						
 						console.log("got store_file()");
 						
@@ -233,6 +267,23 @@
 						xhr.onreadystatechange = parse_response;
 						xhr.send(file);
 						
+						// this formats the upload progress nicely as the upload proceeds
+						var current_progress = {};
+						
+						function upload_progress(progress){
+							current_progress.file_size = progress.total;
+							current_progress.amount_uploaded = progress.loaded;
+							current_progress.percent_complete = (current_progress.amount_uploaded / current_progress.file_size) * 100;
+							
+							if(current_progress.percent_complete === 100){
+								//progress_status.status = "complete";
+							} else {
+								current_progress.status = "uploading";
+							}
+							
+							progress_callback(current_progress);
+						}
+						
 						function parse_response(){
 							if(this.readyState == 4){
 								if(this.status === 200){
@@ -240,33 +291,55 @@
 									// extract access_token from response
 									var post_result = JSON.parse(this.responseText);
 									add_key(url + "/" + file.name, post_result.access_token);
+									
+									current_progress.status = "complete";
+									progress_callback(current_progress);
+									
+								} else if(this.status === 405 && overwrite){
+									// try to find an access token for this url
+									kc = self.get_keychain();
+									if(kc.keys[url + "/" + file.name]){
+										console.log("overwriting existing file " + url + "/" + file.name);
+										
+										current_progress.status = "overwriting";
+										progress_callback(current_progress);
+										
+										overwrite_existing(kc.keys[url + "/" + file.name].access_token);
+									} else {
+										console.log("no access token to overwrite " + url + "/" + file.name);
+										
+										current_progress.status = "error";
+										current_progress.http_status = this.status;
+										progress_callback(current_progress);
+										
+									}
 								} else {
 									console.log("Error saving file, HTTP " + this.status);
-									
 									// notify caller of error
-									var ps = {};
-									ps.status = "error";
-									ps.http_status = this.status;
-									progress_callback(ps);
+									
+									current_progress.status = "error";
+									current_progress.http_status = this.status;
+									progress_callback(current_progress);
 								}
 							}
 						}
 						
-						// this formats the upload progress nicely
-						function upload_progress(progress){
+						function overwrite_existing(access_token){
+							xhr.open("PUT", url + "/" + file.name, true);
+							xhr.setRequestHeader("Content-type","application/json");
+							xhr.setRequestHeader("x-access-token", access_token);
 							
-							var progress_status = {};
-							progress_status.file_size = progress.total;
-							progress_status.amount_uploaded = progress.loaded;
-							progress_status.percent_complete = (progress_status.amount_uploaded / progress_status.file_size) * 100;
-							
-							if(progress_status.percent_complete === 100){
-								progress_status.status = "complete";
-							} else {
-								progress_status.status = "uploading";
+							// add optional jsfs-specific headers if requested
+							if(private){
+								xhr.setRequestHeader("x-private", "true");
 							}
 							
-							progress_callback(progress_status);
+							if(encrypted){
+								xhr.setRequestHeader("x-encrypted", "true");
+							}
+							
+							xhr.onreadystatechange = parse_response;
+							xhr.send(file);
 						}
 					}
 				};
@@ -287,7 +360,14 @@
 					if(result){
 						load_file_list();
 					} else {
-						console.log("error logging in");
+						console.log("error loading keychain, attempting to create a new one");
+						jsfs.create_keychain(email.value, passphrase.value, function(result){
+							if(result){
+								load_file_list();
+							} else {
+								console.log("error creating new keychain, giving up");
+							}
+						});
 					}
 				});
 			}
@@ -307,7 +387,7 @@
 					a_key = kc.keys[key];
 					var file_option = document.createElement("option");
 					file_option.value = a_key.access_token;
-					file_option.innerHTML = a_key.url;
+					file_option.innerHTML = key;
 					file_list.appendChild(file_option);
 				}
 			}
@@ -328,7 +408,7 @@
 					// debug
 					console.log(a_file);
 					
-					jsfs.store_file(a_file, url, false, false, function(progress){console.log(progress)});
+					jsfs.store_file(a_file, url, false, false, function(progress){console.log(progress)}, true);
 				}
 			}
 			
