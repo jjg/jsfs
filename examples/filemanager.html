@@ -17,6 +17,9 @@
 			<br>
 			<input type="file" id="selected_files" multiple value="upload"><input type="button" onclick="upload_files()" value="send">
 
+			<br>
+			<h3>object store test</h3>
+			
 		<script>
 		
 			// a new jsos_jsfs object
@@ -141,7 +144,73 @@
 							}
 						}
 					},
+					store_object: function(obj, url, private, encrypted, result_callback){
+						
+						console.log("got store_object()");
+						
+						var xhr = new XMLHttpRequest();
+						
+						xhr.open("POST", url, true);
+						xhr.setRequestHeader("Content-type","application/json");
+						
+						// add optional jsfs-specific headers if requested
+						if(private){
+							xhr.setRequestHeader("x-private", "true");
+						}
+						
+						if(encrypted){
+							xhr.setRequestHeader("x-encrypted", "true");
+						}
+						
+						xhr.onreadystatechange = parse_response;
+						xhr.send(JSON.stringify(obj));
+
+						function parse_response(){
+							if(this.readyState == 4){
+								if(this.status === 200){
+									console.log("object stored");
+									var post_result = JSON.parse(this.responseText);
+									add_key(url, post_result.access_token);
+									result_callback(true);
+								} else {
+									console.log("store object failed, HTTP " + this.status);
+									result_callback(false);
+								}
+							}
+						}
+					},
+					load_object: function(url, result_callback){
+						// try to load object
+						
+						console.log("got load_object()");
+						
+						var xhr = new XMLHttpRequest();
+						xhr.open("GET", url, true);
+						//xhr.setRequestHeader("x-access-token", _hashed_token);
+						xhr.onreadystatechange = parse_response;
+						xhr.send();
+						
+						function parse_response(){
+							if(this.readyState === 4){
+								console.log("load object request status: " + this.status);
+								if(this.status === 200){
+									// sucess!
+									var response_object = JSON.parse(this.responseText);
+									result_callback(response_object);
+									//self.set_keychain(response_object);
+									//open_result_callback(true);
+								} else {
+									// failure!
+									console.log("unable to load object, HTTP " + this.status);
+									result_callback(false);
+									//open_result_callback(false);
+								}
+							}
+						}
+					},
 					store_file: function(file, url, private, encrypted, progress_callback){
+						
+						console.log("got store_file()");
 						
 						// this is a hack
 						var self = this;
@@ -173,6 +242,12 @@
 									add_key(url + "/" + file.name, post_result.access_token);
 								} else {
 									console.log("Error saving file, HTTP " + this.status);
+									
+									// notify caller of error
+									var ps = {};
+									ps.status = "error";
+									ps.http_status = this.status;
+									progress_callback(ps);
 								}
 							}
 						}
@@ -192,7 +267,6 @@
 							}
 							
 							progress_callback(progress_status);
-							//return progress_status;
 						}
 					}
 				};
@@ -257,6 +331,12 @@
 					jsfs.store_file(a_file, url, false, false, function(progress){console.log(progress)});
 				}
 			}
+			
+			// object store test
+			var submission = {};
+			submission.artist = "EAR";
+			submission.album = "Dead Animals Dream";
+			submission.tracks = [];
 						
 /*
             // utility hash function
