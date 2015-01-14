@@ -280,7 +280,6 @@
 							} else {
 								current_progress.status = "uploading";
 							}
-							
 							progress_callback(current_progress);
 						}
 						
@@ -291,32 +290,25 @@
 									// extract access_token from response
 									var post_result = JSON.parse(this.responseText);
 									add_key(url + "/" + file.name, post_result.access_token);
-									
 									current_progress.status = "complete";
 									progress_callback(current_progress);
-									
-								} else if(this.status === 405 && overwrite){
+								} else if(this.status === 405 && overwrite) {
 									// try to find an access token for this url
 									kc = self.get_keychain();
 									if(kc.keys[url + "/" + file.name]){
 										console.log("overwriting existing file " + url + "/" + file.name);
-										
 										current_progress.status = "overwriting";
 										progress_callback(current_progress);
-										
 										overwrite_existing(kc.keys[url + "/" + file.name].access_token);
 									} else {
 										console.log("no access token to overwrite " + url + "/" + file.name);
-										
 										current_progress.status = "error";
 										current_progress.http_status = this.status;
 										progress_callback(current_progress);
-										
 									}
 								} else {
 									console.log("Error saving file, HTTP " + this.status);
 									// notify caller of error
-									
 									current_progress.status = "error";
 									current_progress.http_status = this.status;
 									progress_callback(current_progress);
