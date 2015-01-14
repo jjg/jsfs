@@ -1,0 +1,141 @@
+<html>
+	<head>
+		<title>submissions</title>
+		<script type="text/javascript" src="jsos_jsfs.js"></script>
+	</head>
+	<body>
+	
+		<div id="terms">
+		
+			<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed varius eros eu ex interdum scelerisque. Phasellus quis augue mauris. Curabitur tempus erat quis feugiat sagittis. Cras volutpat ornare sem, quis faucibus enim rutrum nec. Pellentesque congue quam ut diam eleifend auctor. Nam sit amet egestas nisl. Donec id tempor enim. Curabitur at ipsum at urna sodales lacinia. Suspendisse id risus vehicula, vestibulum lacus ut, ultrices nunc. Donec ac mi auctor, dapibus enim sit amet, mollis leo. Cras sed neque elit. Curabitur finibus bibendum tincidunt.</p>
+
+			<p>Vivamus quis mauris elit. Pellentesque facilisis est at urna pharetra mollis. Vestibulum vel est sed enim euismod accumsan eget vel dolor. Sed at scelerisque elit. Nunc ornare gravida tristique. Mauris tempor pharetra pharetra. Suspendisse id mauris dapibus, rutrum sem at, venenatis lectus. Praesent tellus ex, accumsan quis sollicitudin id, scelerisque vitae sapien. Sed rhoncus nulla tortor, ut porta lacus maximus id. Aliquam at auctor elit, et placerat est. Pellentesque ornare urna sit amet urna viverra, nec molestie nunc tincidunt. Quisque lectus ipsum, dapibus nec dolor vitae, tempor viverra nunc. Sed nec odio purus. Nulla ac est ut nulla tristique porta.</p>
+			
+			<input type="button" onclick="accept_terms()" value="Heck Yeah!">
+			
+		</div>
+		
+		<div id="metadata">
+		
+			<h1>Add some metadata</h1>
+			
+			<ul>
+				<li>album: <input type="text" id="album_title">
+				<li>artist: <input type="text" id="artist_name">
+				<li>genre: <input type="text" id="album_genre">
+			</ul>
+			
+			<input type="button" onclick="create_submission()" value="Next Step>">
+			
+		</div>
+		
+		<div id="uploads">
+		
+			<h1>Upload 3 tracks</h1>
+			
+			<!-- "fuck-you!" said coyote, "I love tables!" -->
+			<table>
+				<tr><td>track name:</td><td><input type="text" id="track_name_1"><input type="file" id="track_1_file" value="select file"><input type="button" onclick="upload_track_1()" value="upload"></td><td><span id="track_1_status"></span></td></tr>
+				<tr><td>track name:</td><td><input type="text" id="track_name_2"><input type="file" id="track_2_file" value="select file"><input type="button" onclick="upload_track_2()" value="upload"></td><td><span id="track_2_status"></span></td></tr>
+				<tr><td>track name:</td><td><input type="text" id="track_name_3"><input type="file" id="track_3_file" value="select file"><input type="button" onclick="upload_track_3()" value="upload"></td><td><span id="track_3_status"></span></td></tr>
+			</table>
+			
+			<input type="button" onclick="finish_submission()" value="Done">
+			
+		</div>
+		
+		<div id="thankyou">
+		
+			<h1>thanks!</h1>
+			
+		</div>
+	
+		<script>
+		
+			// globals
+			var jsfs = jsos_jsfs();
+			var submission = {};
+			var submission_base_url = "http://localhost:7302/submissions";
+		
+			// init
+			// hide everything but the first page
+			metadata.style.display = "none";
+			uploads.style.display = "none";
+			thankyou.style.display = "none";
+			
+			// init the keychain
+			//jsfs.open_keychain("", "");
+			
+			// event handlers
+			function accept_terms(){
+				console.log("got accept_terms()");
+				
+				// show metadata view
+				terms.style.display = "none";
+				metadata.style.display = "block";
+				uploads.style.display = "none";
+				thankyou.style.display = "none";
+			}
+			
+			function create_submission(){
+				console.log("got create_submission()");
+				
+				// gather submission form info
+				submission.album_title = album_title.value;
+				submission.artist_name = artist_name.value;
+				submission.album_genre = album_genre.value;
+				
+				// store submission object
+				var submission_url = submission_base_url + "/" + submission.artist_name + "-" + submission.album_title + ".json";
+				
+				jsfs.store_object(submission, submission_url, false, false, submission_create_result, false);
+				
+				function submission_create_result(result){
+					
+					if(result){
+						// show upload view
+						terms.style.display = "none";
+						metadata.style.display = "none";
+						uploads.style.display = "block";
+						thankyou.style.display = "none";
+					} else {
+						// display error
+						alert("error saving submission, try again :P");
+					}
+					
+				}
+			}
+			
+			function upload_track_1(){
+				console.log("got upload_file_1");
+				
+				// initialize status
+				track_1_status.innerHTML = "uploading";
+				
+				// todo: upload selected file
+			}
+			
+			function upload_track_2(){
+				console.log("got upload_file_1");
+			}
+			
+			function upload_track_3(){
+				console.log("got upload_file_1");
+			}
+			
+			function finish_submission(){
+				console.log("got finish_submission()");
+				
+				// todo: update submission metadata
+				
+				// show thank-you view
+				terms.style.display = "none";
+				metadata.style.display = "none";
+				uploads.style.display = "none";
+				thankyou.style.display = "block";
+				
+			}
+			
+		</script>
+	</body>
+</html>
