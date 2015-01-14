@@ -55,9 +55,11 @@
 			// globals
 			var jsfs = jsos_jsfs();
 			var submission = {};
+			submission.tracks = {};
 			var submission_base_url = "http://localhost:7302/submissions";
 			var submission_url = null;
 			var submission_access_token = null;
+			var media_base_url = "http://localhost:7302/submissions/media";
 		
 			// init
 			// hide everything but the first page
@@ -114,12 +116,43 @@
 			}
 			
 			function upload_track_1(){
+				
 				console.log("got upload_file_1");
 				
 				// initialize status
 				track_1_status.innerHTML = "uploading";
 				
-				// todo: upload selected file
+				// gather track info
+				var a_file = track_1_file.files[0];
+				
+				var a_track = {};
+				a_track.name = track_name_1.value;
+				a_track.filename = a_file.name;
+				a_track.url = media_base_url + "/" + submission.artist_name + "-" + submission.album_title + "/" + a_file.name; // todo: consider making this part of the submission object
+				
+				// due to file storing conventions, the url can't be used so we use this instead
+				var destination_bucket = media_base_url + "/" + submission.artist_name + "-" + submission.album_title;
+				
+				// upload selected file
+				jsfs.store_file(a_file, destination_bucket, false, false, upload_progress, false);
+				
+				function upload_progress(result){
+					if(result.status == "complete"){
+						
+						// update upload status
+						track_1_status.innerHTML = "upload complete!";
+						
+						// add track info to submission
+						a_track.access_token = result.access_token;
+						submission.tracks[a_track.name] = a_track;
+						
+					} else {
+						
+						// update upload progress
+						track_1_status.innerHTML = result.percent_complete;
+						
+					}
+				}
 			}
 			
 			function upload_track_2(){

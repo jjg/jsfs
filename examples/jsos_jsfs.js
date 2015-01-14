@@ -151,16 +151,16 @@ var jsos_jsfs = function(){
 			xhr.send(JSON.stringify(obj));
 
 			// organize results
-			var storage_result = {};
+			var store_result = {};
 			
 			function parse_response(){
 				if(this.readyState == 4){
 					if(this.status === 200){
 						console.log("object stored");
-						var storage_result = JSON.parse(this.responseText);
-						add_key(url, storage_result.access_token);
-						storage_result.success = true;
-						result_callback(storage_result);
+						var store_result = JSON.parse(this.responseText);
+						add_key(url, store_result.access_token);
+						store_result.success = true;
+						result_callback(store_result);
 					} else if(this.status === 405 && overwrite){
 						// try to find an access token for this url
 						kc = self.get_keychain();
@@ -169,14 +169,14 @@ var jsos_jsfs = function(){
 							overwrite_existing(kc.keys[url].access_token);
 						} else {
 							console.log("no access token to overwrite " + url);
-							self.storage_result.success = false;
-							result_callback(self.storage_result);
+							self.store_result.success = false;
+							result_callback(self.store_result);
 						}
 					} else {
 						console.log("store object failed, HTTP " + this.status);
-						self.storage_result.success = false;
-						self.storage_result.http_status = this.status;
-						result_callback(self.storage_result);
+						self.store_result.success = false;
+						self.store_result.http_status = this.status;
+						result_callback(self.store_result);
 					}
 				}
 			}
@@ -228,7 +228,7 @@ var jsos_jsfs = function(){
 				}
 			}
 		},
-		store_file: function(file, url, private, encrypted, progress_callback, overwrite){
+		store_file: function(file, url, private, encrypted, result_callback, overwrite){
 			
 			console.log("got store_file()");
 			
@@ -254,19 +254,20 @@ var jsos_jsfs = function(){
 			xhr.send(file);
 			
 			// this formats the upload progress nicely as the upload proceeds
-			var current_progress = {};
+			var store_result = {};
+			//var current_progress = {};
 			
 			function upload_progress(progress){
-				current_progress.file_size = progress.total;
-				current_progress.amount_uploaded = progress.loaded;
-				current_progress.percent_complete = (current_progress.amount_uploaded / current_progress.file_size) * 100;
+				store_result.file_size = progress.total;
+				store_result.amount_uploaded = progress.loaded;
+				store_result.percent_complete = (store_result.amount_uploaded / store_result.file_size) * 100;
 				
-				if(current_progress.percent_complete === 100){
+				if(store_result.percent_complete === 100){
 					//progress_status.status = "complete";
 				} else {
-					current_progress.status = "uploading";
+					store_result.status = "uploading";
 				}
-				progress_callback(current_progress);
+				result_callback(store_result);
 			}
 			
 			function parse_response(){
@@ -274,30 +275,30 @@ var jsos_jsfs = function(){
 					if(this.status === 200){
 						console.log('done uploading ' + file.name);
 						// extract access_token from response
-						var post_result = JSON.parse(this.responseText);
-						add_key(url + "/" + file.name, post_result.access_token);
-						current_progress.status = "complete";
-						progress_callback(current_progress);
+						store_result = JSON.parse(this.responseText);
+						add_key(url + "/" + file.name, store_result.access_token);
+						store_result.status = "complete";
+						result_callback(store_result);
 					} else if(this.status === 405 && overwrite) {
 						// try to find an access token for this url
 						kc = self.get_keychain();
 						if(kc.keys[url + "/" + file.name]){
 							console.log("overwriting existing file " + url + "/" + file.name);
-							current_progress.status = "overwriting";
-							progress_callback(current_progress);
+							store_result.status = "overwriting";
+							result_callback(store_result);
 							overwrite_existing(kc.keys[url + "/" + file.name].access_token);
 						} else {
 							console.log("no access token to overwrite " + url + "/" + file.name);
-							current_progress.status = "error";
-							current_progress.http_status = this.status;
-							progress_callback(current_progress);
+							store_result.status = "error";
+							store_result.http_status = this.status;
+							result_callback(store_result);
 						}
 					} else {
 						console.log("Error saving file, HTTP " + this.status);
 						// notify caller of error
-						current_progress.status = "error";
-						current_progress.http_status = this.status;
-						progress_callback(current_progress);
+						store_result.status = "error";
+						store_result.http_status = this.status;
+						result_callback(store_result);
 					}
 				}
 			}
