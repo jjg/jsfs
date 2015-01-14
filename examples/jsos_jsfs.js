@@ -3,44 +3,46 @@ var jsos_jsfs = function(){
 	
 	// private variables and methods
 	var _keychain_root = "http://localhost:7302/keychains";
-	var _keychain = null;
+	var _keychain = {};
+	_keychain.keys = {};
 	var _hashed_uid = null;
 	var _hashed_token = null;
 	
 	function save_keychain(){
-		console.log("got save_keychain");
-		var xhr = new XMLHttpRequest();
-		xhr.open("PUT", _keychain_root + "/" + _hashed_uid, true);
-        xhr.setRequestHeader("x-access-token", _hashed_token);
-        xhr.onreadystatechange = parse_response;
-        xhr.send(JSON.stringify(_keychain));
-
-        function parse_response(){
-            if(this.readyState == 4){
-                if(this.status === 200){
-                    console.log("keychain updated");
-
-                    // update file list
-					//callback;
-
-                } else {
-                    console.log("keychain update failed, HTTP " + this.status);
-					//callback;
-                }
-            }
-        }
+		
+		// if _hashed_uid is null, we're working anonymously so skip this
+		if(_hashed_uid && _hashed_token){
+			console.log("got save_keychain");
+			var xhr = new XMLHttpRequest();
+			xhr.open("PUT", _keychain_root + "/" + _hashed_uid, true);
+	        xhr.setRequestHeader("x-access-token", _hashed_token);
+	        xhr.onreadystatechange = parse_response;
+	        xhr.send(JSON.stringify(_keychain));
+	
+	        function parse_response(){
+	            if(this.readyState == 4){
+	                if(this.status === 200){
+	                    console.log("keychain updated");
+	
+	                    // update file list
+						//callback;
+	
+	                } else {
+	                    console.log("keychain update failed, HTTP " + this.status);
+						//callback;
+	                }
+	            }
+	        }
+		} else {
+			console.log("no keychain open, discarding update");
+		}
 	}
 	
 	function add_key(url,access_token){
-		// if keychain is null, don't bother
-		if(_keychain){
-	        // add new key to keychain
-	        _keychain.keys[url] = {};
-	        _keychain.keys[url].access_token = access_token;
-			save_keychain();
-		} else {
-			console.log("keychain is null, discarding anonymous key");
-		}
+		// add new key to keychain
+		_keychain.keys[url] = {};
+		_keychain.keys[url].access_token = access_token;
+		save_keychain();
 	}
 	
 	function hashit(value){
@@ -148,13 +150,17 @@ var jsos_jsfs = function(){
 			xhr.onreadystatechange = parse_response;
 			xhr.send(JSON.stringify(obj));
 
+			// organize results
+			var storage_result = {};
+			
 			function parse_response(){
 				if(this.readyState == 4){
 					if(this.status === 200){
 						console.log("object stored");
-						var post_result = JSON.parse(this.responseText);
-						add_key(url, post_result.access_token);
-						result_callback(true);
+						var storage_result = JSON.parse(this.responseText);
+						add_key(url, storage_result.access_token);
+						storage_result.success = true;
+						result_callback(storage_result);
 					} else if(this.status === 405 && overwrite){
 						// try to find an access token for this url
 						kc = self.get_keychain();
@@ -163,11 +169,14 @@ var jsos_jsfs = function(){
 							overwrite_existing(kc.keys[url].access_token);
 						} else {
 							console.log("no access token to overwrite " + url);
-							result_callback(false);
+							self.storage_result.success = false;
+							result_callback(self.storage_result);
 						}
 					} else {
 						console.log("store object failed, HTTP " + this.status);
-						result_callback(false);
+						self.storage_result.success = false;
+						self.storage_result.http_status = this.status;
+						result_callback(self.storage_result);
 					}
 				}
 			}

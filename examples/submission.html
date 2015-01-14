@@ -56,6 +56,8 @@
 			var jsfs = jsos_jsfs();
 			var submission = {};
 			var submission_base_url = "http://localhost:7302/submissions";
+			var submission_url = null;
+			var submission_access_token = null;
 		
 			// init
 			// hide everything but the first page
@@ -86,19 +88,24 @@
 				submission.album_genre = album_genre.value;
 				
 				// store submission object
-				var submission_url = submission_base_url + "/" + submission.artist_name + "-" + submission.album_title + ".json";
+				submission_url = submission_base_url + "/" + submission.artist_name + "-" + submission.album_title + ".json";
 				
 				jsfs.store_object(submission, submission_url, false, false, submission_create_result, false);
 				
 				function submission_create_result(result){
 					
-					if(result){
+					if(result.success){
+						
+						submission_access_token = result.access_token;
+						
 						// show upload view
 						terms.style.display = "none";
 						metadata.style.display = "none";
 						uploads.style.display = "block";
 						thankyou.style.display = "none";
+						
 					} else {
+						
 						// display error
 						alert("error saving submission, try again :P");
 					}
@@ -127,12 +134,21 @@
 				console.log("got finish_submission()");
 				
 				// todo: update submission metadata
+				jsfs.store_object(submission, submission_url, false, false, submission_update_result, true);
 				
-				// show thank-you view
-				terms.style.display = "none";
-				metadata.style.display = "none";
-				uploads.style.display = "none";
-				thankyou.style.display = "block";
+				function submission_update_result(result){
+					if(result.success){
+						
+						// show thank-you view
+						terms.style.display = "none";
+						metadata.style.display = "none";
+						uploads.style.display = "none";
+						thankyou.style.display = "block";
+						
+					} else {
+						alert("error updating submission, sorry :P");
+					}
+				}
 				
 			}
 			
