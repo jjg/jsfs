@@ -1,7 +1,7 @@
 <html>
 	<head>
 		<title>submissions</title>
-		<script type="text/javascript" src="jsos_jsfs.js"></script>
+		<script type="text/javascript" src="/jsos/lib/jsos_jsfs.js"></script>
 	</head>
 	<body>
 	
@@ -22,7 +22,16 @@
 			<ul>
 				<li>album: <input type="text" id="album_title">
 				<li>artist: <input type="text" id="artist_name">
-				<li>genre: <input type="text" id="album_genre">
+				<li>release date: <input type="text" id="release_date">
+				<li>record label: <input type="text" id="record_label">
+				<li>upc: <input type="text" id="upc">
+				<li>artist bio: <textarea id="artist_bio"></textarea>
+				<li>artist youtbe url: <input type="text" id="artist_youtube_url">
+				<li>artist social media url: <input type="text" id="artist_social_media_url">
+				<li>artist website url: <input type="text" id="artist_website_url">
+				<li>album genre: <input type="text" id="album_genre">
+				<li>submitter name: <input type="text" id="submitter_name">
+				<li>submitter email: <input type="text" id="submitter_email">
 			</ul>
 			
 			<input type="button" onclick="create_submission()" value="Next Step>">
@@ -33,7 +42,6 @@
 		
 			<h1>Upload 3 tracks</h1>
 			
-			<!-- "fuck-you!" said coyote, "I love tables!" -->
 			<table>
 				<tr><td>track name:</td><td><input type="text" id="track_name_1"><input type="file" id="track_1_file" value="select file"><input type="button" onclick="upload_track_1()" value="upload"></td><td><span id="track_1_status"></span></td></tr>
 				<tr><td>track name:</td><td><input type="text" id="track_name_2"><input type="file" id="track_2_file" value="select file"><input type="button" onclick="upload_track_2()" value="upload"></td><td><span id="track_2_status"></span></td></tr>
@@ -56,19 +64,16 @@
 			var jsfs = jsos_jsfs();
 			var submission = {};
 			submission.tracks = {};
-			var submission_base_url = "http://localhost:7302/submissions";
+			var submission_base_url = "/experiments/mediareview/submissions";
 			var submission_url = null;
 			var submission_access_token = null;
-			var media_base_url = "http://localhost:7302/submissions/media";
+			var media_base_url = "/experiments/mediareview/submissions/media";
 		
 			// init
 			// hide everything but the first page
 			metadata.style.display = "none";
 			uploads.style.display = "none";
 			thankyou.style.display = "none";
-			
-			// init the keychain
-			//jsfs.open_keychain("", "");
 			
 			// event handlers
 			function accept_terms(){
@@ -87,7 +92,17 @@
 				// gather submission form info
 				submission.album_title = album_title.value;
 				submission.artist_name = artist_name.value;
+				submission.release_date = release_date.value;
+				submission.record_label = record_label.value;
+				submission.upc = upc.value;
+				submission.artist_bio = artist_bio.value;
+				submission.artist_youtube_url = artist_youtube_url.value;
+				submission.artist_social_media_url = artist_social_media_url.value;
+				submission.artist_website_url = artist_website_url.value;
 				submission.album_genre = album_genre.value;
+				submission.submitter_name = submitter_name.value;
+				submission.submitter_email = submitter_email.value;
+				submission.submission_date = Date().toString();
 				
 				// store submission object
 				submission_url = submission_base_url + "/" + submission.artist_name + "-" + submission.album_title + ".json";
@@ -156,11 +171,63 @@
 			}
 			
 			function upload_track_2(){
-				console.log("got upload_file_1");
+				console.log("got upload_file_2");
+				// initialize status
+				track_2_status.innerHTML = "uploading";
+				// gather track info
+				var a_file = track_2_file.files[0];
+				
+				var a_track = {};
+				a_track.name = track_name_2.value;
+				a_track.filename = a_file.name;
+				a_track.url = media_base_url + "/" + submission.artist_name + "-" + submission.album_title + "/" + a_file.name; // todo: consider making this part of the submission object
+				// due to file storing conventions, the url can't be used so we use this instead
+				var destination_bucket = media_base_url + "/" + submission.artist_name + "-" + submission.album_title;
+				// upload selected file
+				jsfs.store_file(a_file, destination_bucket, false, false, upload_progress, false);
+				
+				function upload_progress(result){
+					if(result.status == "complete"){
+						// update upload status
+						track_2_status.innerHTML = "upload complete!";
+						// add track info to submission
+						a_track.access_token = result.access_token;
+						submission.tracks[a_track.name] = a_track;
+					} else {
+						// update upload progress
+						track_2_status.innerHTML = result.percent_complete;
+					}
+				}
 			}
 			
 			function upload_track_3(){
-				console.log("got upload_file_1");
+				console.log("got upload_file_3");
+				// initialize status
+				track_3_status.innerHTML = "uploading";
+				// gather track info
+				var a_file = track_3_file.files[0];
+				
+				var a_track = {};
+				a_track.name = track_name_3.value;
+				a_track.filename = a_file.name;
+				a_track.url = media_base_url + "/" + submission.artist_name + "-" + submission.album_title + "/" + a_file.name; // todo: consider making this part of the submission object
+				// due to file storing conventions, the url can't be used so we use this instead
+				var destination_bucket = media_base_url + "/" + submission.artist_name + "-" + submission.album_title;
+				// upload selected file
+				jsfs.store_file(a_file, destination_bucket, false, false, upload_progress, false);
+				
+				function upload_progress(result){
+					if(result.status == "complete"){
+						// update upload status
+						track_3_status.innerHTML = "upload complete!";
+						// add track info to submission
+						a_track.access_token = result.access_token;
+						submission.tracks[a_track.name] = a_track;
+					} else {
+						// update upload progress
+						track_3_status.innerHTML = result.percent_complete;
+					}
+				}
 			}
 			
 			function finish_submission(){
