@@ -204,6 +204,26 @@ http.createServer(function(req, res){
 
 	// all requests are interrorgated for these values
 	var target_url = require("url").parse(req.url).pathname;
+
+	// host-based url shortcut expansion
+	if(target_url.substring(0,2) === "//"){
+		log.message(log.INFO, "Attempting to expand host namespace shortcut");
+		var host_header = req.headers["host"]);
+		if(host_header){
+			log.message(log.INFO, "Found host header: " + host_header);
+			var host_header_parts = host_header.split(":");
+			var forward_host = host_header_parts[0].split(".");
+			log.message(log.INFO, "forward_host: " + forward_host);
+			var reversed_host = "";
+			for(var i=(forward_host.length - 1);i>=0;i--){
+				reversed_host = reversed_host + "." + forward_host[i];
+			}
+			log.message(log.INFO, "reversed_host: " + reversed_host);
+			target_url = reversed_host + target_url.substring(1);
+			log.message(log.INFO, "Expanded target_url: " + target_url);
+		}
+	}
+
 	var content_type = req.headers["content-type"];
 	var access_token = req.headers["x-access-token"];
 	var private = req.headers["x-private"];
