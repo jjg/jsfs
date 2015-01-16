@@ -206,14 +206,19 @@ http.createServer(function(req, res){
 	var target_url = require("url").parse(req.url).pathname;
 	log.message(log.INFO, "target_url: " + target_url);
 
-	// host-based url shortcut expansion
+	// debug
+	//console.log(req.headers);
+
+	// origin-based url shortcut expansion (origin: 'http://localhost:8000')
 	if(target_url.substring(0,2) === "/M"){
-		log.message(log.INFO, "Attempting to expand host namespace shortcut");
-		var host_header = req.headers["host"];
-		if(host_header){
-			log.message(log.INFO, "Found host header: " + host_header);
-			var host_header_parts = host_header.split(":");
-			var forward_host = host_header_parts[0].split(".");
+		log.message(log.INFO, "Attempting to expand origin namespace shortcut");
+		//var host_header = req.headers["host"];
+		var host_string = req.headers["origin"].split("//")[1];
+		//host_string = host_string.split("//");
+		if(host_string){
+			log.message(log.INFO, "Found host: " + host_string);
+			var host_string_parts = host_string.split(":");
+			var forward_host = host_string_parts[0].split(".");
 			log.message(log.INFO, "forward_host: " + forward_host);
 			var reversed_host = "";
 			for(var i=(forward_host.length - 1);i>=0;i--){
