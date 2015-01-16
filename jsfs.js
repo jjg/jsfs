@@ -204,6 +204,7 @@ http.createServer(function(req, res){
 
 	// all requests are interrorgated for these values
 	var target_url = require("url").parse(req.url).pathname;
+	log.message(log.INFO, "target_url: " + target_url);
 
 	// host-based url shortcut expansion
 	if(target_url.substring(0,2) === "MY"){
