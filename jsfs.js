@@ -220,7 +220,7 @@ http.createServer(function(req, res){
 				reversed_host = reversed_host + "." + forward_host[i];
 			}
 			log.message(log.INFO, "reversed_host: " + reversed_host);
-			target_url = reversed_host + target_url.substring(1);
+			target_url = reversed_host + target_url.substring(2);
 			log.message(log.INFO, "Expanded target_url: " + target_url);
 		}
 	}
