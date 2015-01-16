@@ -208,7 +208,7 @@ http.createServer(function(req, res){
 	// host-based url shortcut expansion
 	if(target_url.substring(0,2) === "//"){
 		log.message(log.INFO, "Attempting to expand host namespace shortcut");
-		var host_header = req.headers["host"]);
+		var host_header = req.headers["host"];
 		if(host_header){
 			log.message(log.INFO, "Found host header: " + host_header);
 			var host_header_parts = host_header.split(":");
