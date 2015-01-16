@@ -1,7 +1,8 @@
 <html>
 	<head>
 		<title>submissions</title>
-		<script type="text/javascript" src="/jsos/lib/jsos_jsfs.js"></script>
+		<!--<script type="text/javascript" src="/jsos/lib/jsos_jsfs.js"></script>-->
+		<script type="text/javascript" src="jsos_jsfs.js"></script>
 	</head>
 	<body>
 	
@@ -64,7 +65,8 @@
 			var jsfs = jsos_jsfs();
 			var submission = {};
 			submission.tracks = {};
-			var submission_base_url = "/experiments/mediareview/submissions";
+			//var submission_base_url = "/experiments/mediareview/submissions";
+			var submission_base_url = "http://localhost:7302/experiments/mediareview/submissions";
 			var submission_url = null;
 			var submission_access_token = null;
 			var media_base_url = "/experiments/mediareview/submissions/media";

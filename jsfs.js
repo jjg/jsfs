@@ -209,6 +209,9 @@ http.createServer(function(req, res){
 	var private = req.headers["x-private"];
 	var encrypted = req.headers["x-encrypted"];
 
+	// debug
+	console.log(req.headers);
+
 	log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
 
 	switch(req.method){
