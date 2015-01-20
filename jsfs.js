@@ -210,10 +210,11 @@ http.createServer(function(req, res){
 	//console.log(req.headers);
 
 	// origin-based url shortcut expansion (origin: 'http://localhost:8000')
-	if(target_url.substring(0,2) === "/M"){
+	//if(target_url.substring(0,2) === "/M"){
+	if(target_url.substring(0,2) != "/."){
 		log.message(log.INFO, "Attempting to expand origin namespace shortcut");
-		//var host_header = req.headers["host"];
-		var host_string = req.headers["origin"].split("//")[1];
+		var host_string = req.headers["host"];
+		//var host_string = req.headers["origin"].split("//")[1];
 		//host_string = host_string.split("//");
 		if(host_string){
 			log.message(log.INFO, "Found host: " + host_string);
@@ -225,7 +226,7 @@ http.createServer(function(req, res){
 				reversed_host = reversed_host + "." + forward_host[i];
 			}
 			log.message(log.INFO, "reversed_host: " + reversed_host);
-			target_url = reversed_host + target_url.substring(2);
+			target_url = reversed_host + target_url;
 			log.message(log.INFO, "Expanded target_url: " + target_url);
 		}
 	}
