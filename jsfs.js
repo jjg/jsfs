@@ -226,9 +226,11 @@ http.createServer(function(req, res){
 				reversed_host = reversed_host + "." + forward_host[i];
 			}
 			log.message(log.INFO, "reversed_host: " + reversed_host);
-			target_url = reversed_host + target_url;
+			target_url = "/" + reversed_host.substring(1) + target_url;
 			log.message(log.INFO, "Expanded target_url: " + target_url);
 		}
+	} else {
+		target_url = "/" + target_url.substring(2);
 	}
 
 	var content_type = req.headers["content-type"];
