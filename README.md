@@ -34,15 +34,15 @@ This header is used to authorize requests that modify existing files (`PUT`, `DE
 ##Temporary/Expiring URLs
 Sometimes you need to grant temporary access to an otherwise private file.  You can generate a time-limited url for any file stored privately (see `x-private` header above) so long as you posess a valid `access_token` for the file using the following steps:
 
-1.  Generate a expiration timestamp in milliseconds since midnight January 1st, 1970 (in Javascript `(new Date()).getTime()` yields the current time in this format)
-2.  Concatinate the `access_token` with the number generated above into a single string
-3.  Generate an sha1 hex hash of the string (refer to https://github.com/jjg/jsfs/blob/master/jsfs.js#L99 for details)
+1.  Generate a expiration timestamp in milliseconds since midnight, January 1st, 1970 (in Javascript `(new Date()).getTime()` yields the current time in this format)
+2.  Concatinate the `access_token` of the desired file with the number generated above to create a single string
+3.  Generate an sha1 hex hash of the string (refer to https://github.com/jjg/jsfs/blob/master/jsfs.js#L99 for an example)
 
-To use the temporary URL, pass the timestamp along with the hash as parameters on a GET request for the file, like so:
+To use the temporary URL, pass the timestamp along with the hash as parameters of a GET request for the file, like so:
 
 `curl "http://localhost:7302/music/Brinstar.mp3?expire_time=2422995348828&time_token=63556d4f6cb3459f1cd2ac33ea53ad10da5d7725"`
 
-JSFS first validates the timestamp against the local (server) time to make sure it hasn't already expired, then performs a hash comparison between the supplied `time_token` and the known `access_token` of the requested file.  If either test fails the call returns a `401 unauthorized`.
+JSFS first validates the timestamp against the local (server) time to make sure it hasn't already expired, then performs a hash comparison between the supplied `time_token` and the known `access_token` of the requested file.  If either test fails, the call returns `401 unauthorized`.
 
 
 ##POST
