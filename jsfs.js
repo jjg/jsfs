@@ -59,7 +59,7 @@ function system_stats(){
 	stats.block_count = 0;
 
 	for(var file in stored_files){
-		if(stored_files.hasOwnProperty(file)){	
+		if(stored_files.hasOwnProperty(file)){
 			// count blocks
 			stats.block_count = stats.block_count + stored_files[file].blocks.length;
 
@@ -84,7 +84,7 @@ function decrypt(block, key){
 	decipher.write(block);
 	decipher.end();
 	return decipher.read();
-} 
+}
 
 // base storage object
 var file_store = {
@@ -244,7 +244,7 @@ http.createServer(function(req, res){
 
 		case "GET":
 
-			// if url ends in "/", return a list of public files 
+			// if url ends in "/", return a list of public files
 			if(target_url.slice(-1) == "/"){
 
 				var public_directory = [];
@@ -253,7 +253,7 @@ http.createServer(function(req, res){
 					if(stored_files.hasOwnProperty(file)){
 						if(!stored_files[file].private && (file.indexOf(target_url) > -1)){
 							
-							// remove leading path from filename 
+							// remove leading path from filename
 							file = file.slice(target_url.length);
 
 							// remove trailing path from subdirectories
@@ -261,17 +261,20 @@ http.createServer(function(req, res){
 								file = file.slice(0,(file.indexOf("/") + 1));
 							}
 
-							public_directory.push(file);
+							// don't add duplicate entries
+							if(public_directory.indexOf(file) == -1){
+								public_directory.push(file);
+							}
 						}
 					}
 				}
-
+				
 				res.write(JSON.stringify(public_directory));
 				res.end();
 
 			} else {
 
-				// return the file located at the requested URL 
+				// return the file located at the requested URL
 				var requested_file = null;
 		
 				// check for existance of requested URL
@@ -326,7 +329,7 @@ http.createServer(function(req, res){
 			if(typeof stored_files[target_url] === "undefined"){
 
 				// store the posted data at the specified URL
-				var file_metadata = null; 
+				var file_metadata = null;
 				var new_file = Object.create(file_store);
 				new_file.init(target_url);
 	
@@ -417,7 +420,7 @@ http.createServer(function(req, res){
 						// if token is invalid, return unauthorized
 						res.statusCode = 401;
 						res.end();
-					}					
+					}
 	
 				} else {
 	
@@ -430,8 +433,8 @@ http.createServer(function(req, res){
 
 		case "DELETE":
 
-			// remove the data stored at the specified URL 
-      // make sure there's a file to remove 
+			// remove the data stored at the specified URL
+      // make sure there's a file to remove
       if(typeof stored_files[target_url] != "undefined"){
 
         var original_file = stored_files[target_url];
