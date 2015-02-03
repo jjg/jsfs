@@ -36,7 +36,7 @@ Sometimes you need to grant temporary access to an otherwise private file.  You 
 
 1.  Generate a expiration timestamp in milliseconds since midnight January 1st, 1970 (in Javascript `(new Date()).getTime()` yields the current time in this format)
 2.  Concatinate the `access_token` with the number generated above into a single string
-3.  Generate an sha1 hash of the string
+3.  Generate an sha1 hex hash of the string (refer to https://github.com/jjg/jsfs/blob/master/jsfs.js#L99 for details)
 
 To use the temporary URL, pass the timestamp along with the hash as parameters on a GET request for the file, like so:
 
