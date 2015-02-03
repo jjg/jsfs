@@ -32,7 +32,7 @@ Set this header to `true` to encrypt stored data before it is stored on-disk.  O
 This header is used to authorize requests that modify existing files (`PUT`, `DELETE`).  The token is provided as part of the response when a new file is `POST`ed to a URL.  To perform further updates to a new file you'll need to keep track of this token.
 
 ##Temporary/Expiring URLs
-Sometimes you need to grant temporary access to an otherwise private file.  You can generate a time-limited url for any file stored privately (see x-private header above) so long as you posess a valid `access_token` for the file using the following steps:
+Sometimes you need to grant temporary access to an otherwise private file.  You can generate a time-limited url for any file stored privately (see `x-private` header above) so long as you posess a valid `access_token` for the file using the following steps:
 
 1.  Generate a expiration timestamp in milliseconds since midnight January 1st, 1970 (in Javascript `(new Date()).getTime()` yields the current time in this format)
 2.  Concatinate the `access_token` with the number generated above into a single string
