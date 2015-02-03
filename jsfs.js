@@ -86,6 +86,29 @@ function decrypt(block, key){
 	return decipher.read();
 }
 
+// expiring url support
+// temporary urls are created by concatinating the access_token
+// and an expiration date (in EPOC) and then generating a sha1 hash
+// to be used along with the time during the request
+function time_token_valid(file, expire_time, time_token){
+	// make sure requested time is still valid
+	if(expire_time < (new Date()).getTime()){
+		log.message(log.WARN,"expire_time is in the past");
+		return false;
+	} else {
+		// make sure time_token is valid
+		shasum = crypto.createHash("sha1");
+		shasum.update(file.access_token + expire_time);
+		var expected_time_token = shasum.digest("hex");
+		if(time_token != expected_time_token){
+			log.message(log.WARN,"time_token is invalid");
+			return false;
+		} else {
+			return true;
+		}
+	}
+}
+
 // base storage object
 var file_store = {
 	init: function(url){
@@ -205,6 +228,10 @@ http.createServer(function(req, res){
 	// all requests are interrorgated for these values
 	var target_url = require("url").parse(req.url).pathname;
 
+	// get temporary url parameters out of the request if present
+	var expire_time = require("url").parse(req.url,true).query.expire_time;
+	var time_token = require("url").parse(req.url,true).query.time_token;
+	
 	// host-based url shortcut expansion
 	if(target_url.substring(0,2) != "/."){
 		var host_string = req.headers["host"];
@@ -274,7 +301,9 @@ http.createServer(function(req, res){
 					res.statusCode = 200;
 
 					// check authorization of URL
-					if(!requested_file.private || (requested_file.private && requested_file.access_token === access_token)){
+					if(!requested_file.private ||
+						(requested_file.private && requested_file.access_token === access_token) ||
+						time_token_valid(requested_file, expire_time, time_token)){
 
 						 // return file metadata as HTTP headers
 						res.setHeader("Content-Type", requested_file.content_type);
@@ -453,7 +482,9 @@ http.createServer(function(req, res){
 
 			if(typeof stored_files[target_url] != "undefined"){
 				var requested_file = stored_files[target_url];
-				if(!requested_file.private || (requested_file.access_token === access_token)){
+				if(!requested_file.private ||
+					(requested_file.access_token === access_token) ||
+					time_token_valid(requested_file, expire_time, time_token)){
 					res.writeHead(200,{
 						"Content-Type": requested_file.content_type,
 						"Content-Length": requested_file.file_size
