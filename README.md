@@ -42,6 +42,8 @@ To use the temporary URL, pass the timestamp along with the hash as parameters o
 
 `curl "http://localhost:7302/music/Brinstar.mp3?expire_time=2422995348828&time_token=63556d4f6cb3459f1cd2ac33ea53ad10da5d7725"`
 
+JSFS first validates the timestamp against the local (server) time to make sure it hasn't already expired, then performs a hash comparison between the supplied `time_token` and the known `access_token` of the requested file.  If either test fails the call returns a `401 unauthorized`.
+
 
 ##POST
 Stores a new file at the specified URL.  If the file exists jsfs returns `405 method not allowed`.
