@@ -94,6 +94,10 @@ Response
 }
 ````
 
+JSFS automatically "namespaces" URL's based on the host name used to make the request.  This makes it easy to create partitioned storage by pointing multiple hostnames at the same JSFS server.  This is accomplished by expanding the host in reverse notation (i.e.: `foo.com` becomes `.com.foo`); this is handled transparrently by JSFS from the client's perspective.
+
+This means that you can point DNS records for `foo.com` and `bar.com` to the same JSFS server and then POST `http://foo.com/files/baz.txt` and `http://bar.com/files/baz.txt` without a conflict.  This also means that `GET http://foo.com/files/baz.txt` and `GET http://bar.com/files/baz.txt` do not return the same file, however if you need to access a file stored via a different host you can reach it using its absolute address (in this case, `http://bar.com/.com.foo/files/baz.txt`).
+
 ##GET
 Retreives the file at the specified URL.  If the file does not exist a `404 not found` is returned.  If the URL ends with a trailing slash `/` a directory listing of non-private files stored at the specified location.
 
