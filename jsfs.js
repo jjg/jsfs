@@ -49,7 +49,7 @@ function load_metadata(){
 	}
 
 	var stats = system_stats();
-	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks");
+	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "% deduplicated)");
 }
 
 function system_stats(){
@@ -57,16 +57,32 @@ function system_stats(){
 	var stats = {};
 	stats.file_count = 0;
 	stats.block_count = 0;
+	stats.unique_blocks = 0;
+	stats.unique_blocks_accumulator = [];
 
 	for(var file in stored_files){
 		if(stored_files.hasOwnProperty(file)){
+			
+			var selected_file = stored_files[file];
+			
 			// count blocks
-			stats.block_count = stats.block_count + stored_files[file].blocks.length;
+			stats.block_count = stats.block_count + selected_file.blocks.length;
 
+			// accumulate unique blocks
+			for(var i=0;i<selected_file.blocks.length;i++){
+				
+				// I think this can be done more efficiently, but this works for now
+				if(stats.unique_blocks_accumulator.indexOf(selected_file.blocks[i]) == -1){
+					stats.unique_blocks_accumulator.push(selected_file.blocks[i]);
+				}
+			}
+			
 			// increment file count
 			stats.file_count++;
 		}
 	}
+	
+	stats.unique_blocks = stats.unique_blocks_accumulator.length;
 
 	return stats;
 }
