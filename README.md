@@ -25,11 +25,11 @@ jsfs uses several custom headers to control access to data and how it is stored.
 ###x-private
 Set this header to `true` to mark files as private (they won't show up in directory listings).  *NOTE:* since private files don't show up in directory listings you'll have to keep track of the URL's yourself.  Additionally, to access private files a valid `x-access-token` header must be supplied with the `GET` request.
 
-###x-encrypted
-Set this header to `true` to encrypt stored data before it is stored on-disk.  Once enabled decryption happens automatically on `GET` requests and additional modifications via `PUT` will be encrypted as well. *NOTE:* encryption increases CPU utilization and reduces deduplication performance so use only when necissary.
-
 ###x-access-token
-This header is used to authorize requests that modify existing files (`PUT`, `DELETE`).  The token is provided as part of the response when a new file is `POST`ed to a URL.  To perform further updates to a new file you'll need to keep track of this token.
+This header is used to authorize requests that modify existing files (`PUT`, `DELETE`).  A JSFS-generated token is automatically provided as part of the response when a new file is `POST`ed to a URL.  It's also possible to provide a custom `access_token` by setting the `x-access-token` header during the initial `POST` of a file (useful if you want to generate/manage tokens using an external system)  To perform further updates to a file you'll need to keep track of this token.
+
+###x-encrypted
+Set this header to `true` to encrypt data before it is stored on-disk (*NOTE* custom `x-access-token` must be supplied to enable encryption!).  Once enabled, decryption happens automatically on `GET` requests and additional modifications via `PUT` will be encrypted as well. *NOTE:* encryption increases CPU utilization and reduces deduplication performance so use only when necissary.
 
 ##Temporary/Expiring URLs
 Sometimes you need to grant temporary access to an otherwise private file.  You can generate a time-limited url for any file stored privately (see `x-private` header above) so long as you posess a valid `access_token` for the file using the following steps:
@@ -66,30 +66,6 @@ Response:
     "block_size": 1048576,
     "blocks": [
         "7653454f4c8c859bed57a44d59c6b536b0518192"
-    ]
-}
-````
-
-It's also possible to provide a custom `access_token` by setting the `x-access-token` header (useful if you want to generate/manage tokens using an external system):
-
-     curl -X POST -H "x-access-token: richardnixonshead" --data-binary @metroid_brinstar.mp3 http://localhost:7302/music/metroid_brinstar.mp3
-     
-Response
-````
-{
-    "created": 1423062575167,
-    "version": 0,
-    "private": false,
-    "encrypted": false,
-    "access_token": "richardnixonshead",
-    "content_type": "application/x-www-form-urlencoded",
-    "file_size": 3960832,
-    "block_size": 1048576,
-    "blocks": [
-        "423fb973adc699fb302a77401a47a2f89cc2cda7",
-        "b514a114beb553d710e9afb959dfba874b74060b",
-        "c3ae28f6b9c614e918876a326e01ddceac237d11",
-        "babef485cc800cd76c118665dd2b8d7c022bd164"
     ]
 }
 ````

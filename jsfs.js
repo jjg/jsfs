@@ -194,17 +194,17 @@ var file_store = {
 		// grab the next block
 		var block = this.input_buffer.slice(0, this.block_size);
 
+		// if encryption is set, encrypt using the hash above
+		if(this.file_metadata.encrypted && this.file_metadata.access_token){
+			log.message(log.INFO, "encrypting block");
+			block = encrypt(block, this.file_metadata.access_token);
+		}
+		
 		// generate a hash of the block to use as a handle/filename
 		var block_hash = null;
 		shasum = crypto.createHash("sha1");
 		shasum.update(block);
 		block_hash = shasum.digest("hex");
-
-		// if encryption is set, encrypt using the hash above
-		if(this.file_metadata.encrypted){
-			log.message(log.INFO, "encrypting block");
-			block = encrypt(block, block_hash);
-		}
 
 		// save the block to disk
 		var block_file = config.STORAGE_PATH + block_hash;
@@ -330,7 +330,7 @@ http.createServer(function(req, res){
 
 							if(requested_file.encrypted){
 								log.message(log.INFO, "decrypting block");
-								block_data = decrypt(block_data, requested_file.blocks[i]);
+								block_data = decrypt(block_data, requested_file.access_token);
 							}
 							// send block to caller
 							res.write(block_data);
