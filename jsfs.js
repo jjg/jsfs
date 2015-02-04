@@ -264,7 +264,21 @@ var inode = {
 		var block_object = {};
 		block_object.block_hash = block_hash;
 		
-		var block_file = config.STORAGE_LOCATIONS[0].path + block_hash;
+		//var selected_storage_location = null;
+		
+		// sort storage locations by avaliable capacity
+		storage_locations.sort(function(a,b) { return parseFloat(b.capacity - b.usage) - parseFloat(a.capacity - a.usage) });
+		
+		// debug
+		for(var storage_location in storage_locations){
+			
+			log.message(log.INFO, "available capacity: " + (storage_locations[storage_location].capacity - storage_locations[storage_location].usage) + " on " + storage_locations[storage_location].path);
+			
+		}
+		
+		
+		// use the location with the most avaliable storage
+		var block_file = storage_locations[0].path + block_hash;
 		if(!fs.existsSync(block_file)){
 			log.message(log.INFO, "storing block " + block_hash);
 		} else {
@@ -272,6 +286,7 @@ var inode = {
 		}
 
 		fs.writeFileSync(block_file, block, "binary");
+		storage_locations[0].usage++;
 		
 		this.file_metadata.blocks.push(block_object);
 		
