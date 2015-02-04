@@ -198,6 +198,9 @@ var file_store = {
 		if(this.file_metadata.encrypted && this.file_metadata.access_token){
 			log.message(log.INFO, "encrypting block");
 			block = encrypt(block, this.file_metadata.access_token);
+		} else {
+			// if even one block can't be encrypted, say so and stop trying
+			this.file_metadata.encrypted = false;
 		}
 		
 		// generate a hash of the block to use as a handle/filename

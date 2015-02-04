@@ -26,7 +26,9 @@ jsfs uses several custom headers to control access to data and how it is stored.
 Set this header to `true` to mark files as private (they won't show up in directory listings).  *NOTE:* since private files don't show up in directory listings you'll have to keep track of the URL's yourself.  Additionally, to access private files a valid `x-access-token` header must be supplied with the `GET` request.
 
 ###x-access-token
-This header is used to authorize requests that modify existing files (`PUT`, `DELETE`).  A JSFS-generated token is automatically provided as part of the response when a new file is `POST`ed to a URL.  It's also possible to provide a custom `access_token` by setting the `x-access-token` header during the initial `POST` of a file (useful if you want to generate/manage tokens using an external system)  To perform further updates to a file you'll need to keep track of this token.
+This header is used to authorize requests that modify existing files (`PUT`, `DELETE`).  A JSFS-generated token is automatically provided as part of the response when a new file is `POST`ed to a URL.
+
+It's also possible to provide a custom `access_token` by setting the `x-access-token` header during the initial `POST` of a file (useful if you want to generate/manage tokens using an external system).  To perform further updates to a file, you'll need to keep track of this token.
 
 ###x-encrypted
 Set this header to `true` to encrypt data before it is stored on-disk (*NOTE* custom `x-access-token` must be supplied to enable encryption!).  Once enabled, decryption happens automatically on `GET` requests and additional modifications via `PUT` will be encrypted as well. *NOTE:* encryption increases CPU utilization and reduces deduplication performance so use only when necissary.
