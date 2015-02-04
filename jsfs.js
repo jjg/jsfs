@@ -37,7 +37,7 @@ function save_metadata(){
 	});
 
 	var stats = system_stats();
-	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks");
+	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "% deduplicated)");
 }
 
 function load_metadata(){
@@ -83,7 +83,6 @@ function system_stats(){
 	}
 	
 	stats.unique_blocks = stats.unique_blocks_accumulator.length;
-
 	return stats;
 }
 
@@ -210,7 +209,7 @@ var file_store = {
 		// save the block to disk
 		var block_file = config.STORAGE_PATH + block_hash;
 		if(!fs.existsSync(block_file)){
-			log.message(log.INFO, "storing block " + block_file);
+			log.message(log.INFO, "storing block " + block_hash);
 		} else {
 			log.message(log.INFO, "duplicate block " + block_hash);
 		}
