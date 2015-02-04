@@ -65,6 +65,10 @@ function load_superblock(){
 
 	// stat each block to establish it's current location and
 	// the utilization of each storage location
+	for(var storage_location in storage_locations){
+		storage_locations[storage_location].usage = 0;
+	}
+	
 	for(var file in superblock){
 		if(superblock.hasOwnProperty(file)){
 			var selected_file = superblock[file];
@@ -74,6 +78,7 @@ function load_superblock(){
 					var selected_location = storage_locations[storage_location];
 					if(fs.existsSync(selected_location.path + selected_block.block_hash)){
 						selected_block.last_seen = selected_location.path;
+						selected_location.usage++;
 						break;
 					} else {
 						log.message(log.WARN, "block " + selected_block.block_hash + " not found in " + selected_location.path);
@@ -85,6 +90,7 @@ function load_superblock(){
 	
 	// debug
 	console.log(JSON.stringify(superblock));
+	console.log(JSON.stringify(storage_locations));
 	
 	var stats = system_stats();
 	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
