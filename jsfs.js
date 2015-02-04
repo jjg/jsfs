@@ -332,26 +332,22 @@ http.createServer(function(req, res){
 								log.message(log.INFO, "decrypting block");
 								block_data = decrypt(block_data, requested_file.blocks[i]);
 							}
-		
 							// send block to caller
 							res.write(block_data);
 						}
-		
 						// finish request
 						res.end();
-
 					} else {
 						// return status 401
 						res.statusCode = 401;
 						res.end();
 					}
-
 				} else {
 					// return status 404
 					res.statusCode = 404;
 					res.end();
 				}
-				}
+			}
 
 			break;
 

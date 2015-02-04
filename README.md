@@ -70,6 +70,30 @@ Response:
 }
 ````
 
+It's also possible to provide a custom `access_token` by setting the `x-access-token` header (useful if you want to generate/manage tokens using an external system):
+
+     curl -X POST -H "x-access-token: richardnixonshead" --data-binary @metroid_brinstar.mp3 http://localhost:7302/music/metroid_brinstar.mp3
+     
+Response
+````
+{
+    "created": 1423062575167,
+    "version": 0,
+    "private": false,
+    "encrypted": false,
+    "access_token": "richardnixonshead",
+    "content_type": "application/x-www-form-urlencoded",
+    "file_size": 3960832,
+    "block_size": 1048576,
+    "blocks": [
+        "423fb973adc699fb302a77401a47a2f89cc2cda7",
+        "b514a114beb553d710e9afb959dfba874b74060b",
+        "c3ae28f6b9c614e918876a326e01ddceac237d11",
+        "babef485cc800cd76c118665dd2b8d7c022bd164"
+    ]
+}
+````
+
 ##GET
 Retreives the file at the specified URL.  If the file does not exist a `404 not found` is returned.  If the URL ends with a trailing slash `/` a directory listing of non-private files stored at the specified location.
 
