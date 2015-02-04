@@ -5,7 +5,7 @@
 
 // *** GLOBALS ***
 // the plan is to eliminate these eventually...
-var stored_files = {};
+var superblock = {};
 
 // *** UTILITIES  & MODULES ***
 var http = require("http");
@@ -27,29 +27,43 @@ var log = {
 	}
 };
 
-function save_metadata(){
-	fs.writeFile(config.STORAGE_PATH + "metadata.json", JSON.stringify(stored_files), function(err){
-		if(err){
-			log.message(log.ERROR, "error saving metadata to disk");
-		} else {
-			log.message(log.INFO, "metadata saved to disk");
+function save_superblock(){
+	for(location in config.STORAGE_LOCATIONS){
+		if(config.STORAGE_LOCATIONS.hasOwnProperty(location)){
+			var storage_path = config.STORAGE_LOCATIONS[location].path;
+		
+			fs.writeFile(storage_path + "superblock.json", JSON.stringify(superblock), function(err){
+				if(err){
+					log.message(log.ERROR, "error saving superblock to disk");
+				} else {
+					log.message(log.INFO, "superblock saved to disk");
+				}
+			});
 		}
-	});
-
+	}
+	
 	var stats = system_stats();
-	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "% deduplicated)");
+	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
 }
 
-function load_metadata(){
-	try{
-		stored_files = JSON.parse(fs.readFileSync(config.STORAGE_PATH + "metadata.json"));
-		log.message(log.INFO, "metadata loaded from disk");
-	} catch(ex) {
-		log.message(log.WARN, "unable to load metadata from disk: " + ex);
+function load_superblock(){
+	for(location in config.STORAGE_LOCATIONS){
+		if(config.STORAGE_LOCATIONS.hasOwnProperty(location)){
+			var storage_path = config.STORAGE_LOCATIONS[location].path;
+			try{
+				// try the first storage device first
+				// todo: loop through devices until a superblock is found
+				superblock = JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + "superblock.json"));
+				log.message(log.INFO, "superblock loaded from disk");
+				break;
+			} catch(ex) {
+				log.message(log.WARN, "unable to load superblock from disk: " + ex);
+			}
+		}
 	}
 
 	var stats = system_stats();
-	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "% deduplicated)");
+	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
 }
 
 function system_stats(){
@@ -60,10 +74,10 @@ function system_stats(){
 	stats.unique_blocks = 0;
 	stats.unique_blocks_accumulator = [];
 
-	for(var file in stored_files){
-		if(stored_files.hasOwnProperty(file)){
+	for(var file in superblock){
+		if(superblock.hasOwnProperty(file)){
 			
-			var selected_file = stored_files[file];
+			var selected_file = superblock[file];
 			
 			// count blocks
 			stats.block_count = stats.block_count + selected_file.blocks.length;
@@ -125,7 +139,7 @@ function time_token_valid(file, expire_time, time_token){
 }
 
 // base storage object
-var file_store = {
+var inode = {
 	init: function(url){
 		this.url = url;
 		this.input_buffer = new Buffer("");
@@ -155,11 +169,11 @@ var file_store = {
 			this.file_metadata.access_token =  shasum.digest("hex");
 		}
 
-		// add file to storage metadata
-		stored_files[this.url] = this.file_metadata;
+		// add file to storage superblock
+		superblock[this.url] = this.file_metadata;
 
-		// write updated metadata to disk
-		save_metadata();
+		// write updated superblock to disk
+		save_superblock();
 
 		// return metadata for future operations
 		return this.file_metadata;
@@ -210,7 +224,8 @@ var file_store = {
 		block_hash = shasum.digest("hex");
 
 		// save the block to disk
-		var block_file = config.STORAGE_PATH + block_hash;
+		// todo: dynamically select location for block
+		var block_file = config.STORAGE_LOCATIONS[0].path + block_hash;
 		if(!fs.existsSync(block_file)){
 			log.message(log.INFO, "storing block " + block_hash);
 		} else {
@@ -229,7 +244,7 @@ log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 
 
 
 // *** INIT ***
-load_metadata();
+load_superblock();
 
 
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
@@ -282,9 +297,9 @@ http.createServer(function(req, res){
 
 				var public_directory = [];
 
-				for(var file in stored_files){
-					if(stored_files.hasOwnProperty(file)){
-						if(!stored_files[file].private && (file.indexOf(target_url) > -1)){
+				for(var file in superblock){
+					if(superblock.hasOwnProperty(file)){
+						if(!superblock[file].private && (file.indexOf(target_url) > -1)){
 							
 							// remove leading path from filename
 							file = file.slice(target_url.length);
@@ -311,9 +326,9 @@ http.createServer(function(req, res){
 				var requested_file = null;
 		
 				// check for existance of requested URL
-				if(typeof stored_files[target_url] != "undefined"){
+				if(typeof superblock[target_url] != "undefined"){
 
-					requested_file = stored_files[target_url];
+					requested_file = superblock[target_url];
 
 					// return status 200
 					res.statusCode = 200;
@@ -357,11 +372,11 @@ http.createServer(function(req, res){
 		case "POST":
 
 			// make sure the URL isn't already taken
-			if(typeof stored_files[target_url] === "undefined"){
+			if(typeof superblock[target_url] === "undefined"){
 
 				// store the posted data at the specified URL
 				var file_metadata = null;
-				var new_file = Object.create(file_store);
+				var new_file = Object.create(inode);
 				new_file.init(target_url);
 	
 				// set additional file properties (content-type, etc.)
@@ -404,15 +419,15 @@ http.createServer(function(req, res){
 		case "PUT":
 
 			// make sure there's a file to update
-			if(typeof stored_files[target_url] != "undefined"){
+			if(typeof superblock[target_url] != "undefined"){
 
-				var original_file = stored_files[target_url];
+				var original_file = superblock[target_url];
 
 				// check authorization
 				if(original_file.access_token === access_token){
 
 					// update the posted data at the specified URL
-					var new_file = Object.create(file_store);
+					var new_file = Object.create(inode);
 					new_file.init(target_url);
 	
 					// copy original file properties
@@ -464,19 +479,19 @@ http.createServer(function(req, res){
 
 		case "DELETE":
 
-			// remove the data stored at the specified URL
+		// remove the data stored at the specified URL
       // make sure there's a file to remove
-      if(typeof stored_files[target_url] != "undefined"){
+      if(typeof superblock[target_url] != "undefined"){
 
-        var original_file = stored_files[target_url];
+        var original_file = superblock[target_url];
 
         // check authorization
         if(original_file.access_token === access_token){
 
 					// unlink the url
-					delete stored_files[target_url];
+					delete superblock[target_url];
 
-					save_metadata();
+					save_superblock();
 					res.end();
 
 				} else {
@@ -494,8 +509,8 @@ http.createServer(function(req, res){
 
 		case "HEAD":
 
-			if(typeof stored_files[target_url] != "undefined"){
-				var requested_file = stored_files[target_url];
+			if(typeof superblock[target_url] != "undefined"){
+				var requested_file = superblock[target_url];
 				if(!requested_file.private ||
 					(requested_file.access_token === access_token) ||
 					time_token_valid(requested_file, expire_time, time_token)){
