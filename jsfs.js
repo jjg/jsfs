@@ -6,6 +6,7 @@
 // *** GLOBALS ***
 // the plan is to eliminate these eventually...
 var superblock = {};
+var storage_locations = {};
 
 // *** UTILITIES  & MODULES ***
 var http = require("http");
@@ -62,6 +63,29 @@ function load_superblock(){
 		}
 	}
 
+	// stat each block to establish it's current location and
+	// the utilization of each storage location
+	for(var file in superblock){
+		if(superblock.hasOwnProperty(file)){
+			var selected_file = superblock[file];
+			for(var block in selected_file.blocks){
+				var selected_block = selected_file.blocks[block];
+				for(var storage_location in storage_locations){
+					var selected_location = storage_locations[storage_location];
+					if(fs.existsSync(selected_location.path + selected_block.block_hash)){
+						selected_block.last_seen = selected_location.path;
+						break;
+					} else {
+						log.message(log.WARN, "block " + selected_block.block_hash + " not found in " + selected_location.path);
+					}
+				}
+			}
+		}
+	}
+	
+	// debug
+	console.log(JSON.stringify(superblock));
+	
 	var stats = system_stats();
 	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
 }
@@ -225,6 +249,9 @@ var inode = {
 
 		// save the block to disk
 		// todo: dynamically select location for block
+		var block_object = {};
+		block_object.block_hash = block_hash;
+		
 		var block_file = config.STORAGE_LOCATIONS[0].path + block_hash;
 		if(!fs.existsSync(block_file)){
 			log.message(log.INFO, "storing block " + block_hash);
@@ -233,7 +260,10 @@ var inode = {
 		}
 
 		fs.writeFileSync(block_file, block, "binary");
-		this.file_metadata.blocks.push(block_hash);
+		
+		this.file_metadata.blocks.push(block_object);
+		
+		//this.file_metadata.blocks.push(block_hash);
 		this.input_buffer = this.input_buffer.slice(this.block_size);
 	}
 };
@@ -244,6 +274,7 @@ log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 
 
 
 // *** INIT ***
+storage_locations = config.STORAGE_LOCATIONS;
 load_superblock();
 
 
