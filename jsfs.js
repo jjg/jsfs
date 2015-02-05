@@ -273,19 +273,27 @@ var inode = {
 		var block_object = {};
 		block_object.block_hash = block_hash;
 		
-		// sort storage locations by avaliable capacity
-		storage_locations.sort(function(a,b) { return parseFloat(b.capacity - b.usage) - parseFloat(a.capacity - a.usage) });
-		
-		// select location with highest avaliable capacity
-		var block_file = storage_locations[0].path + block_hash;
-		
 		// don't rely on the filesystem to detect duplicate blocks
 		if(unique_blocks.indexOf(block_hash) == -1){
-			log.message(log.INFO, "storing block:   " + block_hash);
+			
 			unique_blocks.push(block_hash);
+			
+			// sort storage locations by avaliable capacity
+			storage_locations.sort(function(a,b) { return parseFloat(b.capacity - b.usage) - parseFloat(a.capacity - a.usage) });
+			
+			// select location with highest avaliable capacity
+			block_object.last_seen = storage_locations[0].path;
+			var block_file = storage_locations[0].path + block_hash;
+			
+			log.message(log.INFO, "storing block:   " + block_hash);
 			fs.writeFileSync(block_file, block, "binary");
 			storage_locations[0].usage++;
+			
 		} else {
+			
+			// todo: set the last_seen property of the block_object to the location of the original block!!!
+			// this is harder than it might seem, we could be lazy and rely on the GET "go hunting"
+			// mechanism, but that seems hackish...
 			log.message(log.INFO, "duplicate block: " + block_hash);
 		}
 		
@@ -399,9 +407,10 @@ http.createServer(function(req, res){
 						res.setHeader("Content-Type", requested_file.content_type);
 		
 						// return file blocks
-						// todo: update this code to be multiple storage location aware!
 						for(var i=0; i < requested_file.blocks.length; i++){
-							var block_filename = config.STORAGE_PATH + requested_file.blocks[i];
+							
+							// todo: if we don't find the block where it was last seen, search all storage locations
+							var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
 							var block_data = fs.readFileSync(block_filename);
 
 							if(requested_file.encrypted){
