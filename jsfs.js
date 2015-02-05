@@ -7,6 +7,7 @@
 // the plan is to eliminate these eventually...
 var superblock = {};
 var storage_locations = {};
+var unique_blocks = [];	// todo: find a less brute-force, more efficient way to track this
 
 // *** UTILITIES  & MODULES ***
 var http = require("http");
@@ -69,7 +70,8 @@ function load_superblock(){
 		storage_locations[storage_location].usage = 0;
 	}
 	
-	var unique_blocks = [];
+	// use global unique_blocks for now
+	//var unique_blocks = [];
 	for(var file in superblock){
 		if(superblock.hasOwnProperty(file)){
 			var selected_file = superblock[file];
@@ -80,7 +82,7 @@ function load_superblock(){
 					if(fs.existsSync(selected_location.path + selected_block.block_hash)){
 						selected_block.last_seen = selected_location.path;
 						
-						// only count uniques
+						// only count unique blocks per device
 						if(unique_blocks.indexOf(selected_block.block_hash) == -1){
 							unique_blocks.push(selected_block.block_hash);
 							selected_location.usage++;
@@ -277,18 +279,15 @@ var inode = {
 		// select location with highest avaliable capacity
 		var block_file = storage_locations[0].path + block_hash;
 		
-		// todo: use superblock to determine if block exists, don't rely on
-		// the filesystem object like the code below
-		if(!fs.existsSync(block_file)){
-			log.message(log.INFO, "storing block " + block_hash);
+		// don't rely on the filesystem to detect duplicate blocks
+		if(unique_blocks.indexOf(block_hash) == -1){
+			log.message(log.INFO, "storing block:   " + block_hash);
+			unique_blocks.push(block_hash);
+			fs.writeFileSync(block_file, block, "binary");
+			storage_locations[0].usage++;
 		} else {
-			log.message(log.INFO, "duplicate block " + block_hash);
+			log.message(log.INFO, "duplicate block: " + block_hash);
 		}
-
-		fs.writeFileSync(block_file, block, "binary");
-		
-		// todo: don't increment usage if block is duplicate
-		storage_locations[0].usage++;
 		
 		this.file_metadata.blocks.push(block_object);
 		this.input_buffer = this.input_buffer.slice(this.block_size);
