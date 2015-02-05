@@ -37,7 +37,7 @@ function save_superblock(){
 				if(err){
 					log.message(log.ERROR, "error saving superblock to disk");
 				} else {
-					log.message(log.INFO, "superblock saved to disk");
+					log.message(log.INFO, "superblock saved to " + storage_path);
 				}
 			});
 		}
@@ -78,12 +78,14 @@ function load_superblock(){
 					var selected_location = storage_locations[storage_location];
 					if(fs.existsSync(selected_location.path + selected_block.block_hash)){
 						selected_block.last_seen = selected_location.path;
+						
+						// todo: don't let duplicate blocks increase usage counter
 						selected_location.usage++;
 						break;
 					} else {
 						// todo: this warning should only get thrown if the block is never found,
 						// right now it gets thrown if the block isn't found everywhere; fix that
-						log.message(log.WARN, "block " + selected_block.block_hash + " not found in " + selected_location.path);
+						//log.message(log.WARN, "block " + selected_block.block_hash + " not found in " + selected_location.path);
 					}
 				}
 			}
@@ -122,8 +124,8 @@ function system_stats(){
 			for(var i=0;i<selected_file.blocks.length;i++){
 				
 				// I think this can be done more efficiently, but this works for now
-				if(stats.unique_blocks_accumulator.indexOf(selected_file.blocks[i]) == -1){
-					stats.unique_blocks_accumulator.push(selected_file.blocks[i]);
+				if(stats.unique_blocks_accumulator.indexOf(selected_file.blocks[i].block_hash) == -1){
+					stats.unique_blocks_accumulator.push(selected_file.blocks[i].block_hash);
 				}
 			}
 			
@@ -260,25 +262,17 @@ var inode = {
 		block_hash = shasum.digest("hex");
 
 		// save the block to disk
-		// todo: dynamically select location for block
 		var block_object = {};
 		block_object.block_hash = block_hash;
-		
-		//var selected_storage_location = null;
 		
 		// sort storage locations by avaliable capacity
 		storage_locations.sort(function(a,b) { return parseFloat(b.capacity - b.usage) - parseFloat(a.capacity - a.usage) });
 		
-		// debug
-		for(var storage_location in storage_locations){
-			
-			log.message(log.INFO, "available capacity: " + (storage_locations[storage_location].capacity - storage_locations[storage_location].usage) + " on " + storage_locations[storage_location].path);
-			
-		}
-		
-		
-		// use the location with the most avaliable storage
+		// select location with highest avaliable capacity
 		var block_file = storage_locations[0].path + block_hash;
+		
+		// todo: use superblock to determine if block exists, don't rely on
+		// the filesystem object like the code below
 		if(!fs.existsSync(block_file)){
 			log.message(log.INFO, "storing block " + block_hash);
 		} else {
@@ -289,8 +283,6 @@ var inode = {
 		storage_locations[0].usage++;
 		
 		this.file_metadata.blocks.push(block_object);
-		
-		//this.file_metadata.blocks.push(block_hash);
 		this.input_buffer = this.input_buffer.slice(this.block_size);
 	}
 };
@@ -400,6 +392,7 @@ http.createServer(function(req, res){
 						res.setHeader("Content-Type", requested_file.content_type);
 		
 						// return file blocks
+						// todo: update this code to be multiple storage location aware!
 						for(var i=0; i < requested_file.blocks.length; i++){
 							var block_filename = config.STORAGE_PATH + requested_file.blocks[i];
 							var block_data = fs.readFileSync(block_filename);
