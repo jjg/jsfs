@@ -69,23 +69,30 @@ function load_superblock(){
 		storage_locations[storage_location].usage = 0;
 	}
 	
+	var unique_blocks = [];
 	for(var file in superblock){
 		if(superblock.hasOwnProperty(file)){
 			var selected_file = superblock[file];
 			for(var block in selected_file.blocks){
 				var selected_block = selected_file.blocks[block];
-				for(var storage_location in storage_locations){
-					var selected_location = storage_locations[storage_location];
-					if(fs.existsSync(selected_location.path + selected_block.block_hash)){
-						selected_block.last_seen = selected_location.path;
-						
-						// todo: don't let duplicate blocks increase usage counter
-						selected_location.usage++;
-						break;
-					} else {
-						// todo: this warning should only get thrown if the block is never found,
-						// right now it gets thrown if the block isn't found everywhere; fix that
-						//log.message(log.WARN, "block " + selected_block.block_hash + " not found in " + selected_location.path);
+				
+				// only care about uniques
+				if(unique_blocks.indexOf(selected_block.block_hash) == -1){
+					unique_blocks.push(selected_block.block_hash);
+					
+					for(var storage_location in storage_locations){
+						var selected_location = storage_locations[storage_location];
+						if(fs.existsSync(selected_location.path + selected_block.block_hash)){
+							selected_block.last_seen = selected_location.path;
+							
+							// todo: don't let duplicate blocks increase usage counter
+							selected_location.usage++;
+							break;
+						} else {
+							// todo: this warning should only get thrown if the block is never found,
+							// right now it gets thrown if the block isn't found everywhere; fix that
+							//log.message(log.WARN, "block " + selected_block.block_hash + " not found in " + selected_location.path);
+						}
 					}
 				}
 			}
@@ -280,6 +287,8 @@ var inode = {
 		}
 
 		fs.writeFileSync(block_file, block, "binary");
+		
+		// todo: don't increment usage if block is duplicate
 		storage_locations[0].usage++;
 		
 		this.file_metadata.blocks.push(block_object);
