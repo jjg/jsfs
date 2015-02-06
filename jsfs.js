@@ -625,21 +625,23 @@ http.createServer(function(req, res){
 
 		case "DELETE":
 
-		// remove the data stored at the specified URL
-      // make sure there's a file to remove
-      if(typeof superblock[target_url] != "undefined"){
-
-        var original_file = superblock[target_url];
-
-        // check authorization
-        if(original_file.access_token === access_token){
-
+			// remove the data stored at the specified URL
+			// make sure there's a file to remove
+			if(typeof superblock[target_url] != "undefined"){
+			
+				var original_file = superblock[target_url];
+				
+				// check authorization
+				if(original_file.access_token === access_token){
+				
 					// unlink the url
 					delete superblock[target_url];
-
+					
+					// todo: update statistics maybe (only if we actual delete the blocks...)
+					
 					save_superblock();
 					res.end();
-
+				
 				} else {
 					// if token is invalid, return unauthorized
 					res.statusCode = 401;
