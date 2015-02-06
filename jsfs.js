@@ -416,8 +416,9 @@ http.createServer(function(req, res){
 								try{
 									block_data = fs.readFileSync(block_filename);
 								} catch(ex){
-									log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + "in last_seen location, hunting...");
+									log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
 								}
+								
 							} else {
 								log.message(log.WARN, "no last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
 							}
@@ -430,7 +431,8 @@ http.createServer(function(req, res){
 										log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
 										requested_file.blocks[i].last_seen = selected_location.path;
 										block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
-										//selected_block.last_seen = selected_location.path;
+									} else {
+										log.message(log.ERROR, "unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
 									}
 								}
 							}
@@ -440,7 +442,14 @@ http.createServer(function(req, res){
 								block_data = decrypt(block_data, requested_file.access_token);
 							}
 							// send block to caller
-							res.write(block_data);
+							if(block_data){
+								res.write(block_data);
+							} else {
+								log.message(log.ERROR, "unable to locate missing block in any storage location");
+								res.statusCode = 500;
+								res.end("unable to return file, missing blocks");
+								break;
+							}
 						}
 						// finish request
 						res.end();
