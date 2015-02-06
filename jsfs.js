@@ -30,7 +30,7 @@ var log = {
 };
 
 function save_superblock(){
-	for(location in config.STORAGE_LOCATIONS){
+	for(var location in config.STORAGE_LOCATIONS){
 		if(config.STORAGE_LOCATIONS.hasOwnProperty(location)){
 			var storage_path = config.STORAGE_LOCATIONS[location].path;
 		
@@ -49,7 +49,7 @@ function save_superblock(){
 }
 
 function load_superblock(){
-	for(location in config.STORAGE_LOCATIONS){
+	for(var location in config.STORAGE_LOCATIONS){
 		if(config.STORAGE_LOCATIONS.hasOwnProperty(location)){
 			var storage_path = config.STORAGE_LOCATIONS[location].path;
 			try{
