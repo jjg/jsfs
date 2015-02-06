@@ -85,7 +85,10 @@ function load_superblock(){
 						// only count unique blocks per device
 						if(unique_blocks.indexOf(selected_block.block_hash) == -1){
 							unique_blocks.push(selected_block.block_hash);
-							selected_location.usage++;
+							
+							// read the block to get the actual size (todo: change if this is too slow)
+							var block_data = fs.readFileSync(selected_location.path + selected_block.block_hash);
+							selected_location.usage = selected_location.usage + block_data.length;
 						}
 						
 						break;
@@ -108,7 +111,7 @@ function load_superblock(){
 	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
 	
 	for(var storage_location in storage_locations){
-		log.message(log.INFO, storage_locations[storage_location].usage + " of " + storage_locations[storage_location].capacity + " blocks used on " + storage_locations[storage_location].path);
+		log.message(log.INFO, storage_locations[storage_location].usage + " of " + storage_locations[storage_location].capacity + " bytes used on " + storage_locations[storage_location].path);
 	}
 }
 
@@ -203,29 +206,38 @@ var inode = {
 	},
 	write: function(chunk){
 		this.input_buffer = new Buffer.concat([this.input_buffer, chunk]);
-		this.process_buffer();
+		return this.process_buffer();
 	},
 	close: function(){
-		this.process_buffer(true);
+		
+		var result;
+		
+		result = this.process_buffer(true);
 
-		// add signature to metadata (used as auth token for update operations)
-		if(!this.file_metadata.access_token){
-			shasum = crypto.createHash("sha1");
-			shasum.update(JSON.stringify(this.file_metadata));
-			this.file_metadata.access_token =  shasum.digest("hex");
+		if(result){
+			// add signature to metadata (used as auth token for update operations)
+			if(!this.file_metadata.access_token){
+				shasum = crypto.createHash("sha1");
+				shasum.update(JSON.stringify(this.file_metadata));
+				this.file_metadata.access_token =  shasum.digest("hex");
+			}
+	
+			// add file to storage superblock
+			superblock[this.url] = this.file_metadata;
+	
+			// write updated superblock to disk
+			save_superblock();
+	
+			// return metadata for future operations
+			result = this.file_metadata;
 		}
-
-		// add file to storage superblock
-		superblock[this.url] = this.file_metadata;
-
-		// write updated superblock to disk
-		save_superblock();
-
-		// return metadata for future operations
-		return this.file_metadata;
+		
+		return result;
 	},
 	process_buffer: function(flush){
 
+		var result = true;
+		
 		if(flush){
 
 			log.message(0, "flushing remaining buffer");
@@ -235,7 +247,7 @@ var inode = {
 
 			// empty the remainder of the buffer
 			while(this.input_buffer.length > 0){
-				this.store_block();
+				result = this.store_block();
 			}
 
 		} else {
@@ -245,12 +257,16 @@ var inode = {
 				// update original file size
 				this.file_metadata.file_size = this.file_metadata.file_size + this.block_size;
 
-				this.store_block();
+				result = this.store_block();
 			}
 		}
+		
+		return result;
 	},
 	store_block: function(){
 
+		var result = true;
+		
 		// grab the next block
 		var block = this.input_buffer.slice(0, this.block_size);
 
@@ -285,9 +301,17 @@ var inode = {
 			block_object.last_seen = storage_locations[0].path;
 			var block_file = storage_locations[0].path + block_hash;
 			
-			log.message(log.INFO, "storing block:   " + block_hash);
-			fs.writeFileSync(block_file, block, "binary");
-			storage_locations[0].usage++;
+			// make sure there's enough capacity left to store the block
+			if((storage_locations[0].capacity - storage_locations[0].usage) > block.length){
+			
+				log.message(log.INFO, "storing block:   " + block_hash);
+				fs.writeFileSync(block_file, block, "binary");
+				storage_locations[0].usage = storage_locations[0].usage + block.length;
+				
+			} else {
+				log.message(log.ERROR, "no room left to store block " + block_hash);
+				result = false;
+			}
 			
 		} else {
 			
@@ -299,6 +323,8 @@ var inode = {
 		
 		this.file_metadata.blocks.push(block_object);
 		this.input_buffer = this.input_buffer.slice(this.block_size);
+		
+		return result;
 	}
 };
 
@@ -425,7 +451,7 @@ http.createServer(function(req, res){
 							
 							// if we don't find the block where we expect it, search all storage locations
 							if(!block_data){
-								for(storage_location in storage_locations){
+								for(var storage_location in storage_locations){
 									var selected_location = storage_locations[storage_location];
 									if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
 										log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
@@ -495,16 +521,30 @@ http.createServer(function(req, res){
 				if(access_token){
 					new_file.file_metadata.access_token = access_token;
 				}
-	
+
 				req.on("data", function(chunk){
-					new_file.write(chunk);
-				});
-	
-				req.on("end", function(){
-					file_metadata = new_file.close();
-					res.end(JSON.stringify(file_metadata));
+					if(!new_file.write(chunk)){
+						res.statusCode = 500;
+						res.end("error writing blocks");
+					}
 				});
 
+				req.on("end", function(){
+					var new_file_metadata = new_file.close();
+					
+					// display utilization stats (todo: this may be temporary so consider putting it elsewhere)
+					for(var storage_location in storage_locations){
+						log.message(log.INFO, storage_locations[storage_location].usage + " bytes used of " + storage_locations[storage_location].capacity + " in " + storage_locations[storage_location].path);
+					}
+					
+					if(new_file_metadata){
+						res.end(JSON.stringify(new_file_metadata));
+					} else {
+						res.statusCode = 500;
+						res.end("error writing blocks");
+					}
+ 				});
+ 			
 			} else {
 
 				// if file exists at this URL, return 405 "Method not allowed"
@@ -551,12 +591,20 @@ http.createServer(function(req, res){
 					}
 
 					req.on("data", function(chunk){
-						new_file.write(chunk);
+						if(!new_file.write(chunk)){
+							res.statusCode = 500;
+							res.end("error writing blocks");
+						};
 					});
 	
 					req.on("end", function(){
 						var new_file_metadata = new_file.close();
-						res.end(JSON.stringify(new_file_metadata));
+						if(new_file_metadata){
+							res.end(JSON.stringify(new_file_metadata));
+						} else {
+							res.statusCode = 500;
+							res.end("error writing blocks");
+						}
  					});
 		
 					} else {
