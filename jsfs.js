@@ -409,9 +409,31 @@ http.createServer(function(req, res){
 						// return file blocks
 						for(var i=0; i < requested_file.blocks.length; i++){
 							
-							// todo: if we don't find the block where it was last seen, search all storage locations
-							var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
-							var block_data = fs.readFileSync(block_filename);
+							var block_data = null;
+							if(requested_file.blocks[i].last_seen){
+								var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
+								
+								try{
+									block_data = fs.readFileSync(block_filename);
+								} catch(ex){
+									log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + "in last_seen location, hunting...");
+								}
+							} else {
+								log.message(log.WARN, "no last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
+							}
+							
+							// if we don't find the block where we expect it, search all storage locations
+							if(!block_data){
+								for(storage_location in storage_locations){
+									var selected_location = storage_locations[storage_location];
+									if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
+										log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
+										requested_file.blocks[i].last_seen = selected_location.path;
+										block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
+										//selected_block.last_seen = selected_location.path;
+									}
+								}
+							}
 
 							if(requested_file.encrypted){
 								log.message(log.INFO, "decrypting block");
