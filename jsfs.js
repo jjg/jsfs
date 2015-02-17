@@ -190,19 +190,31 @@ function time_token_valid(file, expire_time, time_token){
 // base storage object
 var inode = {
 	init: function(url){
-		this.url = url;
 		this.input_buffer = new Buffer("");
 		this.block_size = config.BLOCK_SIZE;
 		this.file_metadata = {};
+		this.file_metadata.url = url;
 		this.file_metadata.created = (new Date()).getTime();
 		this.file_metadata.version = 0;	// todo: use a function to check for previous versions
 		this.file_metadata.private = false;
 		this.file_metadata.encrypted = false;
-		this.file_metadata.access_token = null;
+		//this.file_metadata.access_token = null;
+		this.file_metadata.fingerprint = null;
 		this.file_metadata.content_type = "application/octet-stream";
 		this.file_metadata.file_size = 0;
 		this.file_metadata.block_size = this.block_size;
 		this.file_metadata.blocks = [];
+
+		// create fingerprint to uniquely identify this file
+		if(!this.file_metadata.fingerprint){
+			shasum = crypto.createHash("sha1");
+			shasum.update(JSON.stringify(this.file_metadata.url + this.file_metadata.version));
+			this.file_metadata.fingerprint =  shasum.digest("hex");
+		}
+
+		// debug
+		console.log("this.url: " + this.url);
+
 	},
 	write: function(chunk){
 		this.input_buffer = new Buffer.concat([this.input_buffer, chunk]);
@@ -215,15 +227,9 @@ var inode = {
 		result = this.process_buffer(true);
 
 		if(result){
-			// add signature to metadata (used as auth token for update operations)
-			if(!this.file_metadata.access_token){
-				shasum = crypto.createHash("sha1");
-				shasum.update(JSON.stringify(this.file_metadata));
-				this.file_metadata.access_token =  shasum.digest("hex");
-			}
 	
 			// add file to storage superblock
-			superblock[this.url] = this.file_metadata;
+			superblock[this.file_metadata.fingerprint] = this.file_metadata;
 	
 			// write updated superblock to disk
 			save_superblock();
@@ -388,21 +394,30 @@ http.createServer(function(req, res){
 
 				var public_directory = [];
 
-				for(var file in superblock){
-					if(superblock.hasOwnProperty(file)){
-						if(!superblock[file].private && (file.indexOf(target_url) > -1)){
+				for(var a_file in superblock){
+					// debug
+					console.log("a_file: " + a_file);
+
+					if(superblock.hasOwnProperty(a_file)){
+						var selected_file = superblock[a_file];
+
+						// debug
+						console.log("file: " + a_file);
+						console.log(selected_file);
+
+						if(!selected_file.private && (selected_file.url.indexOf(target_url) > -1)){
 							
 							// remove leading path from filename
-							file = file.slice(target_url.length);
+							filename = selected_file.url.slice(target_url.length);
 
 							// remove trailing path from subdirectories
-							if(file.indexOf("/") > -1){
-								file = file.slice(0,(file.indexOf("/") + 1));
+							if(filename.indexOf("/") > -1){
+								filename = filename.slice(0,(filename.indexOf("/") + 1));
 							}
 
 							// don't add duplicate entries
-							if(public_directory.indexOf(file) == -1){
-								public_directory.push(file);
+							if(public_directory.indexOf(filename) == -1){
+								public_directory.push(filename);
 							}
 						}
 					}
