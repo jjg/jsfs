@@ -748,10 +748,30 @@ http.createServer(function(req, res){
 
 		case "HEAD":
 
-			if(typeof superblock[target_url] != "undefined"){
-				var requested_file = superblock[target_url];
+			// todo: look into a more efficient way of looking up inode fingerprints by url
+			var matching_inodes = [];
+			for(var an_inode in superblock){
+				if(superblock.hasOwnProperty(an_inode)){
+					var selected_inode = superblock[an_inode];
+					if(!selected_inode.private && (selected_inode.url.indexOf(target_url) > -1)){
+						// todo: consider only returning inodes whose fingerprint matches the token?    
+						matching_inodes.push(selected_inode);
+					}
+				}
+			}
+
+			if(matching_inodes.length > 0) {
+				// sort by version
+				matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
+
+				// select most recent version
+				var requested_file = null;
+				if(matching_inodes.length > 0){
+					requested_file = matching_inodes[0];
+				}
+
 				if(!requested_file.private ||
-					(requested_file.access_token === access_token) ||
+					(requested_file.fingerprint === access_token.fingerprint) ||
 					time_token_valid(requested_file, expire_time, time_token)){
 					res.writeHead(200,{
 						"Content-Type": requested_file.content_type,
