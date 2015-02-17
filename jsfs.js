@@ -669,15 +669,17 @@ http.createServer(function(req, res){
 					req.on("end", function(){
 						var new_file_metadata = new_file.close();
 
-	                    // generate token 
+	                    // generate token (inheret permissions from supplied token) 
 		                var new_token_permissions = {};
-			            new_token_permissions.owner = true;
-				        new_token_permissions.url = target_url;
+						if(access_token.owner){
+							new_token_permissions.owner = true;
+						}
+				        new_token_permissions.url = access_token.url;
 					    new_token_permissions.fingerprint = new_file_metadata.fingerprint;
-						new_token_permissions.POST = true;
-						new_token_permissions.GET = true;
-				        new_token_permissions.PUT = true;
-					    new_token_permissions.DELETE = true;
+						new_token_permissions.POST = access_token.POST;
+						new_token_permissions.GET = access_token.GET;
+				        new_token_permissions.PUT = access_token.PUT;
+					    new_token_permissions.DELETE = access_token.DELETE;
 						log.message(log.INFO, "new_token_permissions: " + JSON.stringify(new_token_permissions));
 
 		                var new_token = jwt.sign(new_token_permissions, config.JWT_SECRET);
