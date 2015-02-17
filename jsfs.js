@@ -204,6 +204,24 @@ var inode = {
 		this.file_metadata.block_size = this.block_size;
 		this.file_metadata.blocks = [];
 
+		// if previous version exists, increment version number before fingerprinting
+		var url_versions = [];
+		for(var an_inode in superblock){
+			if(superblock.hasOwnProperty(an_inode)){
+				var selected_inode = superblock[an_inode];
+				if(selected_inode.url === this.file_metadata.url){
+					url_versions.push(selected_inode.version);
+				}
+			}
+		}
+
+		if(url_versions.length > 0){
+			// sort versions
+			url_versions.sort(function(a,b) { return parseFloat(b) - parseFloat(a) });
+			// increment version by one
+			this.file_metadata.version = url_versions[0] + 1;
+		}
+
 		// create fingerprint to uniquely identify this file
 		if(!this.file_metadata.fingerprint){
 			shasum = crypto.createHash("sha1");
@@ -418,12 +436,13 @@ http.createServer(function(req, res){
 				}
 			}
 
+			// sort by version
+			matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
+
 			// this feels like awkward logic but good enough for now 
 			if(return_index){
-
 				res.write(JSON.stringify(matching_inodes));
 				res.end();
-
 			} else {
 
 				// return the first file located at the requested URL
