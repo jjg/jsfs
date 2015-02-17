@@ -198,7 +198,6 @@ var inode = {
 		this.file_metadata.version = 0;	// todo: use a function to check for previous versions
 		this.file_metadata.private = false;
 		this.file_metadata.encrypted = false;
-		//this.file_metadata.access_token = null;
 		this.file_metadata.fingerprint = null;
 		this.file_metadata.content_type = "application/octet-stream";
 		this.file_metadata.file_size = 0;
@@ -211,10 +210,6 @@ var inode = {
 			shasum.update(JSON.stringify(this.file_metadata.url + this.file_metadata.version));
 			this.file_metadata.fingerprint =  shasum.digest("hex");
 		}
-
-		// debug
-		console.log("this.url: " + this.url);
-
 	},
 	write: function(chunk){
 		this.input_buffer = new Buffer.concat([this.input_buffer, chunk]);
@@ -390,51 +385,52 @@ http.createServer(function(req, res){
 		case "GET":
 
 			// if url ends in "/", return a list of public files
-			if(target_url.slice(-1) == "/"){
+			//if(target_url.slice(-1) == "/"){
 
-				var public_directory = [];
+			var matching_inodes = [];
 
-				for(var a_file in superblock){
-					// debug
-					console.log("a_file: " + a_file);
+			for(var an_inode in superblock){
+				if(superblock.hasOwnProperty(an_inode)){
+					var selected_inode = superblock[an_inode];
+					if(!selected_inode.private && (selected_inode.url.indexOf(target_url) > -1)){
+					
+						matching_inodes.push(selected_inode);
 
-					if(superblock.hasOwnProperty(a_file)){
-						var selected_file = superblock[a_file];
+						/*	
+						// remove leading path from filename
+						filename = selected_file.url.slice(target_url.length);
 
-						// debug
-						console.log("file: " + a_file);
-						console.log(selected_file);
-
-						if(!selected_file.private && (selected_file.url.indexOf(target_url) > -1)){
-							
-							// remove leading path from filename
-							filename = selected_file.url.slice(target_url.length);
-
-							// remove trailing path from subdirectories
-							if(filename.indexOf("/") > -1){
-								filename = filename.slice(0,(filename.indexOf("/") + 1));
-							}
-
-							// don't add duplicate entries
-							if(public_directory.indexOf(filename) == -1){
-								public_directory.push(filename);
-							}
+						// remove trailing path from subdirectories
+						if(filename.indexOf("/") > -1){
+							filename = filename.slice(0,(filename.indexOf("/") + 1));
 						}
+
+						// don't add duplicate entries
+						if(matching_inodes.indexOf(filename) == -1){
+							public_directory.push(filename);
+						}
+						*/
 					}
 				}
-				
-				res.write(JSON.stringify(public_directory));
+			}
+
+			// if url ends in "/", return a directory listing
+			if(target_url.slice(-1) == "/"){
+
+				res.write(JSON.stringify(matching_inodes));
 				res.end();
 
 			} else {
 
-				// return the file located at the requested URL
-				var requested_file = null;
+				// return the first file located at the requested URL
+				//var requested_inode = matching_inodes[0];
 		
 				// check for existance of requested URL
-				if(typeof superblock[target_url] != "undefined"){
+				// loop through inodes looking for match
+				//if(typeof superblock[target_url] != "undefined"){
+				if(matching_inodes.length > 0){
 
-					requested_file = superblock[target_url];
+					requested_file = matching_inodes[0]; //superblock[target_url];
 
 					// return status 200
 					res.statusCode = 200;
