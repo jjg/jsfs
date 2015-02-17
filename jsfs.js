@@ -385,7 +385,11 @@ http.createServer(function(req, res){
 		case "GET":
 
 			// if url ends in "/", return a list of public files
-			//if(target_url.slice(-1) == "/"){
+			var return_index = false;
+			if(target_url.slice(-1) == "/"){
+				target_url = target_url.slice(target_url.length);
+				return_index = true;
+			}
 
 			var matching_inodes = [];
 
@@ -414,8 +418,8 @@ http.createServer(function(req, res){
 				}
 			}
 
-			// if url ends in "/", return a directory listing
-			if(target_url.slice(-1) == "/"){
+			// this feels like awkward logic but good enough for now 
+			if(return_index){
 
 				res.write(JSON.stringify(matching_inodes));
 				res.end();
