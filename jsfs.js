@@ -640,7 +640,7 @@ http.createServer(function(req, res){
 					// copy original file properties
 					new_file.file_metadata.created = original_file.created;
 					new_file.file_metadata.updated = (new Date()).getTime();
-					new_file.file_metadata.access_token = access_token;
+					new_file.file_metadata.fingerprint = original_file.fingerprint;
 					new_file.file_metadata.content_type = original_file.content_type;
 					new_file.file_metadata.private = original_file.private;
 					new_file.file_metadata.encrypted = original_file.encrypted;
