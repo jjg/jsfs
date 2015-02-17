@@ -718,12 +718,12 @@ http.createServer(function(req, res){
 
 			// remove the data stored at the specified URL
 			// make sure there's a file to remove
-			if(typeof superblock[target_url] != "undefined"){
+			if(typeof superblock[access_token.fingerprint] != "undefined"){
 			
-				var original_file = superblock[target_url];
+				var original_file = superblock[access_token.fingerprint];
 				
 				// check authorization
-				if(original_file.access_token === access_token){
+				if(access_token.DELETE && original_file.fingerprint === access_token.fingerprint){
 				
 					// unlink the url
 					delete superblock[target_url];
@@ -739,8 +739,8 @@ http.createServer(function(req, res){
 					res.end();
 				}
 			} else {
-				// if file doesn't exist, return method not allowed
-				res.statusCode = 405;
+				// if file doesn't exist, return file not found 
+				res.statusCode = 404;
 				res.end();
 			}
 
