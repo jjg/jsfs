@@ -625,12 +625,13 @@ http.createServer(function(req, res){
 		case "PUT":
 
 			// make sure there's a file to update
-			if(typeof superblock[target_url] != "undefined"){
+			if(access_token && typeof superblock[access_token.fingerprint] != "undefined"){
 
-				var original_file = superblock[target_url];
+				var original_file = superblock[access_token.fingerprint];
 
 				// check authorization
-				if(original_file.access_token === access_token){
+				//if(original_file.access_token === access_token){
+				if((access_token.url === target_url) && access_token.PUT && (access_token.fingerprint === original_file.fingerprint)){
 
 					// update the posted data at the specified URL
 					var new_file = Object.create(inode);
@@ -667,8 +668,28 @@ http.createServer(function(req, res){
 	
 					req.on("end", function(){
 						var new_file_metadata = new_file.close();
+
+	                    // generate token 
+		                var new_token_permissions = {};
+			            new_token_permissions.owner = true;
+				        new_token_permissions.url = target_url;
+					    new_token_permissions.fingerprint = new_file_metadata.fingerprint;
+						new_token_permissions.POST = true;
+						new_token_permissions.GET = true;
+				        new_token_permissions.PUT = true;
+					    new_token_permissions.DELETE = true;
+						log.message(log.INFO, "new_token_permissions: " + JSON.stringify(new_token_permissions));
+
+		                var new_token = jwt.sign(new_token_permissions, config.JWT_SECRET);
+
+						// insert token into response
+						var response = {
+							token: new_token,
+							metadata: new_file_metadata
+						};
+
 						if(new_file_metadata){
-							res.end(JSON.stringify(new_file_metadata));
+							res.end(JSON.stringify(response));
 						} else {
 							res.statusCode = 500;
 							res.end("error writing blocks");
