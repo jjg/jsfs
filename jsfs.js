@@ -14,6 +14,7 @@ var http = require("http");
 var crypto = require("crypto");
 var fs = require("fs");
 var config = require('./config.js');
+var jwt = require("jsonwebtoken");
 
 // these may be broken-out into individual files once they have been debugged
 // general-purpose logging facility
