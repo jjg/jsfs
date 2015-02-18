@@ -24,6 +24,4 @@ Objects updated via PUT request create a new version of the object but retain th
 
 Object listings (directories) can be retreived by placing a "/" at the end of a url.  If no token is supplied, only a list of non-private objects will be returned.  If a token is supplied, and the token has the GET authorization for the specified url both private and non-private objects will be returned. 
 
-Currently listings include the contents of the object stored at the specified url.  This is convinient for small text-based files but is going to be a problem for large binary files.  I have an issue created to come up with a better solution for this. 
-
 If a url points directly to an object (as opposed to a container or endpoint) a single object will be returned.  If more than one object has been posted to this url the most recent version will be the one returned.  If a "/" is placed at the end of a url that points to a specific object it will return a list of versions of the object 
