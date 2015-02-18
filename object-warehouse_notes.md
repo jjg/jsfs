@@ -10,6 +10,8 @@ The main change was adding JWT support to JSFS which allows access tokens (x-acc
 * PUT:  boolean indicating if this token authorizes use of the PUT verb
 * DELETE:  boolean indicating if this token authorizes use of the DELETE verb
 
+It's worth noting that these properties are opaque to the client (you can't tell what the capabilities of a token you have are) so if this is information the client needs it should keep track of that at the time the token is provisioned.
+
 The original header-based JSFS permission flags still apply, so an object stored (POST) with the x-private header set will only be accessible if a valid token is presented, and objects stored with the x-encrypted header will be stored on disk in encrypted format, using the objects fingerprint property as the encryption key.
 
 The purpose of the owner flag is to indicate whether or not this token can be used to provision additional tokens for this object.  These deligate tokens can customized to allow a subset of the HTTP verbs allowed by the owner token.
