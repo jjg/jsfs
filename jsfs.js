@@ -414,17 +414,20 @@ http.createServer(function(req, res){
 				return_index = true;
 			}
 
-			if(access_token && access_token.url === target_url && access_token.GET){
+			//if(access_token && access_token.url === target_url && access_token.GET){
 
 				var matching_inodes = [];
 	
 				for(var an_inode in superblock){
 					if(superblock.hasOwnProperty(an_inode)){
 						var selected_inode = superblock[an_inode];
-						if(!selected_inode.private && (selected_inode.url.indexOf(target_url) > -1)){
-					
-							// todo: consider only returning inodes whose fingerprint matches the token?	
-							matching_inodes.push(selected_inode);
+						if(selected_inode.url.indexOf(target_url) > -1){
+				
+							// todo: consider only returning inodes whose fingerprint matches the token?
+							if(!selected_inode.private || (access_token && access_token.url === target_url && access_token.GET)){	
+								matching_inodes.push(selected_inode);
+
+							}
 	
 							/*	
 							// remove leading path from filename
@@ -468,10 +471,10 @@ http.createServer(function(req, res){
 
 						// check authorization of URL
 						if(!requested_file.private ||
-							(requested_file.private && requested_file.access_token === access_token) ||
+							(requested_file.fingerprint === access_token.fingerprint && access_token.GET) ||
 							time_token_valid(requested_file, expire_time, time_token)){
 
-							 // return file metadata as HTTP headers
+							// return file metadata as HTTP headers
 							res.setHeader("Content-Type", requested_file.content_type);
 			
 							// return file blocks
@@ -532,12 +535,12 @@ http.createServer(function(req, res){
 						res.end();
 					}
 				}
-			} else {
-				log.message(log.WARN, "Supplied token does not grant " + req.method + " access to url " + target_url);
-				res.statusCode = 401;
-				res.write( "Supplied token does not grant " + req.method + " access to url " + target_url);
-				res.end();
-			}
+			//} else {
+			//	log.message(log.WARN, "Supplied token does not grant " + req.method + " access to url " + target_url);
+			//	res.statusCode = 401;
+			//	res.write( "Supplied token does not grant " + req.method + " access to url " + target_url);
+			//	res.end();
+			//}
 			break;
 
 		case "POST":
