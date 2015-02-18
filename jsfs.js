@@ -92,10 +92,6 @@ function load_superblock(){
 		}
 	}
 	
-	// debug
-	//console.log(JSON.stringify(superblock));
-	//console.log(JSON.stringify(storage_locations));
-	
 	var stats = system_stats();
 	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
 	
@@ -184,7 +180,7 @@ var inode = {
 		this.file_metadata = {};
 		this.file_metadata.url = url;
 		this.file_metadata.created = (new Date()).getTime();
-		this.file_metadata.version = 0;	// todo: use a function to check for previous versions
+		this.file_metadata.version = 0;
 		this.file_metadata.private = false;
 		this.file_metadata.encrypted = false;
 		this.file_metadata.fingerprint = null;
@@ -225,9 +221,7 @@ var inode = {
 	close: function(){
 		
 		var result;
-		
 		result = this.process_buffer(true);
-
 		if(result){
 	
 			// add file to storage superblock
