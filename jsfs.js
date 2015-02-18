@@ -15,6 +15,7 @@ var crypto = require("crypto");
 var fs = require("fs");
 var config = require('./config.js');
 var jwt = require("jsonwebtoken");
+var url = require("url");
 
 // these may be broken-out into individual files once they have been debugged
 // general-purpose logging facility
@@ -468,6 +469,28 @@ http.createServer(function(req, res){
 
 						requested_file = matching_inodes[0]; //superblock[target_url];
 
+						// todo: test this, there may be an overlooked security problem here...
+						// permissions instead of the object
+						if(url.parse(req.url,true).query.new_token){
+							log.message(log.INFO, "New token requested");
+                            var token_permissions = {};
+                            token_permissions.fingerprint = requested_file.fingerprint;
+                            token_permissions.url = target_url;
+                            token_permissions.POST = (url.parse(req.url,true).query.POST === "true") || false;
+                            token_permissions.GET = (url.parse(req.url,true).query.GET === "true") || false;
+                            token_permissions.PUT = (url.parse(req.url,true).query.PUT === "true") || false;
+                            token_permissions.DELETE = (url.parse(req.url,true).query.DELETE === "true") || false;
+                            log.message(log.INFO, "token_permissions: " + JSON.stringify(token_permissions));
+                            var new_token = jwt.sign(token_permissions,config.JWT_SECRET);
+                            res.statusCode = 200;
+                            res.write(JSON.stringify(new_token));
+                            res.end();
+                        } else {
+                            //res.statusCode = 200;
+                            //res.write(JSON.stringify(requested_object));
+                            //res.end();
+                        //}
+
 						// return status 200
 						res.statusCode = 200;
 
@@ -530,6 +553,7 @@ http.createServer(function(req, res){
 							// return status 401
 							res.statusCode = 401;
 							res.end();
+						}
 						}
 					} else {
 						// return status 404
