@@ -13,23 +13,10 @@ var unique_blocks = [];	// todo: find a less brute-force, more efficient way to 
 var http = require("http");
 var crypto = require("crypto");
 var fs = require("fs");
-var config = require('./config.js');
+var config = require("./config.js");
+var log = require("./jlog.js");
 var jwt = require("jsonwebtoken");
 var url = require("url");
-
-// these may be broken-out into individual files once they have been debugged
-// general-purpose logging facility
-var log = {
-	INFO: 0,
-	WARN: 1,
-	ERROR: 2,
-	level: 0, // default log level
-	message: function(severity, log_message){
-		if(severity >= this.level){
-			console.log(Date() + "\t" + severity + "\t" + log_message);
-		}
-	}
-};
 
 function save_superblock(){
 	for(var location in config.STORAGE_LOCATIONS){
