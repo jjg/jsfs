@@ -2,13 +2,13 @@ Some notes about the merging of object-warehouse functionality into JSFS.
 
 The main change was adding JWT support to JSFS which allows access tokens (x-access-token) to carry information about what the token can do.  The properties of these tokens are:
 
-owner: boolean indicating if this is an owner token or not
-fingerprint: hash uniquely identifying this instance of the object
-url: the path at which the object resides
-POST: boolean indicating if this token authorizes use of the POST verb
-GET:  boolean indicating if this token authorizes use of the GET verb
-PUT:  boolean indicating if this token authorizes use of the PUT verb
-DELETE:  boolean indicating if this token authorizes use of the DELETE verb
+* owner: boolean indicating if this is an owner token or not
+* fingerprint: hash uniquely identifying this instance of the object
+* url: the path at which the object resides
+* POST: boolean indicating if this token authorizes use of the POST verb
+* GET:  boolean indicating if this token authorizes use of the GET verb
+* PUT:  boolean indicating if this token authorizes use of the PUT verb
+* DELETE:  boolean indicating if this token authorizes use of the DELETE verb
 
 The original header-based JSFS permission flags still apply, so an object stored (POST) with the x-private header set will only be accessible if a valid token is presented, and objects stored with the x-encrypted header will be stored on disk in encrypted format, using the objects fingerprint property as the encryption key.
 
