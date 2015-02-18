@@ -393,7 +393,9 @@ http.createServer(function(req, res){
 	}
 
 	var content_type = req.headers["content-type"];
-	var access_token = req.headers["x-access-token"];
+
+	// check for a token, first in the header and then in the querystring
+	var access_token = require("url").parse(req.url,true).query.access_token || req.headers["x-access-token"];
 	if(access_token){
 		access_token = jwt.verify(access_token, config.JWT_SECRET);
 	}
