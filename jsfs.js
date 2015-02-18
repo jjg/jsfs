@@ -485,75 +485,71 @@ http.createServer(function(req, res){
                             res.statusCode = 200;
                             res.write(JSON.stringify(new_token));
                             res.end();
-                        } else {
-                            //res.statusCode = 200;
-                            //res.write(JSON.stringify(requested_object));
-                            //res.end();
-                        //}
+						} else {
 
-						// return status 200
-						res.statusCode = 200;
+							// return status 200
+							res.statusCode = 200;
 
-						// check authorization of URL
-						if(!requested_file.private ||
-							(requested_file.fingerprint === access_token.fingerprint && access_token.GET) ||
-							time_token_valid(requested_file, expire_time, time_token)){
+							// check authorization of URL
+							if(!requested_file.private ||
+								(requested_file.fingerprint === access_token.fingerprint && access_token.GET) ||
+								time_token_valid(requested_file, expire_time, time_token)){
 
-							// return file metadata as HTTP headers
-							res.setHeader("Content-Type", requested_file.content_type);
-			
-							// return file blocks
-							for(var i=0; i < requested_file.blocks.length; i++){
-								
-								var block_data = null;
-								if(requested_file.blocks[i].last_seen){
-									var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
+								// return file metadata as HTTP headers
+								res.setHeader("Content-Type", requested_file.content_type);
+				
+								// return file blocks
+								for(var i=0; i < requested_file.blocks.length; i++){
 									
-									try{
-										block_data = fs.readFileSync(block_filename);
-									} catch(ex){
-										log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
+									var block_data = null;
+									if(requested_file.blocks[i].last_seen){
+										var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
+										
+										try{
+											block_data = fs.readFileSync(block_filename);
+										} catch(ex){
+											log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
+										}
+										
+									} else {
+										log.message(log.WARN, "no last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
 									}
 									
-								} else {
-									log.message(log.WARN, "no last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
-								}
-								
-								// if we don't find the block where we expect it, search all storage locations
-								if(!block_data){
-									for(var storage_location in storage_locations){
-										var selected_location = storage_locations[storage_location];
-										if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
-											log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
-											requested_file.blocks[i].last_seen = selected_location.path;
-											block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
-										} else {
-											log.message(log.ERROR, "unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
+									// if we don't find the block where we expect it, search all storage locations
+									if(!block_data){
+										for(var storage_location in storage_locations){
+											var selected_location = storage_locations[storage_location];
+											if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
+												log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
+												requested_file.blocks[i].last_seen = selected_location.path;
+												block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
+											} else {
+												log.message(log.ERROR, "unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
+											}
 										}
 									}
-								}
 
-								if(requested_file.encrypted){
-									log.message(log.INFO, "decrypting block");
-									block_data = decrypt(block_data, requested_file.fingerprint);
+									if(requested_file.encrypted){
+										log.message(log.INFO, "decrypting block");
+										block_data = decrypt(block_data, requested_file.fingerprint);
+									}
+									// send block to caller
+									if(block_data){
+										res.write(block_data);
+									} else {
+										log.message(log.ERROR, "unable to locate missing block in any storage location");
+										res.statusCode = 500;
+										res.end("unable to return file, missing blocks");
+										break;
+									}
 								}
-								// send block to caller
-								if(block_data){
-									res.write(block_data);
-								} else {
-									log.message(log.ERROR, "unable to locate missing block in any storage location");
-									res.statusCode = 500;
-									res.end("unable to return file, missing blocks");
-									break;
-								}
+								// finish request
+								res.end();
+							} else {
+								// return status 401
+								res.statusCode = 401;
+								res.end();
 							}
-							// finish request
-							res.end();
-						} else {
-							// return status 401
-							res.statusCode = 401;
-							res.end();
-						}
 						}
 					} else {
 						// return status 404
