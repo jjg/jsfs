@@ -15,7 +15,7 @@ var crypto = require("crypto");
 var fs = require("fs");
 var config = require("./config.js");
 var log = require("./jlog.js");
-var jwt = require("jsonwebtoken");
+//var jwt = require("jsonwebtoken");
 var url = require("url");
 
 function save_superblock(){
@@ -183,7 +183,8 @@ var inode = {
 		this.file_metadata.version = 0;
 		this.file_metadata.private = false;
 		this.file_metadata.encrypted = false;
-		this.file_metadata.fingerprint = null;
+		this.file_metadata.fingerprint = null;	// todo: determine if we still need fingerprint
+		this.file_metadata.access_key = null;
 		this.file_metadata.content_type = "application/octet-stream";
 		this.file_metadata.file_size = 0;
 		this.file_metadata.block_size = this.block_size;
@@ -208,11 +209,12 @@ var inode = {
 		}
 
 		// create fingerprint to uniquely identify this file
-		if(!this.file_metadata.fingerprint){
-			shasum = crypto.createHash("sha1");
-			shasum.update(JSON.stringify(this.file_metadata.url + this.file_metadata.version));
-			this.file_metadata.fingerprint =  shasum.digest("hex");
-		}
+		shasum = crypto.createHash("sha1");
+		shasum.update(JSON.stringify(this.file_metadata.url + this.file_metadata.version));
+		this.file_metadata.fingerprint =  shasum.digest("hex");
+
+		// use fingerprint as default key
+		this.file_metadata.access_key = this.file_metadata.fingerprint;
 	},
 	write: function(chunk){
 		this.input_buffer = new Buffer.concat([this.input_buffer, chunk]);
@@ -273,9 +275,9 @@ var inode = {
 		var block = this.input_buffer.slice(0, this.block_size);
 
 		// if encryption is set, encrypt using the hash above
-		if(this.file_metadata.encrypted && this.file_metadata.fingerprint){
+		if(this.file_metadata.encrypted && this.file_metadata.access_key){
 			log.message(log.INFO, "encrypting block");
-			block = encrypt(block, this.file_metadata.access_token);
+			block = encrypt(block, this.file_metadata.access_key);
 		} else {
 			// if even one block can't be encrypted, say so and stop trying
 			this.file_metadata.encrypted = false;
@@ -330,6 +332,20 @@ var inode = {
 	}
 };
 
+function token_valid(access_token, inode, method){
+
+	// generate expected token
+	var shasum = crypto.createHash("sha1");
+    shasum.update(inode.access_key + method);
+    //block_hash = shasum.digest("hex");
+
+	// compare
+	if(shasum.digest("hex") === access_token){
+		return true;
+	} else {
+		return false;
+	}
+}
 
 // *** CONFIGURATION ***
 log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
@@ -374,16 +390,12 @@ http.createServer(function(req, res){
 		target_url = "/" + target_url.substring(2);
 	}
 
-	var content_type = req.headers["content-type"];
-
-	// check for a token, first in the header and then in the querystring
-	var access_token = require("url").parse(req.url,true).query.access_token || req.headers["x-access-token"];
-	if(access_token){
-		access_token = jwt.verify(access_token, config.JWT_SECRET);
-	}
-
-	var private = req.headers["x-private"];
-	var encrypted = req.headers["x-encrypted"];
+	// check for request parameters, first in the header and then in the querystring
+	var access_token = url.parse(req.url,true).query.access_token || req.headers["x-access-token"];
+	var access_key = url.parse(req.url,true).query.access_key || req.headers["x-access-key"];
+	var private = url.parse(req.url,true).query.private || req.headers["x-private"];
+	var encrypted = url.parse(req.url,true).query.encrypted || req.headers["x-encrypted"];
+	var content_type = url.parse(req.url,true).query.content_type || req.headers["content-type"];
 
 	log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
 
@@ -399,13 +411,13 @@ http.createServer(function(req, res){
 			}
 
 			var matching_inodes = [];
-
 			for(var an_inode in superblock){
 				if(superblock.hasOwnProperty(an_inode)){
 					var selected_inode = superblock[an_inode];
-					if(selected_inode.url.indexOf(target_url) > -1){
-						// todo: consider only returning inodes whose fingerprint matches the token?
-						if(!selected_inode.private || (access_token && access_token.url === target_url && access_token.GET)){	
+					if(selected_inode.url.indexOf(target_url) > -1){	// todo: consider making this match more precise
+						if(!selected_inode.private || 
+							token_valid(access_token, selected_inode, req.method) ||
+							(expire_time && time_token_valid(requested_file, expire_time, time_token))){	
 							matching_inodes.push(selected_inode);
 						}
 					}
@@ -425,7 +437,7 @@ http.createServer(function(req, res){
 				if(matching_inodes.length > 0){
 
 					requested_file = matching_inodes[0];
-
+/*
 					// todo: test this, there may be an overlooked security problem here...
 					// generate a delegate token if requested (instead of returning the object) 
 					if(url.parse(req.url,true).query.new_token){
@@ -445,15 +457,15 @@ http.createServer(function(req, res){
 						res.end();
 
 					} else {
-
+*/
 						// return status 200
 						res.statusCode = 200;
-
+/*
 						// check authorization of URL
 						if(!requested_file.private ||
 							(requested_file.fingerprint === access_token.fingerprint && access_token.GET) ||
 							time_token_valid(requested_file, expire_time, time_token)){
-
+*/
 							// return file metadata as HTTP headers
 							res.setHeader("Content-Type", requested_file.content_type);
 			
@@ -490,7 +502,7 @@ http.createServer(function(req, res){
 
 								if(requested_file.encrypted){
 									log.message(log.INFO, "decrypting block");
-									block_data = decrypt(block_data, requested_file.fingerprint);
+									block_data = decrypt(block_data, requested_file.access_key);
 								}
 								// send block to caller
 								if(block_data){
@@ -504,13 +516,15 @@ http.createServer(function(req, res){
 							}
 							// finish request
 							res.end();
+/*
 						} else {
 							// return status 401
 							log.message(log.WARN, "request is unauthorized");
 							res.statusCode = 401;
 							res.end("request is unauthorized");
 						}
-					}
+*/
+					//}
 				} else {
 					// return status 404
 					log.message(log.WARN, "file not found");
@@ -523,7 +537,7 @@ http.createServer(function(req, res){
 	case "POST":
 
 		// make sure the URL isn't already taken
-		if(typeof superblock[target_url] === "undefined"){
+		if(typeof superblock[target_url] === "undefined"){	// todo: this check is meaningless in the fingerprint-driven world, refactor
 
 			// store the posted data at the specified URL
 			var file_metadata = null;
@@ -544,12 +558,10 @@ http.createServer(function(req, res){
 				new_file.file_metadata.encrypted = true;
 			}
 
-			/*
-			// if access_token is supplied with POST, don't generate a new one
-			if(access_token){
-				new_file.file_metadata.access_token = access_token;
+			// if access_key is supplied with POST, replace the default one 
+			if(access_key){
+				new_file.file_metadata.access_key = access_key;
 			}
-			*/
 
 			req.on("data", function(chunk){
 				if(!new_file.write(chunk)){
@@ -560,7 +572,7 @@ http.createServer(function(req, res){
 
 			req.on("end", function(){
 				var new_file_metadata = new_file.close();
-
+/*
 				// generate token 
 				var owner_token_permissions = {};
 				owner_token_permissions.owner = true;
@@ -579,18 +591,19 @@ http.createServer(function(req, res){
 					token: owner_token,
 					metadata: new_file_metadata
 				};
-				
-				// display utilization stats (todo: this may be temporary so consider putting it elsewhere)
-				for(var storage_location in storage_locations){
-					log.message(log.INFO, storage_locations[storage_location].usage + " bytes used of " + storage_locations[storage_location].capacity + " in " + storage_locations[storage_location].path);
-				}
-				
+*/				
 				if(new_file_metadata){
-					res.end(JSON.stringify(response));
+					res.end(JSON.stringify(new_file_metadata));
 				} else {
 					res.statusCode = 500;
 					res.end("error writing blocks");
 				}
+
+                // display utilization stats (todo: this may be temporary so consider putting it elsewhere)
+                for(var storage_location in storage_locations){
+                    log.message(log.INFO, storage_locations[storage_location].usage + " bytes used of " + storage_locations[storage_location].capacity + " in " + storage_locations[storage_location].path);
+                }
+
 			});
 		
 		} else {
