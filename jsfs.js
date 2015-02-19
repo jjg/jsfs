@@ -404,11 +404,9 @@ http.createServer(function(req, res){
 				if(superblock.hasOwnProperty(an_inode)){
 					var selected_inode = superblock[an_inode];
 					if(selected_inode.url.indexOf(target_url) > -1){
-			
 						// todo: consider only returning inodes whose fingerprint matches the token?
 						if(!selected_inode.private || (access_token && access_token.url === target_url && access_token.GET)){	
 							matching_inodes.push(selected_inode);
-
 						}
 					}
 				}
