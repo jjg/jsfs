@@ -340,7 +340,7 @@ function token_valid(access_token, inode, method){
     var expected_token = shasum.digest("hex");
 
 	log.message(log.DEBUG,"expected_token: " + expected_token);
-	log.message(log.DEBUG,"token: " + access_token);
+	log.message(log.DEBUG,"access_token: " + access_token);
 
 	// compare
 	if(expected_token === access_token){
@@ -418,7 +418,8 @@ http.createServer(function(req, res){
 				if(superblock.hasOwnProperty(an_inode)){
 					var selected_inode = superblock[an_inode];
 					if(selected_inode.url.indexOf(target_url) > -1){	// todo: consider making this match more precise
-						if(!selected_inode.private || 
+						if(!selected_inode.private ||
+							(access_key && access_key === selected_inode.access_key) ||
 							token_valid(access_token, selected_inode, req.method) ||
 							(expire_time && time_token_valid(requested_file, expire_time, time_token))){
 							matching_inodes.push(selected_inode);
@@ -729,6 +730,30 @@ http.createServer(function(req, res){
 
 		// remove the data stored at the specified URL
 		// make sure there's a file to remove
+
+        // make sure there's a file to update
+        var matching_inodes = [];
+        for(var an_inode in superblock){
+            if(superblock.hasOwnProperty(an_inode)){
+                var selected_inode = superblock[an_inode];
+                if(selected_inode.url === target_url){
+					if(access_key && selected_inode.access_key === access_key){
+						// hard delete
+						delete superblock[selected_inode.fingerprint];
+					} else if(token_valid(access_token, selected_inode, req.method)){
+						// soft delete
+						selected_inode.private = true; 
+                    }
+					save_superblock();
+					res.StatusCode = 200;
+					res.end();
+                 } else {
+					res.statusCode = 404;
+					res.end();
+				}
+            }
+        }
+/*
 		if(typeof superblock[access_token.fingerprint] != "undefined"){
 		
 			var original_file = superblock[access_token.fingerprint];
@@ -754,7 +779,7 @@ http.createServer(function(req, res){
 			res.statusCode = 404;
 			res.end();
 		}
-
+*/
 		break;
 
 	case "HEAD":
