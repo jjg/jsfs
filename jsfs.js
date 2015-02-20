@@ -337,10 +337,13 @@ function token_valid(access_token, inode, method){
 	// generate expected token
 	var shasum = crypto.createHash("sha1");
     shasum.update(inode.access_key + method);
-    //block_hash = shasum.digest("hex");
+    var expected_token = shasum.digest("hex");
+
+	log.message(log.DEBUG,"expected_token: " + expected_token);
+	log.message(log.DEBUG,"token: " + access_token);
 
 	// compare
-	if(shasum.digest("hex") === access_token){
+	if(expected_token === access_token){
 		return true;
 	} else {
 		return false;
@@ -417,7 +420,7 @@ http.createServer(function(req, res){
 					if(selected_inode.url.indexOf(target_url) > -1){	// todo: consider making this match more precise
 						if(!selected_inode.private || 
 							token_valid(access_token, selected_inode, req.method) ||
-							(expire_time && time_token_valid(requested_file, expire_time, time_token))){	
+							(expire_time && time_token_valid(requested_file, expire_time, time_token))){
 							matching_inodes.push(selected_inode);
 						}
 					}
@@ -618,12 +621,27 @@ http.createServer(function(req, res){
 	case "PUT":
 
 		// make sure there's a file to update
-		if(access_token && typeof superblock[access_token.fingerprint] != "undefined"){
+        var matching_inodes = [];
+        for(var an_inode in superblock){
+            if(superblock.hasOwnProperty(an_inode)){
+                var selected_inode = superblock[an_inode];
+                if(selected_inode.url.indexOf(target_url) > -1){    // todo: consider making this match more precise
+                    if(token_valid(access_token, selected_inode, req.method)){
+                        matching_inodes.push(selected_inode);
+                    } 
+                 }
+            }
+        }
 
-			var original_file = superblock[access_token.fingerprint];
+        // sort by version
+		matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
+
+		if(matching_inodes.length > 0){
+
+			var original_file = matching_inodes[0]; //superblock[access_token.fingerprint];
 
 			// check authorization
-			if((access_token.url === target_url) && access_token.PUT && (access_token.fingerprint === original_file.fingerprint)){
+			//if((access_token.url === target_url) && access_token.PUT && (access_token.fingerprint === original_file.fingerprint)){
 
 				// update the posted data at the specified URL
 				var new_file = Object.create(inode);
@@ -636,6 +654,7 @@ http.createServer(function(req, res){
 				new_file.file_metadata.content_type = original_file.content_type;
 				new_file.file_metadata.private = original_file.private;
 				new_file.file_metadata.encrypted = original_file.encrypted;
+				new_file.file_metadata.access_key = original_file.access_key;
 
 				// update file properties (if requested)
 				if(content_type){
@@ -660,7 +679,7 @@ http.createServer(function(req, res){
 
 				req.on("end", function(){
 					var new_file_metadata = new_file.close();
-
+/*
 					// generate token (inheret permissions from supplied token) 
 					var new_token_permissions = {};
 					if(access_token.owner){
@@ -681,22 +700,22 @@ http.createServer(function(req, res){
 						token: new_token,
 						metadata: new_file_metadata
 					};
-
+*/
 					if(new_file_metadata){
-						res.end(JSON.stringify(response));
+						res.end(JSON.stringify(new_file_metadata));
 					} else {
 						res.statusCode = 500;
 						res.end("error writing blocks");
 					}
 				});
-	
+/*	
 				} else {
 
 					// if token is invalid, return unauthorized
 					res.statusCode = 401;
 					res.end();
 				}
-
+*/
 			} else {
 
 				// if file dosen't exist at this URL, return 405 "Method not allowed"
