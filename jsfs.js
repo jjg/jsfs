@@ -15,7 +15,6 @@ var crypto = require("crypto");
 var fs = require("fs");
 var config = require("./config.js");
 var log = require("./jlog.js");
-//var jwt = require("jsonwebtoken");
 var url = require("url");
 
 function save_superblock(){
@@ -60,7 +59,6 @@ function load_superblock(){
 	}
 	
 	// use global unique_blocks for now
-	//var unique_blocks = [];
 	for(var file in superblock){
 		if(superblock.hasOwnProperty(file)){
 			var selected_file = superblock[file];
@@ -203,7 +201,7 @@ var inode = {
 		this.file_metadata.version = 0;
 		this.file_metadata.private = false;
 		this.file_metadata.encrypted = false;
-		this.file_metadata.fingerprint = null;	// todo: determine if we still need fingerprint
+		this.file_metadata.fingerprint = null;
 		this.file_metadata.access_key = null;
 		this.file_metadata.content_type = "application/octet-stream";
 		this.file_metadata.file_size = 0;
@@ -351,25 +349,7 @@ var inode = {
 		return result;
 	}
 };
-/*
-function token_valid(access_token, inode, method){
 
-	// generate expected token
-	var shasum = crypto.createHash("sha1");
-    shasum.update(inode.access_key + method);
-    var expected_token = shasum.digest("hex");
-
-	log.message(log.DEBUG,"expected_token: " + expected_token);
-	log.message(log.DEBUG,"access_token: " + access_token);
-
-	// compare
-	if(expected_token === access_token){
-		return true;
-	} else {
-		return false;
-	}
-}
-*/
 // *** CONFIGURATION ***
 log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
 
@@ -392,11 +372,7 @@ http.createServer(function(req, res){
 
 	// all requests are interrorgated for these values
 	var target_url = require("url").parse(req.url).pathname;
-/*
-	// get temporary url parameters out of the request if present
-	var expire_time = require("url").parse(req.url,true).query.expire_time;
-	var time_token = require("url").parse(req.url,true).query.time_token;
-*/	
+
 	// host-based url shortcut expansion
 	if(target_url.substring(0,2) != "/."){
 		var host_string = req.headers["host"];
@@ -421,7 +397,7 @@ http.createServer(function(req, res){
 	var expires = url.parse(req.url,true).query.expires || req.headers["x-expires"];
 	var content_type = url.parse(req.url,true).query.content_type || req.headers["content-type"];
 
-	log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
+	log.message(log.INFO, "Received " + req.method + " request for URL " + target_url);
 
 	switch(req.method){
 
@@ -462,94 +438,61 @@ http.createServer(function(req, res){
 				if(matching_inodes.length > 0){
 
 					requested_file = matching_inodes[0];
-/*
-					// todo: test this, there may be an overlooked security problem here...
-					// generate a delegate token if requested (instead of returning the object) 
-					if(url.parse(req.url,true).query.new_token){
 
-						log.message(log.INFO, "New token requested");
-						var token_permissions = {};
-						token_permissions.fingerprint = requested_file.fingerprint;
-						token_permissions.url = target_url;
-						token_permissions.POST = (url.parse(req.url,true).query.POST === "true") || false;
-						token_permissions.GET = (url.parse(req.url,true).query.GET === "true") || false;
-						token_permissions.PUT = (url.parse(req.url,true).query.PUT === "true") || false;
-						token_permissions.DELETE = (url.parse(req.url,true).query.DELETE === "true") || false;
-						log.message(log.INFO, "token_permissions: " + JSON.stringify(token_permissions));
-						var new_token = jwt.sign(token_permissions,config.JWT_SECRET);
-						res.statusCode = 200;
-						res.write(JSON.stringify(new_token));
-						res.end();
+					// return status 200
+					res.statusCode = 200;
 
-					} else {
-*/
-						// return status 200
-						res.statusCode = 200;
-/*
-						// check authorization of URL
-						if(!requested_file.private ||
-							(requested_file.fingerprint === access_token.fingerprint && access_token.GET) ||
-							time_token_valid(requested_file, expire_time, time_token)){
-*/
-							// return file metadata as HTTP headers
-							res.setHeader("Content-Type", requested_file.content_type);
-			
-							// return file blocks
-							for(var i=0; i < requested_file.blocks.length; i++){
-								
-								var block_data = null;
-								if(requested_file.blocks[i].last_seen){
-									var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
-									
-									try{
-										block_data = fs.readFileSync(block_filename);
-									} catch(ex){
-										log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
-									}
-									
+					// return file metadata as HTTP headers
+					res.setHeader("Content-Type", requested_file.content_type);
+	
+					// return file blocks
+					for(var i=0; i < requested_file.blocks.length; i++){
+						
+						var block_data = null;
+						if(requested_file.blocks[i].last_seen){
+							var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
+							
+							try{
+								block_data = fs.readFileSync(block_filename);
+							} catch(ex){
+								log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
+							}
+							
+						} else {
+							log.message(log.WARN, "no last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
+						}
+						
+						// if we don't find the block where we expect it, search all storage locations
+						if(!block_data){
+							for(var storage_location in storage_locations){
+								var selected_location = storage_locations[storage_location];
+								if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
+									log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
+									requested_file.blocks[i].last_seen = selected_location.path;
+									block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
 								} else {
-									log.message(log.WARN, "no last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
-								}
-								
-								// if we don't find the block where we expect it, search all storage locations
-								if(!block_data){
-									for(var storage_location in storage_locations){
-										var selected_location = storage_locations[storage_location];
-										if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
-											log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
-											requested_file.blocks[i].last_seen = selected_location.path;
-											block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
-										} else {
-											log.message(log.ERROR, "unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
-										}
-									}
-								}
-
-								if(requested_file.encrypted){
-									log.message(log.INFO, "decrypting block");
-									block_data = decrypt(block_data, requested_file.access_key);
-								}
-								// send block to caller
-								if(block_data){
-									res.write(block_data);
-								} else {
-									log.message(log.ERROR, "unable to locate missing block in any storage location");
-									res.statusCode = 500;
-									res.end("unable to return file, missing blocks");
-									break;
+									log.message(log.ERROR, "unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
 								}
 							}
-							// finish request
-							res.end();
-/*
-						} else {
-							// return status 401
-							log.message(log.WARN, "request is unauthorized");
-							res.statusCode = 401;
-							res.end("request is unauthorized");
 						}
-*/
-					//}
+
+						if(requested_file.encrypted){
+							log.message(log.INFO, "decrypting block");
+							block_data = decrypt(block_data, requested_file.access_key);
+						}
+						// send block to caller
+						if(block_data){
+							res.write(block_data);
+						} else {
+							log.message(log.ERROR, "unable to locate missing block in any storage location");
+							res.statusCode = 500;
+							res.end("unable to return file, missing blocks");
+							break;
+						}
+					}
+					// finish request
+					res.end();
+
 				} else {
 					// return status 404
 					log.message(log.WARN, "file not found");
@@ -557,12 +500,23 @@ http.createServer(function(req, res){
 					res.end("file not found");
 				}
 			}
+
 		break;
 
 	case "POST":
 
 		// make sure the URL isn't already taken
-		if(typeof superblock[target_url] === "undefined"){	// todo: this check is meaningless in the fingerprint-driven world, refactor
+        var matching_inodes = [];
+		for(var an_inode in superblock){
+			if(superblock.hasOwnProperty(an_inode)){
+				var selected_inode = superblock[an_inode];
+				if(selected_inode.url === target_url){
+					matching_inodes.push(selected_inode);
+				}
+			}
+		}
+
+		if(matching_inodes.length < 1){
 
 			// store the posted data at the specified URL
 			var file_metadata = null;
@@ -597,26 +551,7 @@ http.createServer(function(req, res){
 
 			req.on("end", function(){
 				var new_file_metadata = new_file.close();
-/*
-				// generate token 
-				var owner_token_permissions = {};
-				owner_token_permissions.owner = true;
-				owner_token_permissions.url = target_url;
-				owner_token_permissions.fingerprint = new_file_metadata.fingerprint;
-				owner_token_permissions.POST = true;
-				owner_token_permissions.GET = true;
-				owner_token_permissions.PUT = true;
-				owner_token_permissions.DELETE = true;
-				log.message(log.INFO, "owner_token_permissions: " + JSON.stringify(owner_token_permissions));
 
-				var owner_token = jwt.sign(owner_token_permissions, config.JWT_SECRET);
-
-				// insert token into response
-				var response = {
-					token: owner_token,
-					metadata: new_file_metadata
-				};
-*/				
 				if(new_file_metadata){
 					res.end(JSON.stringify(new_file_metadata));
 				} else {
@@ -634,6 +569,7 @@ http.createServer(function(req, res){
 		} else {
 
 			// if file exists at this URL, return 405 "Method not allowed"
+			log.message(log.WARN,"File exists at " + target_url + ", re-POST not allowed");
 			res.statusCode = 405;
 			res.end();
 		}
@@ -662,97 +598,64 @@ http.createServer(function(req, res){
 
 		if(matching_inodes.length > 0){
 
-			var original_file = matching_inodes[0]; //superblock[access_token.fingerprint];
+			var original_file = matching_inodes[0];
 
-			// check authorization
-			//if((access_token.url === target_url) && access_token.PUT && (access_token.fingerprint === original_file.fingerprint)){
+			// update the posted data at the specified URL
+			var new_file = Object.create(inode);
+			new_file.init(target_url);
 
-				// update the posted data at the specified URL
-				var new_file = Object.create(inode);
-				new_file.init(target_url);
+			// copy original file properties
+			new_file.file_metadata.created = original_file.created;
+			new_file.file_metadata.updated = (new Date()).getTime();
+			new_file.file_metadata.fingerprint = original_file.fingerprint;
+			new_file.file_metadata.content_type = original_file.content_type;
+			new_file.file_metadata.private = original_file.private;
+			new_file.file_metadata.encrypted = original_file.encrypted;
+			new_file.file_metadata.access_key = original_file.access_key;
 
-				// copy original file properties
-				new_file.file_metadata.created = original_file.created;
-				new_file.file_metadata.updated = (new Date()).getTime();
-				new_file.file_metadata.fingerprint = original_file.fingerprint;
-				new_file.file_metadata.content_type = original_file.content_type;
-				new_file.file_metadata.private = original_file.private;
-				new_file.file_metadata.encrypted = original_file.encrypted;
-				new_file.file_metadata.access_key = original_file.access_key;
-
-				// update file properties (if requested)
-				if(content_type){
-					log.message(log.INFO, "Content-Type: " + content_type);
-					new_file.file_metadata.content_type = content_type;
-				}
-
-				if(private){
-					new_file.file_metadata.private = true;
-				}
-
-				if(encrypted){
-					new_file.file_metadata.encrypted = true;
-				}
-
-				req.on("data", function(chunk){
-					if(!new_file.write(chunk)){
-						res.statusCode = 500;
-						res.end("error writing blocks");
-					};
-				});
-
-				req.on("end", function(){
-					var new_file_metadata = new_file.close();
-/*
-					// generate token (inheret permissions from supplied token) 
-					var new_token_permissions = {};
-					if(access_token.owner){
-						new_token_permissions.owner = true;
-					}
-					new_token_permissions.url = access_token.url;
-					new_token_permissions.fingerprint = new_file_metadata.fingerprint;
-					new_token_permissions.POST = access_token.POST;
-					new_token_permissions.GET = access_token.GET;
-					new_token_permissions.PUT = access_token.PUT;
-					new_token_permissions.DELETE = access_token.DELETE;
-					log.message(log.INFO, "new_token_permissions: " + JSON.stringify(new_token_permissions));
-
-					var new_token = jwt.sign(new_token_permissions, config.JWT_SECRET);
-
-					// insert token into response
-					var response = {
-						token: new_token,
-						metadata: new_file_metadata
-					};
-*/
-					if(new_file_metadata){
-						res.end(JSON.stringify(new_file_metadata));
-					} else {
-						res.statusCode = 500;
-						res.end("error writing blocks");
-					}
-				});
-/*	
-				} else {
-
-					// if token is invalid, return unauthorized
-					res.statusCode = 401;
-					res.end();
-				}
-*/
-			} else {
-
-				// if file dosen't exist at this URL, return 405 "Method not allowed"
-				res.statusCode = 405;
-				res.end();
+			// update file properties (if requested)
+			if(content_type){
+				log.message(log.INFO, "Content-Type: " + content_type);
+				new_file.file_metadata.content_type = content_type;
 			}
 
-			break;
+			if(private){
+				new_file.file_metadata.private = true;
+			}
+
+			if(encrypted){
+				new_file.file_metadata.encrypted = true;
+			}
+
+			req.on("data", function(chunk){
+				if(!new_file.write(chunk)){
+					res.statusCode = 500;
+					res.end("error writing blocks");
+				};
+			});
+
+			req.on("end", function(){
+				var new_file_metadata = new_file.close();
+
+				if(new_file_metadata){
+					res.end(JSON.stringify(new_file_metadata));
+				} else {
+					res.statusCode = 500;
+					res.end("error writing blocks");
+				}
+			});
+		} else {
+
+			// if file dosen't exist at this URL, return 405 "Method not allowed"
+			res.statusCode = 405;
+			res.end();
+		}
+
+		break;
 
 	case "DELETE":
 
 		// remove the data stored at the specified URL
-		// make sure there's a file to remove
 
         // make sure there's a file to update
         var matching_inodes = [];
@@ -777,33 +680,7 @@ http.createServer(function(req, res){
 				}
             }
         }
-/*
-		if(typeof superblock[access_token.fingerprint] != "undefined"){
-		
-			var original_file = superblock[access_token.fingerprint];
-			
-			// check authorization
-			if(access_token.DELETE && original_file.fingerprint === access_token.fingerprint){
-			
-				// unlink the url
-				delete superblock[access_token.fingerprint];
-				
-				// todo: update statistics maybe (only if we actual delete the blocks...)
-				
-				save_superblock();
-				res.end();
-			
-			} else {
-				// if token is invalid, return unauthorized
-				res.statusCode = 401;
-				res.end();
-			}
-		} else {
-			// if file doesn't exist, return file not found 
-			res.statusCode = 404;
-			res.end();
-		}
-*/
+
 		break;
 
 	case "HEAD":
