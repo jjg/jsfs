@@ -149,25 +149,45 @@ function decrypt(block, key){
 	return decipher.read();
 }
 
-// expiring url support
-// temporary urls are created by concatinating the access_token
-// and an expiration date (in EPOC) and then generating a sha1 hash
-// to be used along with the time during the request
-function time_token_valid(file, expire_time, time_token){
+function token_valid(access_token, inode, method){
+
+    // generate expected token
+    var shasum = crypto.createHash("sha1");
+    shasum.update(inode.access_key + method);
+    var expected_token = shasum.digest("hex");
+
+    log.message(log.DEBUG,"expected_token: " + expected_token);
+    log.message(log.DEBUG,"access_token: " + access_token);
+
+    // compare
+    if(expected_token === access_token){
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function time_token_valid(access_token, inode, expires, method){
+
 	// make sure requested time is still valid
-	if(expire_time < (new Date()).getTime()){
-		log.message(log.WARN,"expire_time is in the past");
+	if(expires < (new Date()).getTime()){
+		log.message(log.WARN,"expires is in the past");
 		return false;
 	} else {
-		// make sure time_token is valid
-		shasum = crypto.createHash("sha1");
-		shasum.update(file.access_token + expire_time);
-		var expected_time_token = shasum.digest("hex");
-		if(time_token != expected_time_token){
-			log.message(log.WARN,"time_token is invalid");
-			return false;
-		} else {
+		// make sure token is valid
+	    // generate expected token
+	    var shasum = crypto.createHash("sha1");
+	    shasum.update(inode.access_key + method + expires);
+	    var expected_token = shasum.digest("hex");
+
+	    log.message(log.DEBUG,"expected_token: " + expected_token);
+	    log.message(log.DEBUG,"access_token: " + access_token);
+
+	    // compare
+	    if(expected_token === access_token){
 			return true;
+		} else {
+			return false;
 		}
 	}
 }
@@ -331,7 +351,7 @@ var inode = {
 		return result;
 	}
 };
-
+/*
 function token_valid(access_token, inode, method){
 
 	// generate expected token
@@ -349,7 +369,7 @@ function token_valid(access_token, inode, method){
 		return false;
 	}
 }
-
+*/
 // *** CONFIGURATION ***
 log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
 
@@ -372,11 +392,11 @@ http.createServer(function(req, res){
 
 	// all requests are interrorgated for these values
 	var target_url = require("url").parse(req.url).pathname;
-
+/*
 	// get temporary url parameters out of the request if present
 	var expire_time = require("url").parse(req.url,true).query.expire_time;
 	var time_token = require("url").parse(req.url,true).query.time_token;
-	
+*/	
 	// host-based url shortcut expansion
 	if(target_url.substring(0,2) != "/."){
 		var host_string = req.headers["host"];
@@ -398,6 +418,7 @@ http.createServer(function(req, res){
 	var access_key = url.parse(req.url,true).query.access_key || req.headers["x-access-key"];
 	var private = url.parse(req.url,true).query.private || req.headers["x-private"];
 	var encrypted = url.parse(req.url,true).query.encrypted || req.headers["x-encrypted"];
+	var expires = url.parse(req.url,true).query.expires || req.headers["x-expires"];
 	var content_type = url.parse(req.url,true).query.content_type || req.headers["content-type"];
 
 	log.message(log.INFO, "Received " + req.method + " requeset for URL " + target_url);
@@ -420,8 +441,8 @@ http.createServer(function(req, res){
 					if(selected_inode.url.indexOf(target_url) > -1){	// todo: consider making this match more precise
 						if(!selected_inode.private ||
 							(access_key && access_key === selected_inode.access_key) ||
-							token_valid(access_token, selected_inode, req.method) ||
-							(expire_time && time_token_valid(requested_file, expire_time, time_token))){
+							(access_token && token_valid(access_token, selected_inode, req.method)) ||
+							(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
 							matching_inodes.push(selected_inode);
 						}
 					}
@@ -627,7 +648,9 @@ http.createServer(function(req, res){
             if(superblock.hasOwnProperty(an_inode)){
                 var selected_inode = superblock[an_inode];
                 if(selected_inode.url.indexOf(target_url) > -1){    // todo: consider making this match more precise
-                    if(token_valid(access_token, selected_inode, req.method)){
+                    if((access_key && access_key === selected_inode.access_token) ||
+						(access_token && token_valid(access_token, selected_inode, req.method))
+						(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
                         matching_inodes.push(selected_inode);
                     } 
                  }
@@ -740,7 +763,8 @@ http.createServer(function(req, res){
 					if(access_key && selected_inode.access_key === access_key){
 						// hard delete
 						delete superblock[selected_inode.fingerprint];
-					} else if(token_valid(access_token, selected_inode, req.method)){
+					} else if((access_token && token_valid(access_token, selected_inode, req.method)) || 
+								(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
 						// soft delete
 						selected_inode.private = true; 
                     }
