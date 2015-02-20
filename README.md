@@ -6,7 +6,7 @@ jsfs
 A general-purpose, deduplicating filesystem with a REST interface, jsfs is intended to provide low-level filesystem functions for Javascript applications.  Additional functionality (private file indexes, token lockers, centralized authentication, etc.) are deliberately avoided here and will be implemented in a modular fashion on top of jsfs.
 
 #STATUS
-jsfs 2.x is a from-scratch rewrite of the original jsfs filesystem.  In its current form, it lacks the versioning and distributed functions of the original jsfs, however these features will return in later builds.  Additionally, the API for jsfs 2.x has been simplified while providing more functionality and an effort has been made to better comply with HTTP conventions.
+JSFS 3.x introduces breaking changes to the REST API compared to earlier versions as well as the on-disk components (blocks, metadata, etc.).  I'll be releasing an upgrade tool at some point to make migration from 2.x JSFS systems easier but for now be aware that there's not a direct upgrade path at this time.
 
 #REQUIREMENTS
 * Node.js
@@ -15,17 +15,28 @@ jsfs 2.x is a from-scratch rewrite of the original jsfs filesystem.  In its curr
 *  Clone this repository
 *  Copy config.ex to config.js
 *  Create the `blocks` directory (`mkdir blocks`)
-*  Start the server (`node jsfs.js` foreman, pm2, etc.)
+*  Start the server (`node server.js`, `npm start`,  foreman, pm2, etc.)
 
 If you don't like storing the data in the same directory as the code (smart), edit config.js to change the location where data (blocks) are stored and restart jsfs for the changes to take effect. If you've already stored data in jsfs, you'll want to move the contents of the existing `blocks` directory to the new location or you'll loose the data.
 
+JSFS can now store blocks across physical disk boundaries which is useful when you need to store more data than a single disk can hold.  At the moment JSFS simply distributes these blocks as evenly as possible across all configured storage devices.  There are thoughts about supporting configurations that provide redundancy through the use of multiple storage devices but for now you'll want to make sure the devices have their own redundancy (or a good backup) as loosing a storage device will cause data loss just like it would with a single device.
+
+In addition to multiple devices JSFS now lets you specify the maximum amount of data that can be stored per-device.  The default config sets this very low (1024 bytes) so you can see what happens when you run out of space and respond accordingly.  Useage and capacity statistics are logged to the console periodically so you can keep an eye on usage before you hit the limit.
+ 
 #API
 
-##HEADERS
-jsfs uses several custom headers to control access to data and how it is stored.
+##Keys and Tokens
+First some terminology.  Keys unlock all operations on an object stored in JSFS.  With an `access_key` you can perform all HTTP operations against an object (GET, PUT, DELETE, etc.) and you can generate tokens that grant varying degrees of access to the object.  Objects have one key.
 
+Tokens are ephemeral and any number of them can be generated to grant access to an object.  Token generation is described later.
+
+##HEADERS
+jsfs uses several custom headers to control access to data and how it is stored.  These values can also be supplied as query parameters by removing the leading "x-" and changing "-" to "_" (`x-access-token` becomes `access_token`).
+
+###x-access-key
+This header is used to authorize requests that 
 ###x-private
-Set this header to `true` to mark files as private (they won't show up in directory listings).  *NOTE:* since private files don't show up in directory listings you'll have to keep track of the URL's yourself.  Additionally, to access private files a valid `x-access-token` header must be supplied with the `GET` request.
+Set this header to `true` to mark files as private (they won't show up in directory listings).  *NOTE:* since private files don't show up in directory listings you'll have to keep track of the URL's yourself.  Additionally, to access private files a valid `x-access-key` or `x-access-token` must be supplied with the request.
 
 ###x-access-token
 This header is used to authorize requests that modify existing files (`PUT`, `DELETE`).  A JSFS-generated token is automatically provided as part of the response when a new file is `POST`ed to a URL.
