@@ -11,7 +11,7 @@
 	<body>
 
 		<div id="authentication">
-			email: <input type="text" id="email_input"> password: <input type="password" id="password_input"> <input type="button" id="authenticate_button" onclick="authenticate()" value="authenticate">
+			email: <input type="text" id="email_input"> password: <input type="password" id="password_input"> <input type="button" id="authenticate_button" onclick="authenticate()" value="authenticate"> <input type="button" id="change_password_button" onclick="change_password()" value="change password">
 		</div>
 
 		<div id="objects">
@@ -151,6 +151,32 @@
 				}
 			}
 
+			function change_password(){
+				console.log("got change_password()");
+
+				// generate new hashed credentials
+				//hashed_credentials = CryptoJS.SHA1(email_input.value + password_input.value);
+				
+				// todo: update keyring access_key with new hash
+				var xhr = new XMLHttpRequest();
+				xhr.open("PUT","http://localhost:7302/keyrings/" + hashed_email, true);
+				xhr.setRequestHeader("x-access-key", hashed_credentials);
+
+				// generate new hashed credentials
+                hashed_credentials = CryptoJS.SHA1(email_input.value + password_input.value);
+				
+				xhr.setRequestHeader("x-replacement-access-key", hashed_credentials);
+				xhr.onreadystatechange = function(){
+					console.log("change_password readyState: " + this.readyState);
+					if(this.readyState === 4){
+						console.log("change_password status: " + this.status);
+						if(this.status === 200){
+							console.log(this.responseText);
+						}
+					}
+				};
+				xhr.send(JSON.stringify(keyring));
+			}
 		</script>
 	</body>
 </html>

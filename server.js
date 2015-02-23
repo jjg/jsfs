@@ -364,7 +364,7 @@ http.createServer(function(req, res){
 
 	// all responses include these headers to support cross-domain requests
 	var allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
-	var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME","X-Access-Key","X-Access-Token", "X-Encrypted", "X-Private"];
+	var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME","X-Access-Key","X-Replacement-Access-Key","X-Access-Token", "X-Encrypted", "X-Private"];
 
 	res.setHeader("Access-Control-Allow-Methods", allowed_methods.join(","));
 	res.setHeader("Access-Control-Allow-Headers", allowed_headers.join(","));
@@ -392,6 +392,7 @@ http.createServer(function(req, res){
 	// check for request parameters, first in the header and then in the querystring
 	var access_token = url.parse(req.url,true).query.access_token || req.headers["x-access-token"];
 	var access_key = url.parse(req.url,true).query.access_key || req.headers["x-access-key"];
+	var replacement_access_key = url.parse(req.url,true).query.replacement_access_key || req.headers["x-replacement-access-key"];
 	var private = url.parse(req.url,true).query.private || req.headers["x-private"];
 	var encrypted = url.parse(req.url,true).query.encrypted || req.headers["x-encrypted"];
 	var expires = url.parse(req.url,true).query.expires || req.headers["x-expires"];
@@ -611,7 +612,11 @@ http.createServer(function(req, res){
 			new_file.file_metadata.content_type = original_file.content_type;
 			new_file.file_metadata.private = original_file.private;
 			new_file.file_metadata.encrypted = original_file.encrypted;
-			new_file.file_metadata.access_key = original_file.access_key;
+			if(replacement_access_key){
+				new_file.file_metadata.access_key = replacement_access_key;
+			} else {
+				new_file.file_metadata.access_key = original_file.access_key;
+			}
 
 			// update file properties (if requested)
 			if(content_type){
