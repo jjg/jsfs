@@ -157,7 +157,7 @@
 				// generate new hashed credentials
 				//hashed_credentials = CryptoJS.SHA1(email_input.value + password_input.value);
 				
-				// todo: update keyring access_key with new hash
+				// update keyring access_key with new hash
 				var xhr = new XMLHttpRequest();
 				xhr.open("PUT","http://localhost:7302/keyrings/" + hashed_email, true);
 				xhr.setRequestHeader("x-access-key", hashed_credentials);
