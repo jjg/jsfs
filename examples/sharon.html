@@ -1,0 +1,56 @@
+<html>
+	<head>
+		<title>object storage and sharing demo</title>
+		<script src="./sha1.js"></script>
+		<style>
+			div{border: solid black;
+				 padding: 3px;
+			}
+		</style>
+	</head>
+	<body>
+
+		<div id="authentication">
+			email: <input type="text" id="email_input"> password: <input type="password" id="password_input"> <input type="button" id="authenticate_button" onclick="authenticate()" value="authenticate">
+		</div>
+
+		<div id="objects">
+			<li id="object_list">
+			<br>
+			<input type="button" id="add_object_button" onclick="add_object()" value="add object">
+		</div>
+
+		<script>
+			var authenticated = false;
+			var hashed_credentials = null;
+
+			function authenticate(){
+				// generate a hash of the credentials
+				hashed_credentials = CryptoJS.SHA1(email_input.value + password_input.value);
+				console.log(hashed_credentials.toString());
+
+				// todo: test for an existing keyring
+				var xhr = new XMLHttpRequest();
+				xhr.open("GET","http://localhost:7302/keychains/" + email_input.value, true);
+				xhr.setRequestHeader("x-access-key",hashed_credentials);
+				xhr.onreadystatechange = function(){
+					console.log("readyState: " + this.readyState);
+					if(this.readyState === 4){
+						console.log("status: " + this.status);
+						if(this.status === 200){
+							console.log("responseText: " + this.responseText);
+							keychain = JSON.parse(this.responseText);
+							authenticated = true;
+						}
+					}
+				};
+				xhr.send();
+
+				// todo: create keyring if necissary
+
+				// update authentication status
+				authenticate_button.value = "deauthenticate";
+			}
+		</script>
+	</body>
+</html>

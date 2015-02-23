@@ -364,7 +364,7 @@ http.createServer(function(req, res){
 
 	// all responses include these headers to support cross-domain requests
 	var allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
-	var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME","X-Access-Token", "X-Encrypted", "X-Private"];
+	var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME","X-Access-Key","X-Access-Token", "X-Encrypted", "X-Private"];
 
 	res.setHeader("Access-Control-Allow-Methods", allowed_methods.join(","));
 	res.setHeader("Access-Control-Allow-Headers", allowed_headers.join(","));
