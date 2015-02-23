@@ -79,10 +79,11 @@
 				object_list.innerHTML = null;
 				// loop through keyring
 				for(key in keyring.keys){
-					console.log("key: " + keyring.keys[key].url);
+					var selected_key = keyring.keys[key];
+					console.log("key: " + selected_key.url);
 					// add info from keyring to the list 
 					var item = document.createElement("li");
-					item.innerHTML = keyring.keys[key].url;
+					item.innerHTML = "<a href=\"" + selected_key.url + "&access_key=" + selected_key.access_key + "\">" + selected_key.url + "&access_key=" + selected_key.access_key + "</a>";
 					object_list.appendChild(item);
 				}
 			}
