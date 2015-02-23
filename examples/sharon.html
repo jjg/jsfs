@@ -15,7 +15,7 @@
 		</div>
 
 		<div id="objects">
-			<li id="object_list">
+			<ul id="object_list"></ul>
 			<br>
 			<input type="button" id="add_object_button" onclick="add_object()" value="add object">
 		</div>
@@ -30,11 +30,11 @@
 				// generate a hash of the credentials
 				hashed_email = CryptoJS.SHA1(email_input.value);
 				hashed_credentials = CryptoJS.SHA1(email_input.value + password_input.value);
-				console.log(hashed_credentials.toString());
+				console.log("hashed_credentials: " + hashed_credentials.toString());
 
 				// test for an existing keyring
 				var xhr = new XMLHttpRequest();
-				xhr.open("GET","http://localhost:7302/keychains/" + hashed_email, true);
+				xhr.open("GET","http://localhost:7302/keyrings/" + hashed_email, true);
 				xhr.setRequestHeader("x-access-key",hashed_credentials);
 				xhr.onreadystatechange = function(){
 					console.log("readyState: " + this.readyState);
@@ -42,17 +42,19 @@
 						console.log("status: " + this.status);
 						if(this.status === 200){
 							console.log("responseText: " + this.responseText);
-							keychain = JSON.parse(this.responseText);
+							keyring = JSON.parse(this.responseText);
 							authenticated = true;
 							// update authentication status
 							authenticate_button.value = "deauthenticate";
+							// display keys 
+							load_keys();
 						}
 						if(this.status === 404){
 							console.log("keyring not found, creating a new one");
-							// todo: create keyring if necissary
-							keychain = {keys:[]};	// todo: add created, etc.?
+							// create keyring if necissary
+							keyring = {keys:[]};	// todo: add created, etc.?
 							var xhr = new XMLHttpRequest();
-							xhr.open("POST", "http://localhost:7302/keychains/" + hashed_email, true);
+							xhr.open("POST", "http://localhost:7302/keyrings/" + hashed_email, true);
 							xhr.setRequestHeader("x-access-key", hashed_credentials);
 							xhr.setRequestHeader("x-private", true);
 							xhr.setRequestHeader("Content-type", "application/json");
@@ -66,12 +68,82 @@
 									}
 								}
 							};
-							xhr.send(JSON.stringify(keychain));
+							xhr.send(JSON.stringify(keyring));
 						}
 					}
 				};
 				xhr.send();
 			}
+
+			function load_keys(){
+				// loop through keyring
+				for(key in keyring.keys){
+					console.log("key: " + keyring.keys[key].url);
+					// add info from keyring to the list 
+					var item = document.createElement("li");
+					item.innerHTML = keyring.keys[key].url;
+					object_list.appendChild(item);
+				}
+			}
+
+			function add_object(){
+
+				// todo: check for authentication
+
+				// create a generic object to store
+				var ts = (new Date()).getTime().toString();
+				var an_object = {
+					timestamp: ts,
+					time_hash: CryptoJS.SHA1(ts).toString()
+				};
+				console.log("an_object: " + JSON.stringify(an_object));
+
+				// store the new object
+				var xhr = new XMLHttpRequest();
+				xhr.open("POST","http://localhost:7302/objects/" + an_object.time_hash, true);
+				xhr.setRequestHeader("x-private", true);
+				xhr.setRequestHeader("Content-type", "application/json");
+				xhr.onreadystatechange = function(){
+					console.log("add_object readyState: " + this.readyState);
+					if(this.readyState === 4){
+						console.log("add_object status: " + this.status);
+						if(this.status === 200){
+							console.log("add_object responseText: " + this.responseText);
+							var post_result = JSON.parse(this.responseText);
+
+							// add the object to the keyring
+							var key = {
+								url:"http://localhost:7302/objects/" + an_object.time_hash,
+								access_key: post_result.access_key
+							};
+
+							keyring.keys.push(key);
+
+							// store updated keyring
+							var xhr = new XMLHttpRequest();
+							xhr.open("PUT","http://localhost:7302/keyrings/" + hashed_email,true);
+							xhr.setRequestHeader("x-access-key",hashed_credentials);
+							xhr.setRequestHeader("Content-type", "application/json");
+							xhr.onreadystatechange = function(){
+								console.log("update keyring readyState: " + this.readyState);
+								if(this.readyState === 4){
+									console.log("update keyring status: " + this.status);
+									if(this.status === 200){
+										console.log("keyring updated");
+									} else {
+										console.log("error updating keyring");
+									}
+								}
+							};
+							xhr.send(JSON.stringify(keyring));
+
+							load_keys();
+						}
+					}
+				};
+				xhr.send(JSON.stringify(an_object));
+			}
+
 		</script>
 	</body>
 </html>
