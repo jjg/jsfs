@@ -22,16 +22,19 @@
 
 		<script>
 			var authenticated = false;
+			var hashed_email = null;
 			var hashed_credentials = null;
+			var keyring = null;
 
 			function authenticate(){
 				// generate a hash of the credentials
+				hashed_email = CryptoJS.SHA1(email_input.value);
 				hashed_credentials = CryptoJS.SHA1(email_input.value + password_input.value);
 				console.log(hashed_credentials.toString());
 
-				// todo: test for an existing keyring
+				// test for an existing keyring
 				var xhr = new XMLHttpRequest();
-				xhr.open("GET","http://localhost:7302/keychains/" + email_input.value, true);
+				xhr.open("GET","http://localhost:7302/keychains/" + hashed_email, true);
 				xhr.setRequestHeader("x-access-key",hashed_credentials);
 				xhr.onreadystatechange = function(){
 					console.log("readyState: " + this.readyState);
@@ -41,15 +44,33 @@
 							console.log("responseText: " + this.responseText);
 							keychain = JSON.parse(this.responseText);
 							authenticated = true;
+							// update authentication status
+							authenticate_button.value = "deauthenticate";
+						}
+						if(this.status === 404){
+							console.log("keyring not found, creating a new one");
+							// todo: create keyring if necissary
+							keychain = {keys:[]};	// todo: add created, etc.?
+							var xhr = new XMLHttpRequest();
+							xhr.open("POST", "http://localhost:7302/keychains/" + hashed_email, true);
+							xhr.setRequestHeader("x-access-key", hashed_credentials);
+							xhr.setRequestHeader("x-private", true);
+							xhr.setRequestHeader("Content-type", "application/json");
+							xhr.onreadystatechange = function(){
+								console.log("create keyring readyState: " + this.readyState);
+								if(this.readyState === 4){
+								console.log("create keyring status: " + this.status);
+									if(this.status === 200){
+										authenticated = true;
+										authenticate_button.value = "deauthenticate";
+									}
+								}
+							};
+							xhr.send(JSON.stringify(keychain));
 						}
 					}
 				};
 				xhr.send();
-
-				// todo: create keyring if necissary
-
-				// update authentication status
-				authenticate_button.value = "deauthenticate";
 			}
 		</script>
 	</body>
