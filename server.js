@@ -586,7 +586,7 @@ http.createServer(function(req, res){
                 var selected_inode = superblock[an_inode];
                 if(selected_inode.url.indexOf(target_url) > -1){    // todo: consider making this match more precise
                     if((access_key && access_key === selected_inode.access_key) ||
-						(access_token && token_valid(access_token, selected_inode, req.method))
+						(access_token && token_valid(access_token, selected_inode, req.method)) ||
 						(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
                         matching_inodes.push(selected_inode);
                     } 
