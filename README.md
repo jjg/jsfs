@@ -37,12 +37,16 @@ By default all objects stored in jsfs are public and will be accessible via `GET
 *NOTE: as `private` objects are not included in directory listings it is up to the client to keep track of them and their associated keys.*
  
 ###encrypted
-Set this paramter to `true` to encrypt data before it is stored on disk.  Once enabled, decryption happens automatically on `GET` requests and additional modifications via `PUT` will be encrypted as well. *NOTE:* encryption increases CPU utilization and potentially reduces deduplication performance, so use only when necissary.
+Set this paramter to `true` to encrypt data before it is stored on disk.  Once enabled, decryption happens automatically on `GET` requests and additional modifications via `PUT` will be encrypted as well.
+
+*NOTE: encryption increases CPU utilization and potentially reduces deduplication performance, so use only when necissary.*
 
 ###access_key
 Specifying a valid access_key authorizes the use of all supported HTTP verbs and is required for requests to change the `access_key` or generate `access_token`s.  When a new object is stored jsfs will generate an `access_key` automatically and return it in the response to a `POST` request.  Additionally the client can supply a custom `access_key` by supplying this parameter to the initial `POST` request.
 
-An `access_key` can be changed by supplying the current `access_key` along with the `replacement_access_key` parameter.  This will cause any existing `access_token`s to become invalid.  *NOTE: changing the `access_key` of an encrypted object is currently unsupported!*.
+An `access_key` can be changed by supplying the current `access_key` along with the `replacement_access_key` parameter.  This will cause any existing `access_token`s to become invalid.
+
+*NOTE: changing the `access_key` of an encrypted object is currently unsupported!*.
 
 ###access_token
 An `access_token` must be provided to execute any request on a `private` object, and is required for `PUT` and `DELETE` if an `access_key` is not supplied.
@@ -64,7 +68,7 @@ To make a temporary token for this same object, concatinate the `access_key` wit
 
 This string is then hashed with SHA1 and supplied as a parameter or header with the request, along with an additional parameter named `expires` which is set to match the expiration time used above.  When jsfs receives the request it generates the same token based on the stored `access_key`, the HTTP method of the incoming request and the supplied `expires` parameter to validate the `access_token`.
 
-* NOTE: all `access_tokens` can be immediately invalidated by changing an objects `access_key`, however if individual `access_tokens` need to be invalidated a pattern of requesting new, temporary tokens before each request is recommended.
+*NOTE: all `access_tokens` can be immediately invalidated by changing an objects `access_key`, however if individual `access_tokens` need to be invalidated a pattern of requesting new, temporary tokens before each request is recommended.*
 
 ##POST
 Stores a new object at the specified URL.  If the object exists jsfs returns `405 method not allowed`.
@@ -240,4 +244,4 @@ Date: Wed, 25 Feb 2015 15:43:03 GMT
 Connection: keep-alive
 ````
 
-* NOTE: some response information above may be removed in later versions of jsfs, in particular the `blocks` section as it's not directly useful to clients.*
+*NOTE: some response information above may be removed in later versions of jsfs, in particular the `blocks` section as it's not directly useful to clients.*
