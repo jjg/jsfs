@@ -1,5 +1,3 @@
-#CURRENTLY OBSOLETE, NEW DOCS COMING SOON :)#
-
 jsfs
 ====
 
@@ -17,51 +15,59 @@ JSFS 3.x introduces breaking changes to the REST API compared to earlier version
 *  Create the `blocks` directory (`mkdir blocks`)
 *  Start the server (`node server.js`, `npm start`,  foreman, pm2, etc.)
 
-If you don't like storing the data in the same directory as the code (smart), edit config.js to change the location where data (blocks) are stored and restart jsfs for the changes to take effect. If you've already stored data in jsfs, you'll want to move the contents of the existing `blocks` directory to the new location or you'll loose the data.
+If you don't like storing the data in the same directory as the code (smart), edit config.js to change the location where data (blocks) are stored and restart jsfs for the changes to take effect.
 
 JSFS can now store blocks across physical disk boundaries which is useful when you need to store more data than a single disk can hold.  At the moment JSFS simply distributes these blocks as evenly as possible across all configured storage devices.  There are thoughts about supporting configurations that provide redundancy through the use of multiple storage devices but for now you'll want to make sure the devices have their own redundancy (or a good backup) as loosing a storage device will cause data loss just like it would with a single device.
 
-In addition to multiple devices JSFS now lets you specify the maximum amount of data that can be stored per-device.  The default config sets this very low (1024 bytes) so you can see what happens when you run out of space and respond accordingly.  Useage and capacity statistics are logged to the console periodically so you can keep an eye on usage before you hit the limit.
+In addition to multiple locations, you specify the maximum amount of data that can be stored per-location.  The default config sets this very low (1024 bytes) so you can see what happens when you run out of space and respond accordingly.  Useage and capacity statistics are logged to the console periodically so you can keep an eye on usage before you hit the limit.
  
 #API
 
 ##Keys and Tokens
-First some terminology.  Keys unlock all operations on an object stored in JSFS.  With an `access_key` you can perform all HTTP operations against an object (GET, PUT, DELETE, etc.) and you can generate tokens that grant varying degrees of access to the object.  Objects have one key.
+Keys are used to unlock all operations that can be performed on an object stored in JSFS, and objects can have only one key.  With an `access_key`, you can execute all supported HTTP verbs (GET, PUT, DELETE) as well as generate tokens that grant varying degrees of access to the object.
 
-Tokens are ephemeral and any number of them can be generated to grant access to an object.  Token generation is described later.
+Tokens are more ephemeral, and any number of them can be generated to grant varying degrees of access to an object.  Token generation is described later.
 
-##HEADERS
-jsfs uses several custom headers to control access to data and how it is stored.  These values can also be supplied as query parameters by removing the leading "x-" and changing "-" to "_" (`x-access-token` becomes `access_token`).
+##Parameters and Headers
+jsfs uses several parameters to control access to objects and how they are stored.  These values can also be supplied as request headers by adding a leading "x-" and changing "_" to "-" (`access_token` becomes `x-access-token`). Headers are preferred to querystring parameters because they are less likely to collide but both function the same. 
 
-###x-access-key
-This header is used to authorize requests that 
-###x-private
-Set this header to `true` to mark files as private (they won't show up in directory listings).  *NOTE:* since private files don't show up in directory listings you'll have to keep track of the URL's yourself.  Additionally, to access private files a valid `x-access-key` or `x-access-token` must be supplied with the request.
+###private
+By default all objects stored in jsfs are public and will be accessible via `GET` request and show up in directory listings.  If the `private` parameter is set to `true` a valid `access_key` or `access_token` must be supplied to access the object.
 
-###x-access-token
-This header is used to authorize requests that modify existing files (`PUT`, `DELETE`).  A JSFS-generated token is automatically provided as part of the response when a new file is `POST`ed to a URL.
+*NOTE: as `private` objects are not included in directory listings it is up to the client to keep track of them and their associated keys.*
+ 
+###encrypted
+Set this paramter to `true` to encrypt data before it is stored on disk.  Once enabled, decryption happens automatically on `GET` requests and additional modifications via `PUT` will be encrypted as well. *NOTE:* encryption increases CPU utilization and potentially reduces deduplication performance, so use only when necissary.
 
-It's also possible to provide a custom `access_token` by setting the `x-access-token` header during the initial `POST` of a file (useful if you want to generate/manage tokens using an external system).  To perform further updates to a file, you'll need to keep track of this token.
+###access_key
+Specifying a valid access_key authorizes the use of all supported HTTP verbs and is required for requests to change the `access_key` or generate `access_token`s.  When a new object is stored jsfs will generate an `access_key` automatically and return it in the response to a `POST` request.  Additionally the client can supply a custom `access_key` by supplying this parameter to the initial `POST` request.
 
-###x-encrypted
-Set this header to `true` to encrypt data before it is stored on-disk (*NOTE* custom `x-access-token` must be supplied to enable encryption!).  Once enabled, decryption happens automatically on `GET` requests and additional modifications via `PUT` will be encrypted as well. *NOTE:* encryption increases CPU utilization and reduces deduplication performance so use only when necissary.
+An `access_key` can be changed by supplying the current `access_key` along with the `replacement_access_key` parameter.  This will cause any existing `access_token`s to become invalid.  *NOTE: changing the `access_key` of an encrypted object is currently unsupported!*.
 
-##Temporary/Expiring URLs
-Sometimes you need to grant temporary access to an otherwise private file.  You can generate a time-limited url for any file stored privately (see `x-private` header above) so long as you posess a valid `access_token` for the file using the following steps:
+###access_token
+An `access_token` must be provided to execute any request on a `private` object, and is required for `PUT` and `DELETE` if an `access_key` is not supplied.
 
-1.  Generate a expiration timestamp in milliseconds since midnight, January 1st, 1970 (in Javascript `(new Date()).getTime()` yields the current time in this format)
-2.  Concatinate the `access_token` of the desired file with the number generated above to create a single string
-3.  Generate an sha1 hex hash of the string (refer to https://github.com/jjg/jsfs/blob/master/jsfs.js#L99 for an example)
+####Generating access_tokens
+Currently there are two types of `access_token`s: durable and temporary.  Both are generated by creating a string that describes what access is granted and then using SHA1 to generate a hash of this string, but the format and use is a little different.
 
-To use the temporary URL, pass the timestamp along with the hash as parameters of a GET request for the file, like so:
+Durable `access_token`s are generated by concatinating an object's `access_key` with the HTTP verb that the token will be used for.
 
-`curl "http://localhost:7302/music/Brinstar.mp3?expire_time=2422995348828&time_token=63556d4f6cb3459f1cd2ac33ea53ad10da5d7725"`
+Example to grant GET access:
 
-JSFS first validates the timestamp against the local (server) time to make sure it hasn't already expired, then performs a hash comparison between the supplied `time_token` and the known `access_token` of the requested file.  If either test fails, the call returns `401 unauthorized`.
+     "077785b5e45418cf6caabdd686719813fb22e3ce" + "GET"
 
+This string is then hashed with SHA1 and can be used to perform a GET request for the object whose `access_key` was used to generate the token.
+
+To make a temporary token for this same object, concatinate the `access_key` with the HTTP verb and the expiration time in epoc format (milliseconds since midnight, 01/01/1970):
+
+     "077785b5e45418cf6caabdd686719813fb22e3ce" + "GET" + "1424877559581"
+
+This string is then hashed with SHA1 and supplied as a parameter or header with the request, along with an additional parameter named `expires` which is set to match the expiration time used above.  When jsfs receives the request it generates the same token based on the stored `access_key`, the HTTP method of the incoming request and the supplied `expires` parameter to validate the `access_token`.
+
+* NOTE: all `access_tokens` can be immediately invalidated by changing an objects `access_key`, however if individual `access_tokens` need to be invalidated a pattern of requesting new, temporary tokens before each request is recommended.
 
 ##POST
-Stores a new file at the specified URL.  If the file exists jsfs returns `405 method not allowed`.
+Stores a new object at the specified URL.  If the object exists jsfs returns `405 method not allowed`.
 
 ###EXAMPLE
 Request:
@@ -71,16 +77,49 @@ Request:
 Response:
 ````
 {
-    "created": 1420309092678,
+    "url": "/localhost/music/Brinstar.mp3",
+    "created": 1424878242595,
     "version": 0,
     "private": false,
     "encrypted": false,
-    "access_token": "7092bee1ac7d4a5c55cb5ff61043b89a6e32cf71",
+    "fingerprint": "fde752ca6541c16ec626a3cf6e45e835cfd9db9b",
+    "access_key": "fde752ca6541c16ec626a3cf6e45e835cfd9db9b",
     "content_type": "application/x-www-form-urlencoded",
-    "file_size": 179186,
+    "file_size": 7678080,
     "block_size": 1048576,
     "blocks": [
-        "7653454f4c8c859bed57a44d59c6b536b0518192"
+        {
+            "block_hash": "610f0b4c20a47b4162edc224db602a040cc9d243",
+            "last_seen": "./blocks/"
+        },
+        {
+            "block_hash": "60a93a7c97fd94bb730516333f1469d101ae9d44",
+            "last_seen": "./blocks/"
+        },
+        {
+            "block_hash": "62774a105ffc5f57dcf14d44afcc8880ee2fff8c",
+            "last_seen": "./blocks/"
+        },
+        {
+            "block_hash": "14c9c748e3c67d8ec52cfc2e071bbe3126cd303a",
+            "last_seen": "./blocks/"
+        },
+        {
+            "block_hash": "8697c9ba80ef824de9b0e35ad6996edaa6cc50df",
+            "last_seen": "./blocks/"
+        },
+        {
+            "block_hash": "866581c2a452160748b84dcd33a2e56290f1b585",
+            "last_seen": "./blocks/"
+        },
+        {
+            "block_hash": "6c1527902e873054b36adf46278e9938e642721c",
+            "last_seen": "./blocks/"
+        },
+        {
+            "block_hash": "10938182cd5e714dacb893d6127f8ca89359fec7",
+            "last_seen": "./blocks/"
+        }
     ]
 }
 ````
@@ -92,7 +131,7 @@ This means that you can point DNS records for `foo.com` and `bar.com` to the sam
 This also means that `GET http://foo.com:7302/files/baz.txt` and `GET http://bar.com:7302/files/baz.txt` do not return the same file, however if you need to access a file stored via a different host you can reach it using its absolute address (in this case, `http://bar.com:7302/.com.foo/files/baz.txt`).
 
 ##GET
-Retreives the file at the specified URL.  If the file does not exist a `404 not found` is returned.  If the URL ends with a trailing slash `/` a directory listing of non-private files stored at the specified location.
+Retreives the object stored at the specified URL.  If the file does not exist a `404 not found` is returned.  If the URL ends with a trailing slash `/` a directory listing of non-private files stored at the specified location.
 
 ###EXAMPLE
 Request (directory):
@@ -103,9 +142,52 @@ Response:
 
 ````
 [
-    "Brinstar.mp3",
-    "Opening.mp3",
-    "Mother_Brain.mp3"
+    {
+        "url": "/localhost/music/Brinstar.mp3",
+        "created": 1424878242595,
+        "version": 0,
+        "private": false,
+        "encrypted": false,
+        "fingerprint": "fde752ca6541c16ec626a3cf6e45e835cfd9db9b",
+        "access_key": "fde752ca6541c16ec626a3cf6e45e835cfd9db9b",
+        "content_type": "application/x-www-form-urlencoded",
+        "file_size": 7678080,
+        "block_size": 1048576,
+        "blocks": [
+            {
+                "block_hash": "610f0b4c20a47b4162edc224db602a040cc9d243",
+                "last_seen": "./blocks/"
+            },
+            {
+                "block_hash": "60a93a7c97fd94bb730516333f1469d101ae9d44",
+                "last_seen": "./blocks/"
+            },
+            {
+                "block_hash": "62774a105ffc5f57dcf14d44afcc8880ee2fff8c",
+                "last_seen": "./blocks/"
+            },
+            {
+                "block_hash": "14c9c748e3c67d8ec52cfc2e071bbe3126cd303a",
+                "last_seen": "./blocks/"
+            },
+            {
+                "block_hash": "8697c9ba80ef824de9b0e35ad6996edaa6cc50df",
+                "last_seen": "./blocks/"
+            },
+            {
+                "block_hash": "866581c2a452160748b84dcd33a2e56290f1b585",
+                "last_seen": "./blocks/"
+            },
+            {
+                "block_hash": "6c1527902e873054b36adf46278e9938e642721c",
+                "last_seen": "./blocks/"
+            },
+            {
+                "block_hash": "10938182cd5e714dacb893d6127f8ca89359fec7",
+                "last_seen": "./blocks/"
+            }
+        ]
+    }
 ]
 ````
 
@@ -117,33 +199,18 @@ Response:
 The binary file is stored in new local file called `Brinstar.mp3`.
 
 ##PUT
-Updates an existing file stored at the specified location.  This method requires authorization, so requests must include a valid `x-access-token` header for the specific file, otherwise `401 unauthorized` will be returned.  If the file does not exist `405 method not allowed` is returned.
+Updates an existing object stored at the specified location.  This method requires authorization, so requests must include a valid `x-access-key` or `x-access-token` header for the specific file, otherwise `401 unauthorized` will be returned.  If the file does not exist `405 method not allowed` is returned.
 
 ###EXAMPLE
 Request:
 
-     curl -X PUT -H "x-access-token: 7092bee1ac7d4a5c55cb5ff61043b89a6e32cf71"  --data-binary @Brinstar.mp3 "http://localhost:7302/music/Brinstar.mp3"
+     curl -X PUT -H "x-access-key: 7092bee1ac7d4a5c55cb5ff61043b89a6e32cf71"  --data-binary @Brinstar.mp3 "http://localhost:7302/music/Brinstar.mp3"
 
 Result:
-````
-{
-    "created": 1420309092678,
-    "version": 0,
-    "private": false,
-    "encrypted": false,
-    "access_token": "7092bee1ac7d4a5c55cb5ff61043b89a6e32cf71",
-    "content_type": "application/x-www-form-urlencoded",
-    "file_size": 179186,
-    "block_size": 1048576,
-    "blocks": [
-        "7653454f4c8c859bed57a44d59c6b536b0518192"
-    ],
-    "updated": 1420309368172
-}
-````
+`HTTP 200`
 
 ##DELETE
-Removes the file at the specified URL.  This method requires authorization so requests must include a valid `x-access-token` header for the specified file.  If the token is not supplied or is invalid `401 unauthorized` is returend.  If the file does not exist `405 method not allowed` is returned.
+Removes the file at the specified URL.  This method requires authorization so requests must include a valid `x-access-key` or `x-access-token` header for the specified file.  If the token is not supplied or is invalid `401 unauthorized` is returend.  If the file does not exist `405 method not allowed` is returned.
 
 ###Example
 Request:
@@ -164,8 +231,13 @@ Request:
 Response:
 ````
 HTTP/1.1 200 OK
+Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
+Access-Control-Allow-Headers: Accept,Accept-Version,Content-Type,Api-Version,Origin,X-Requested-With,Range,X_FILENAME,X-Access-Key,X-Replacement-Access-Key,X-Access-Token,X-Encrypted,X-Private
+Access-Control-Allow-Origin: *
 Content-Type: application/x-www-form-urlencoded
-Content-Length: 179186
-Date: Sat, 03 Jan 2015 18:24:53 GMT
+Content-Length: 7678080
+Date: Wed, 25 Feb 2015 15:43:03 GMT
 Connection: keep-alive
 ````
+
+* NOTE: some response information above may be removed in later versions of jsfs, in particular the `blocks` section as it's not directly useful to clients.*
