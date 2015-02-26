@@ -533,6 +533,20 @@ http.createServer(function(req, res){
 							break;
 						}
 					}
+					
+					// send notification to websocket listeners
+					//log.message(log.DEBUG, JSON.stringify(ws_servers[target_url]));
+					if(ws_servers[target_url]){
+						
+						log.message(log.DEBUG, "Notifying websocket connections to " + target_url);
+						
+						ws_servers[target_url].clients.forEach(function each(client){
+							client.send(req.method + ": " + target_url);
+						});
+						
+						//ws_servers[target_url].send(req.method + ": " + target_url);
+					}
+					
 					// finish request
 					res.end();
 
