@@ -192,6 +192,17 @@ function time_token_valid(access_token, inode, expires, method){
 	}
 }
 
+function send_notifications(req, target_url, object){
+	
+	if(ws_servers[target_url]){
+		log.message(log.DEBUG, "Notifying websocket connections to " + target_url);
+		ws_servers[target_url].clients.forEach(function each(client){
+			// todo: define what these notifications should contain (what's most valuable to the listener?)
+			client.send(req.method + ": " + target_url);
+		});
+	}
+}
+
 // base storage object
 var inode = {
 	init: function(url){
@@ -530,17 +541,8 @@ http.createServer(function(req, res){
 						}
 					}
 					
-					// send notification to websocket listeners
-					if(ws_servers[target_url]){
-						
-						log.message(log.DEBUG, "Notifying websocket connections to " + target_url);
-						
-						ws_servers[target_url].clients.forEach(function each(client){
-							
-							// todo: define what these notifications should contain (what's most valuable to the listener?)
-							client.send(req.method + ": " + target_url);
-						});
-					}
+					// send notifications
+					send_notifications(req, target_url, requested_file);
 					
 					// finish request
 					res.end();
