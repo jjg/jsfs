@@ -7,7 +7,8 @@
 // the plan is to eliminate these eventually...
 var superblock = {};
 var storage_locations = {};
-var unique_blocks = [];	// todo: find a less brute-force, more efficient way to track this
+var unique_blocks = [];		// todo: find a less brute-force, more efficient way to track this
+var ws_servers = {};		// holds the websocket servers
 
 // *** UTILITIES  & MODULES ***
 var http = require("http");
@@ -16,6 +17,7 @@ var fs = require("fs");
 var config = require("./config.js");
 var log = require("./jlog.js");
 var url = require("url");
+var ws_server = require("ws").Server;
 
 function save_superblock(){
 	for(var location in config.STORAGE_LOCATIONS){
@@ -410,6 +412,13 @@ http.createServer(function(req, res){
 				target_url = target_url.slice(0,target_url.length - 1);
 				return_index = true;
 			}
+			
+			// if url ends in "/ws", return a websocket to broadcast changes
+			var return_ws = false;
+			if(target_url.slice(-3) === "/ws"){
+				target_url = target_url.slice(0,target_url.length -3);
+				return_ws = true;
+			}
 
 			var matching_inodes = [];
 			for(var an_inode in superblock){
@@ -429,10 +438,43 @@ http.createServer(function(req, res){
 			// sort by version
 			matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
 
-			// this feels like awkward logic but good enough for now 
+			// this feels like awkward logic but good enough for now
 			if(return_index){
 				res.write(JSON.stringify(matching_inodes));
 				res.end();
+			} else if(return_ws){
+			
+				// todo: check ws_servers for existing websocket for this path
+				if(!ws_servers[target_url]){
+					
+					log.message(log.INFO, "Allocating websocket for " + target_url);
+					
+					// todo: create websocket for this path
+					var a_wss = new ws_server({path:target_url,port:7304});
+					a_wss.on("connection", function connection(a_ws) {
+						
+						log.message(log.INFO,"Websocket connected");
+						
+						a_ws.on("message", function incoming(message) {
+					  	
+					  		log.message(log.INFO, "Websocket message received");
+							
+							// debug
+							a_ws.send("ECHO: " + message);
+						});
+						a_ws.send('ACK');
+					});
+					
+					ws_servers[target_url] = a_wss;
+					
+				} else {
+					log.message(log.INFO, "Connecting to existing websocket for " + target_url);
+				}
+				
+				// todo: connect request to websocket for this path
+				res.write("ws:/" + target_url + ":7304");
+				res.end();
+			
 			} else {
 
 				// return the first file located at the requested URL
@@ -538,7 +580,7 @@ http.createServer(function(req, res){
 				new_file.file_metadata.encrypted = true;
 			}
 
-			// if access_key is supplied with POST, replace the default one 
+			// if access_key is supplied with POST, replace the default one
 			if(access_key){
 				new_file.file_metadata.access_key = access_key;
 			}
@@ -589,7 +631,7 @@ http.createServer(function(req, res){
 						(access_token && token_valid(access_token, selected_inode, req.method)) ||
 						(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
                         matching_inodes.push(selected_inode);
-                    } 
+                    }
                  }
             }
         }
@@ -671,10 +713,10 @@ http.createServer(function(req, res){
 					if(access_key && selected_inode.access_key === access_key){
 						// hard delete
 						delete superblock[selected_inode.fingerprint];
-					} else if((access_token && token_valid(access_token, selected_inode, req.method)) || 
+					} else if((access_token && token_valid(access_token, selected_inode, req.method)) ||
 								(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
 						// soft delete
-						selected_inode.private = true; 
+						selected_inode.private = true;
                     }
 					save_superblock();
 					res.StatusCode = 200;
@@ -696,7 +738,7 @@ http.createServer(function(req, res){
 			if(superblock.hasOwnProperty(an_inode)){
 				var selected_inode = superblock[an_inode];
 				if(!selected_inode.private && (selected_inode.url.indexOf(target_url) > -1)){
-					// todo: consider only returning inodes whose fingerprint matches the token?    
+					// todo: consider only returning inodes whose fingerprint matches the token?
 					matching_inodes.push(selected_inode);
 				}
 			}
