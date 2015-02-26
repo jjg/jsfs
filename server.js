@@ -414,6 +414,7 @@ http.createServer(function(req, res){
 			}
 			
 			// if url ends in "/ws", return a websocket to broadcast changes
+			// todo: find a better way to specify this request than a string which could collide...
 			var return_ws = false;
 			if(target_url.slice(-3) === "/ws"){
 				target_url = target_url.slice(0,target_url.length -3);
@@ -444,25 +445,20 @@ http.createServer(function(req, res){
 				res.end();
 			} else if(return_ws){
 			
-				// todo: check ws_servers for existing websocket for this path
+				// check ws_servers for existing websocket for this path
 				if(!ws_servers[target_url]){
 					
 					log.message(log.INFO, "Allocating websocket for " + target_url);
 					
-					// todo: create websocket for this path
+					// create websocket for this path
 					var a_wss = new ws_server({path:target_url,port:7304});
 					a_wss.on("connection", function connection(a_ws) {
-						
-						log.message(log.INFO,"Websocket connected");
-						
+						log.message(log.DEBUG,"Websocket connected");
 						a_ws.on("message", function incoming(message) {
-					  	
+							// todo: consider doing something useful with incoming messages?
 					  		log.message(log.INFO, "Websocket message received");
-							
-							// debug
-							a_ws.send("ECHO: " + message);
 						});
-						a_ws.send('ACK');
+						a_ws.send("Connected to " + target_url);
 					});
 					
 					ws_servers[target_url] = a_wss;
@@ -471,8 +467,8 @@ http.createServer(function(req, res){
 					log.message(log.INFO, "Connecting to existing websocket for " + target_url);
 				}
 				
-				// todo: connect request to websocket for this path
-				res.write("ws:/" + target_url + ":7304");
+				// return a URL where websocket clients can get notifications for this object
+				res.write("ws://" + req.headers.host.slice(0,req.headers.host.indexOf(":")) + ":7304" + target_url);
 				res.end();
 			
 			} else {
@@ -535,16 +531,15 @@ http.createServer(function(req, res){
 					}
 					
 					// send notification to websocket listeners
-					//log.message(log.DEBUG, JSON.stringify(ws_servers[target_url]));
 					if(ws_servers[target_url]){
 						
 						log.message(log.DEBUG, "Notifying websocket connections to " + target_url);
 						
 						ws_servers[target_url].clients.forEach(function each(client){
+							
+							// todo: define what these notifications should contain (what's most valuable to the listener?)
 							client.send(req.method + ": " + target_url);
 						});
-						
-						//ws_servers[target_url].send(req.method + ": " + target_url);
 					}
 					
 					// finish request
