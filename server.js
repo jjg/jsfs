@@ -193,7 +193,6 @@ function time_token_valid(access_token, inode, expires, method){
 }
 
 function send_notifications(req, target_url, object){
-	
 	if(ws_servers[target_url]){
 		log.message(log.DEBUG, "Notifying websocket connections to " + target_url);
 		ws_servers[target_url].clients.forEach(function each(client){
@@ -607,6 +606,10 @@ http.createServer(function(req, res){
 				var new_file_metadata = new_file.close();
 
 				if(new_file_metadata){
+					
+					// send notifications todo: cool, but consider if this opens a security hole...
+					send_notifications(req, target_url, new_file);
+					
 					res.end(JSON.stringify(new_file_metadata));
 				} else {
 					res.statusCode = 500;
@@ -696,6 +699,10 @@ http.createServer(function(req, res){
 				var new_file_metadata = new_file.close();
 
 				if(new_file_metadata){
+					
+					// send notifications
+					send_notifications(req, target_url, new_file);
+					
 					res.end(JSON.stringify(new_file_metadata));
 				} else {
 					res.statusCode = 500;
@@ -730,6 +737,10 @@ http.createServer(function(req, res){
 						selected_inode.private = true;
                     }
 					save_superblock();
+					
+					// send notifications
+					send_notifications(req, target_url, selected_inode);
+					
 					res.StatusCode = 200;
 					res.end();
                  } else {
