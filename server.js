@@ -149,20 +149,20 @@ function decrypt(block, key){
 
 function token_valid(access_token, inode, method){
 
-    // generate expected token
-    var shasum = crypto.createHash("sha1");
-    shasum.update(inode.access_key + method);
-    var expected_token = shasum.digest("hex");
+	// generate expected token
+	var shasum = crypto.createHash("sha1");
+	shasum.update(inode.access_key + method);
+	var expected_token = shasum.digest("hex");
 
-    log.message(log.DEBUG,"expected_token: " + expected_token);
-    log.message(log.DEBUG,"access_token: " + access_token);
+	log.message(log.DEBUG,"expected_token: " + expected_token);
+	log.message(log.DEBUG,"access_token: " + access_token);
 
-    // compare
-    if(expected_token === access_token){
-        return true;
-    } else {
-        return false;
-    }
+	// compare
+	if(expected_token === access_token){
+		return true;
+	} else {
+		return false;
+	}
 }
 
 function time_token_valid(access_token, inode, expires, method){
@@ -173,16 +173,16 @@ function time_token_valid(access_token, inode, expires, method){
 		return false;
 	} else {
 		// make sure token is valid
-	    // generate expected token
-	    var shasum = crypto.createHash("sha1");
-	    shasum.update(inode.access_key + method + expires);
-	    var expected_token = shasum.digest("hex");
+		// generate expected token
+		var shasum = crypto.createHash("sha1");
+		shasum.update(inode.access_key + method + expires);
+		var expected_token = shasum.digest("hex");
 
-	    log.message(log.DEBUG,"expected_token: " + expected_token);
-	    log.message(log.DEBUG,"access_token: " + access_token);
+		log.message(log.DEBUG,"expected_token: " + expected_token);
+		log.message(log.DEBUG,"access_token: " + access_token);
 
-	    // compare
-	    if(expected_token === access_token){
+		// compare
+		if(expected_token === access_token){
 			return true;
 		} else {
 			return false;
@@ -507,7 +507,7 @@ http.createServer(function(req, res){
 	case "POST":
 
 		// make sure the URL isn't already taken
-        var matching_inodes = [];
+		var matching_inodes = [];
 		for(var an_inode in superblock){
 			if(superblock.hasOwnProperty(an_inode)){
 				var selected_inode = superblock[an_inode];
@@ -560,10 +560,10 @@ http.createServer(function(req, res){
 					res.end("error writing blocks");
 				}
 
-                // display utilization stats (todo: this may be temporary so consider putting it elsewhere)
-                for(var storage_location in storage_locations){
-                    log.message(log.INFO, storage_locations[storage_location].usage + " bytes used of " + storage_locations[storage_location].capacity + " in " + storage_locations[storage_location].path);
-                }
+				// display utilization stats (todo: this may be temporary so consider putting it elsewhere)
+				for(var storage_location in storage_locations){
+					log.message(log.INFO, storage_locations[storage_location].usage + " bytes used of " + storage_locations[storage_location].capacity + " in " + storage_locations[storage_location].path);
+				}
 
 			});
 
@@ -580,21 +580,21 @@ http.createServer(function(req, res){
 	case "PUT":
 
 		// make sure there's a file to update
-        var matching_inodes = [];
-        for(var an_inode in superblock){
-            if(superblock.hasOwnProperty(an_inode)){
-                var selected_inode = superblock[an_inode];
-                if(selected_inode.url.indexOf(target_url) > -1){    // todo: consider making this match more precise
-                    if((access_key && access_key === selected_inode.access_key) ||
+		var matching_inodes = [];
+		for(var an_inode in superblock){
+			if(superblock.hasOwnProperty(an_inode)){
+				var selected_inode = superblock[an_inode];
+				if(selected_inode.url.indexOf(target_url) > -1){    // todo: consider making this match more precise
+					if((access_key && access_key === selected_inode.access_key) ||
 						(access_token && token_valid(access_token, selected_inode, req.method)) ||
 						(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
-                        matching_inodes.push(selected_inode);
-                    }
-                 }
-            }
-        }
+						matching_inodes.push(selected_inode);
+					}
+				 }
+			}
+		}
 
-        // sort by version
+		// sort by version
 		matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
 
 		if(matching_inodes.length > 0){
@@ -660,32 +660,32 @@ http.createServer(function(req, res){
 
 	case "DELETE":
 
-	// remove the data stored at the specified URL
+		// remove the data stored at the specified URL
 
-	// make sure there's a file to update
-	var matching_inodes = [];
-	for(var an_inode in superblock){
-		if(superblock.hasOwnProperty(an_inode)){
-			var selected_inode = superblock[an_inode];
-			if(selected_inode.url === target_url){
-				if(access_key && selected_inode.access_key === access_key){
-					// hard delete
-					delete superblock[selected_inode.fingerprint];
-				} else if((access_token && token_valid(access_token, selected_inode, req.method)) ||
-							(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
-					// soft delete
-					selected_inode.private = true;
+		// make sure there's a file to update
+		var matching_inodes = [];
+		for(var an_inode in superblock){
+			if(superblock.hasOwnProperty(an_inode)){
+				var selected_inode = superblock[an_inode];
+				if(selected_inode.url === target_url){
+					if(access_key && selected_inode.access_key === access_key){
+						// hard delete
+						delete superblock[selected_inode.fingerprint];
+					} else if((access_token && token_valid(access_token, selected_inode, req.method)) ||
+								(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
+						// soft delete
+						selected_inode.private = true;
+					}
+					save_superblock();
+					res.statusCode = 204;
+					break;
+				} else {
+					res.statusCode = 404;
 				}
-				save_superblock();
-				res.statusCode = 204;
-				break;
-			} else {
-				res.statusCode = 404;
 			}
 		}
-	}
-	res.end();
-	break;
+		res.end();
+		break;
 
 	case "HEAD":
 
