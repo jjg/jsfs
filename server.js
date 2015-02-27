@@ -664,6 +664,7 @@ http.createServer(function(req, res){
 
 		// make sure there's a file to update
 		var matching_inodes = [];
+		var goodResp, badResp;
 		for(var an_inode in superblock){
 			if(superblock.hasOwnProperty(an_inode)){
 				var selected_inode = superblock[an_inode];
@@ -677,15 +678,15 @@ http.createServer(function(req, res){
 						selected_inode.private = true;
 					}
 					save_superblock();
-					res.StatusCode = 200;
-					res.end();
-				 } else {
-					res.statusCode = 404;
-					res.end();
+					goodResp = 204;
+				} else {
+					badResp = 404;
 				}
 			}
 		}
 
+		res.statusCode = goodResp ? goodResp : badResp;
+		res.end();
 		break;
 
 	case "HEAD":
