@@ -454,32 +454,42 @@ http.createServer(function(req, res){
 				res.write(JSON.stringify(matching_inodes));
 				res.end();
 			} else if(return_ws){
-			
-				// check ws_servers for existing websocket for this path
-				if(!ws_servers[target_url]){
+
+					if(matching_inodes.length > 0){
 					
-					log.message(log.INFO, "Allocating websocket for " + target_url);
-					
-					// create websocket for this path
-					var a_wss = new ws_server({path:target_url,port:7304});
-					a_wss.on("connection", function connection(a_ws) {
-						log.message(log.DEBUG,"Websocket connected");
-						a_ws.on("message", function incoming(message) {
-							// todo: consider doing something useful with incoming messages?
-					  		log.message(log.INFO, "Websocket message received");
-						});
-						a_ws.send("Connected to " + target_url);
-					});
-					
-					ws_servers[target_url] = a_wss;
-					
-				} else {
-					log.message(log.INFO, "Connecting to existing websocket for " + target_url);
+						// check ws_servers for existing websocket for this path
+						if(!ws_servers[target_url]){
+							
+							log.message(log.INFO, "Allocating websocket for " + target_url);
+							
+							// create websocket for this path
+								// todo: consider requiring some form of authentication for these connections (verifyClient?)
+							var a_wss = new ws_server({path:target_url,port:7304});
+							a_wss.on("connection", function connection(a_ws) {
+								log.message(log.DEBUG,"Websocket connected");
+								a_ws.on("message", function incoming(message) {
+									// todo: consider doing something useful with incoming messages?
+										log.message(log.INFO, "Websocket message received");
+								});
+								a_ws.send("Connected to " + target_url);
+							});
+							
+							ws_servers[target_url] = a_wss;
+							
+						} else {
+							log.message(log.INFO, "Connecting to existing websocket for " + target_url);
+						}
+						
+						// return a URL where websocket clients can get notifications for this object
+						res.write("ws://" + req.headers.host.slice(0,req.headers.host.indexOf(":")) + ":7304" + target_url);
+						res.end();
+
+					} else {
+
+						// don't return websockets for files that can't be accessed
+						res.statusCode = 404;
+						res.end("file not found");
 				}
-				
-				// return a URL where websocket clients can get notifications for this object
-				res.write("ws://" + req.headers.host.slice(0,req.headers.host.indexOf(":")) + ":7304" + target_url);
-				res.end();
 			
 			} else {
 
