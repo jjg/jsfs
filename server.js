@@ -703,7 +703,8 @@ http.createServer(function(req, res){
 				// experimental: append support
 				if(append){
 
-	                // todo: fetch the original file data
+	                // fetch the original file data
+					// todo: dry this up if we decide to keep it (duplicated from the GET method above)
 					var original_file_data = "";
                     for(var i=0; i < original_file.blocks.length; i++){
                         var block_data = null;
@@ -746,16 +747,17 @@ http.createServer(function(req, res){
                         }
                     }
 
-		            // todo: try to parse the original file data
-					log.message(log.DEBUG, "original_file_data: " + original_file_data);
-					var parsed_original_file_data = JSON.parse(original_file_data);
-
-			        // todo: if the root object of the orignal data is an array,
-				    // append the new data to the array
-					parsed_original_file_data.push(JSON.parse(append_data));
-
-					// debug
-					log.message(log.DEBUG, "updated file contents: " + JSON.stringify(parsed_original_file_data));
+					var parsed_original_file_data = null;
+					try{
+						// try to parse the original file data
+						parsed_original_file_data = JSON.parse(original_file_data);
+						// append the new data to the array
+						parsed_original_file_data.push(JSON.parse(append_data));
+					} catch(ex){
+						log.message(log.ERROR,"Error parsing existing data for append operation: " + ex);
+						res.statusCode = 500;
+						res.end("Error appending data: error parsing original object, must be JSON array");
+					}
 
 					// finally, store the updated data
 					var updated_data = new Buffer(JSON.stringify(parsed_original_file_data));
