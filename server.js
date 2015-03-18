@@ -404,6 +404,8 @@ http.createServer(function(req, res){
 
 		case "GET":
 
+			var request_status = 404;
+
 			// if url ends in "/", return a list of public files
 			var return_index = false;
 			if(target_url.slice(-1) == "/"){
@@ -420,7 +422,12 @@ http.createServer(function(req, res){
 							(access_key && access_key === selected_inode.access_key) ||
 							(access_token && token_valid(access_token, selected_inode, req.method)) ||
 							(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
+							// we found at least one file you have access to
+							request_status = 200;
 							matching_inodes.push(selected_inode);
+						} else {
+							// we found a file, but you don't have permission to see it
+							request_status = 401;
 						}
 					}
 				}
@@ -454,8 +461,8 @@ http.createServer(function(req, res){
 
 					requested_file = matching_inodes[0];
 
-					// return status 200
-					res.statusCode = 200;
+					// return status
+					res.statusCode = request_status; 
 
 					// return file metadata as HTTP headers
 					res.setHeader("Content-Type", requested_file.content_type);
@@ -509,10 +516,10 @@ http.createServer(function(req, res){
 					res.end();
 
 				} else {
-					// return status 404
-					log.message(log.WARN, "file not found");
-					res.statusCode = 404;
-					res.end("file not found");
+					// return status
+					log.message(log.INFO, "Result: " + request_status);
+					res.statusCode = request_status;
+					res.end();
 				}
 			}
 
