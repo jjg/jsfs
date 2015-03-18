@@ -42,6 +42,13 @@ Set this paramter to `true` to encrypt data before it is stored on disk.  Once e
 
 *NOTE: encryption increases CPU utilization and potentially reduces deduplication performance, so use only when necissary.*
 
+###append
+*Don't use this unless you have to, it's experimental and likely to be removed in the future.*
+
+This allows you to append an object to an array that is stored in a file on JSFS.  If you set the `x-append` header when the object is initially `POST`ed, subsequent `PUT` requests that include the `x-append` header set to a matching value will attempt to load the original object and `.push()` a JSON object supplied in the payload of the `PUT` request into the original object and store the result.  
+
+If anything goes wrong (if the original object doesn't contain an array, or the `PUT` payload isn't JSON, etc.) the call will fail.  If the value of the `x-append` header of the `PUT` request doesn't match the value supplied during the original `POST`, the call will return a `401`.
+
 ###version
 This parameter allows you to retreive a specific version of a file when making a `GET` request.  Each time a `PUT` request is made to an existing URL a new version is created and an `x-version` header is returned if the `PUT` request is sucessful.  A list of versions can be displayed by appending a `/` to the end of the URL for a file, which will return a JSON array of versions for the specified file.
 
