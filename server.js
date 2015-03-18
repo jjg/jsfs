@@ -450,6 +450,8 @@ http.createServer(function(req, res){
 						index_inode.version = selected_inode.version;
 						index_inode.content_type = selected_inode.content_type;
 						index_inode.file_size = selected_inode.file_size;
+
+						index_inodes.push(index_inode);
 					}
 				}
 				res.write(JSON.stringify(index_inodes));
@@ -629,7 +631,7 @@ http.createServer(function(req, res){
 			// copy original file properties
 			new_file.file_metadata.created = original_file.created;
 			new_file.file_metadata.updated = (new Date()).getTime();
-			new_file.file_metadata.fingerprint = original_file.fingerprint;
+			//new_file.file_metadata.fingerprint = original_file.fingerprint;
 			new_file.file_metadata.content_type = original_file.content_type;
 			new_file.file_metadata.private = original_file.private;
 			new_file.file_metadata.encrypted = original_file.encrypted;
