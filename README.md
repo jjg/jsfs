@@ -37,6 +37,7 @@ By default all objects stored in jsfs are public and will be accessible via `GET
 *NOTE: as `private` objects are not included in directory listings it is up to the client to keep track of them and their associated keys.*
  
 ###encrypted
+Don't use encryption for now, it needs more testing in light of recent changes.
 Set this paramter to `true` to encrypt data before it is stored on disk.  Once enabled, decryption happens automatically on `GET` requests and additional modifications via `PUT` will be encrypted as well.
 
 *NOTE: encryption increases CPU utilization and potentially reduces deduplication performance, so use only when necissary.*
