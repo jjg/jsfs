@@ -433,9 +433,18 @@ http.createServer(function(req, res){
 			if(return_index){
 
 				// don't return internal-use-only metadata 
+				var index_inodes = []; 
 				for(var an_inode in matching_inodes){
 					if(matching_inodes.hasOwnProperty(an_inode)){
 						var selected_inode = matching_inodes[an_inode];
+						var index_inode = {};
+						index_inode.url = selected_inode.url;
+						index_inode.created = selected_inode.created;
+						index_inode.version = selected_inode.version;
+						index_inode.content_type = selected_inode.content_type;
+						index_inode.file_size = selected_inode.file_size;
+					
+						/*
 						delete selected_inode.private;
 						delete selected_inode.encrypted;
 						delete selected_inode.fingerprint;
@@ -443,9 +452,11 @@ http.createServer(function(req, res){
 						delete selected_inode.access_key;
 						delete selected_inode.blocks;
 						delete selected_inode.last_seen;
+						*/
+						index_inodes.push(index_inode);
 					}
 				}
-				res.write(JSON.stringify(matching_inodes));
+				res.write(JSON.stringify(index_inodes));
 				res.end();
 			} else {
 
