@@ -431,6 +431,20 @@ http.createServer(function(req, res){
 
 			// this feels like awkward logic but good enough for now
 			if(return_index){
+
+				// don't return internal-use-only metadata 
+				for(var an_inode in matching_inodes){
+					if(matching_inodes.hasOwnProperty(an_inode)){
+						var selected_inode = matching_inodes[an_inode];
+						delete selected_inode.private;
+						delete selected_inode.encrypted;
+						delete selected_inode.fingerprint;
+						delete selected_inode.block_size;
+						delete selected_inode.access_key;
+						delete selected_inode.blocks;
+						delete selected_inode.last_seen;
+					}
+				}
 				res.write(JSON.stringify(matching_inodes));
 				res.end();
 			} else {
