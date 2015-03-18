@@ -666,7 +666,9 @@ http.createServer(function(req, res){
 				var new_file_metadata = new_file.close();
 
 				if(new_file_metadata){
-					res.statusCode = 204;
+					res.writeHead(204,
+						{"x-version": new_file_metadata.version}
+					);
 					res.end();
 				} else {
 					res.statusCode = 500;
