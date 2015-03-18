@@ -397,6 +397,7 @@ http.createServer(function(req, res){
 	var encrypted = url.parse(req.url,true).query.encrypted || req.headers["x-encrypted"];
 	var expires = url.parse(req.url,true).query.expires || req.headers["x-expires"];
 	var content_type = url.parse(req.url,true).query.content_type || req.headers["content-type"];
+	var version = url.parse(req.url,true).query.version || req.headers["x-version"];
 
 	log.message(log.INFO, "Received " + req.method + " request for URL " + target_url);
 
@@ -422,9 +423,20 @@ http.createServer(function(req, res){
 							(access_key && access_key === selected_inode.access_key) ||
 							(access_token && token_valid(access_token, selected_inode, req.method)) ||
 							(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
+
+							// if a specific version is requested, return only that version
+							if(version){
+								if(selected_inode.version == version){
+									request_status = 200;
+									matching_inodes.push(selected_inode);
+									break;
+								}
+							}
+
 							// we found at least one file you have access to
 							request_status = 200;
 							matching_inodes.push(selected_inode);
+
 						} else {
 							// we found a file, but you don't have permission to see it
 							request_status = 401;
