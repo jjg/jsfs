@@ -443,17 +443,6 @@ http.createServer(function(req, res){
 						index_inode.version = selected_inode.version;
 						index_inode.content_type = selected_inode.content_type;
 						index_inode.file_size = selected_inode.file_size;
-					
-						/*
-						delete selected_inode.private;
-						delete selected_inode.encrypted;
-						delete selected_inode.fingerprint;
-						delete selected_inode.block_size;
-						delete selected_inode.access_key;
-						delete selected_inode.blocks;
-						delete selected_inode.last_seen;
-						*/
-						index_inodes.push(index_inode);
 					}
 				}
 				res.write(JSON.stringify(index_inodes));
@@ -668,7 +657,9 @@ http.createServer(function(req, res){
 				var new_file_metadata = new_file.close();
 
 				if(new_file_metadata){
-					res.end(JSON.stringify(new_file_metadata));
+					res.statusCode = 204;
+					res.end();
+					//res.end(JSON.stringify(new_file_metadata));
 				} else {
 					res.statusCode = 500;
 					res.end("error writing blocks");
