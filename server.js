@@ -659,7 +659,6 @@ http.createServer(function(req, res){
 				if(new_file_metadata){
 					res.statusCode = 204;
 					res.end();
-					//res.end(JSON.stringify(new_file_metadata));
 				} else {
 					res.statusCode = 500;
 					res.end("error writing blocks");
