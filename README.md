@@ -41,6 +41,9 @@ Set this paramter to `true` to encrypt data before it is stored on disk.  Once e
 
 *NOTE: encryption increases CPU utilization and potentially reduces deduplication performance, so use only when necissary.*
 
+###version
+This parameter allows you to retreive a specific version of a file when making a `GET` request.  Each time a `PUT` request is made to an existing URL a new version is created and an `x-version` header is returned if the `PUT` request is sucessful.  A list of versions can be displayed by appending a `/` to the end of the URL for a file, which will return a JSON array of versions for the specified file.
+
 ###access_key
 Specifying a valid access_key authorizes the use of all supported HTTP verbs and is required for requests to change the `access_key` or generate `access_token`s.  When a new object is stored jsfs will generate an `access_key` automatically and return it in the response to a `POST` request.  Additionally the client can supply a custom `access_key` by supplying this parameter to the initial `POST` request.
 
