@@ -365,7 +365,7 @@ http.createServer(function(req, res){
 
 	// all responses include these headers to support cross-domain requests
 	var allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
-	var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME","X-Access-Key","X-Replacement-Access-Key","X-Access-Token", "X-Encrypted", "X-Private"];
+	var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME","X-Access-Key","X-Replacement-Access-Key","X-Access-Token", "X-Encrypted", "X-Private", "X-Append"];
 
 	res.setHeader("Access-Control-Allow-Methods", allowed_methods.join(","));
 	res.setHeader("Access-Control-Allow-Headers", allowed_headers.join(","));
@@ -400,7 +400,7 @@ http.createServer(function(req, res){
 	var content_type = url.parse(req.url,true).query.content_type || req.headers["content-type"];
 	var version = url.parse(req.url,true).query.version || req.headers["x-version"];
 
-	// experimental: support for appending data to stored objects 
+	// experimental: support for appending data to stored objects
 	var append = url.parse(req.url,true).query.append || req.headers["x-append"];
 
 	log.message(log.INFO, "Received " + req.method + " request for URL " + target_url);
@@ -455,8 +455,8 @@ http.createServer(function(req, res){
 			// this feels like awkward logic but good enough for now
 			if(return_index){
 
-				// don't return internal-use-only metadata 
-				var index_inodes = []; 
+				// don't return internal-use-only metadata
+				var index_inodes = [];
 				for(var an_inode in matching_inodes){
 					if(matching_inodes.hasOwnProperty(an_inode)){
 						var selected_inode = matching_inodes[an_inode];
@@ -480,7 +480,7 @@ http.createServer(function(req, res){
 					requested_file = matching_inodes[0];
 
 					// return status
-					res.statusCode = request_status; 
+					res.statusCode = request_status;
 
 					// return file metadata as HTTP headers
 					res.setHeader("Content-Type", requested_file.content_type);
@@ -703,49 +703,49 @@ http.createServer(function(req, res){
 				// experimental: append support
 				if(append){
 
-	                // fetch the original file data
+					// fetch the original file data
 					// todo: dry this up if we decide to keep it (duplicated from the GET method above)
 					var original_file_data = "";
-                    for(var i=0; i < original_file.blocks.length; i++){
-                        var block_data = null;
-                        if(original_file.blocks[i].last_seen){
-                            var block_filename = original_file.blocks[i].last_seen + original_file.blocks[i].block_hash;
+					for(var i=0; i < original_file.blocks.length; i++){
+						var block_data = null;
+						if(original_file.blocks[i].last_seen){
+							var block_filename = original_file.blocks[i].last_seen + original_file.blocks[i].block_hash;
 
-                            try{
-                                block_data = fs.readFileSync(block_filename);
-                            } catch(ex){
-                                log.message(log.ERROR, "cannot locate block " + original_file.blocks[i].block_hash + " in last_seen location, hunting...");
-                            }
+							try{
+								block_data = fs.readFileSync(block_filename);
+							} catch(ex){
+								log.message(log.ERROR, "cannot locate block " + original_file.blocks[i].block_hash + " in last_seen location, hunting...");
+							}
 
-                        } else {
-                            log.message(log.WARN, "no last_seen value for block " + original_file.blocks[i].block_hash + ", hunting...");
-                        }
+						} else {
+							log.message(log.WARN, "no last_seen value for block " + original_file.blocks[i].block_hash + ", hunting...");
+						}
 
-                        // if we don't find the block where we expect it, search all storage locations
-                        if(!block_data){
-                            for(var storage_location in storage_locations){
-                                var selected_location = storage_locations[storage_location];
-                                if(fs.existsSync(selected_location.path + original_file.blocks[i].block_hash)){                                    log.message(log.INFO, "found block " + original_file.blocks[i].block_hash + " in " + selected_location.path);
-                                    original_file.blocks[i].last_seen = selected_location.path;
-                                    block_data = fs.readFileSync(selected_location.path + original_file.blocks[i].block_hash);
-                                } else {
-                                    log.message(log.ERROR, "unable to locate block " + original_file.blocks[i].block_hash + " in " + selected_location.path);
-                                }
-                            }
-                        }
+						// if we don't find the block where we expect it, search all storage locations
+						if(!block_data){
+							for(var storage_location in storage_locations){
+								var selected_location = storage_locations[storage_location];
+								if(fs.existsSync(selected_location.path + original_file.blocks[i].block_hash)){                                    log.message(log.INFO, "found block " + original_file.blocks[i].block_hash + " in " + selected_location.path);
+									original_file.blocks[i].last_seen = selected_location.path;
+									block_data = fs.readFileSync(selected_location.path + original_file.blocks[i].block_hash);
+								} else {
+									log.message(log.ERROR, "unable to locate block " + original_file.blocks[i].block_hash + " in " + selected_location.path);
+								}
+							}
+						}
 
-                        if(original_file.encrypted){
-                            log.message(log.INFO, "decrypting block");
-                            block_data = decrypt(block_data, original_file.access_key);
-                        }
-                        // append block to file data 
-                        if(block_data){
-                           original_file_data += block_data; 
-                        } else {
-                            log.message(log.ERROR, "unable to locate missing block in any storage location");
-                            break;
-                        }
-                    }
+						if(original_file.encrypted){
+							log.message(log.INFO, "decrypting block");
+							block_data = decrypt(block_data, original_file.access_key);
+						}
+						// append block to file data
+						if(block_data){
+						   original_file_data += block_data;
+						} else {
+							log.message(log.ERROR, "unable to locate missing block in any storage location");
+							break;
+						}
+					}
 
 					var parsed_original_file_data = null;
 					try{
@@ -762,9 +762,9 @@ http.createServer(function(req, res){
 					// finally, store the updated data
 					var updated_data = new Buffer(JSON.stringify(parsed_original_file_data));
 					if(!new_file.write(updated_data)){
-                        res.statusCode = 500;
-                        res.end("error writing blocks");
-                    };
+						res.statusCode = 500;
+						res.end("error writing blocks");
+					};
 				}
 
 				var new_file_metadata = new_file.close();
