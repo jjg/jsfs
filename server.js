@@ -235,7 +235,7 @@ var inode = {
 		this.file_metadata.access_key = this.file_metadata.fingerprint;
 	},
 	write: function(chunk){
-		log.message(log.DEBUG,"got inode.write: " + chunk);
+		//log.message(log.DEBUG,"got inode.write: " + chunk);
 		this.input_buffer = new Buffer.concat([this.input_buffer, chunk]);
 		return this.process_buffer();
 	},
