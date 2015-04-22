@@ -400,9 +400,6 @@ http.createServer(function(req, res){
 	var content_type = url.parse(req.url,true).query.content_type || req.headers["content-type"];
 	var version = url.parse(req.url,true).query.version || req.headers["x-version"];
 
-	// experimental: support for appending data to stored objects
-	var append = url.parse(req.url,true).query.append || req.headers["x-append"];
-
 	log.message(log.INFO, "Received " + req.method + " request for URL " + target_url);
 
 	switch(req.method){
@@ -577,11 +574,6 @@ http.createServer(function(req, res){
 				new_file.file_metadata.encrypted = true;
 			}
 
-			// experimental: append support, may be removed later
-			if(append){
-				new_file.file_metadata.append = append;
-			}
-
 			// if access_key is supplied with POST, replace the default one
 			if(access_key){
 				new_file.file_metadata.access_key = access_key;
@@ -631,9 +623,7 @@ http.createServer(function(req, res){
 				if(selected_inode.url.indexOf(target_url) > -1){    // todo: consider making this match more precise
 					if((access_key && access_key === selected_inode.access_key) ||
 						(access_token && token_valid(access_token, selected_inode, req.method)) ||
-						(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method)) ||
-						(selected_inode.append === append)){	// experimental: object append support
-
+						(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
 						matching_inodes.push(selected_inode);
 					}
 				 }
@@ -678,95 +668,14 @@ http.createServer(function(req, res){
 				new_file.file_metadata.encrypted = true;
 			}
 
-			// experimental: append support
-			var append_data = "";
-			if(append){
-				// set the append property on the new version of the file
-				new_file.file_metadata.append = append;
-			}
-
 			req.on("data", function(chunk){
-
-				// experimental: append support
-				if(append){
-					append_data += chunk;
-				} else {
-					if(!new_file.write(chunk)){
-						res.statusCode = 500;
-						res.end("error writing blocks");
-					};
-				}
+				if(!new_file.write(chunk)){
+					res.statusCode = 500;
+					res.end("error writing blocks");
+				};
 			});
 
 			req.on("end", function(){
-
-				// experimental: append support
-				if(append){
-
-					// fetch the original file data
-					// todo: dry this up if we decide to keep it (duplicated from the GET method above)
-					var original_file_data = "";
-					for(var i=0; i < original_file.blocks.length; i++){
-						var block_data = null;
-						if(original_file.blocks[i].last_seen){
-							var block_filename = original_file.blocks[i].last_seen + original_file.blocks[i].block_hash;
-
-							try{
-								block_data = fs.readFileSync(block_filename);
-							} catch(ex){
-								log.message(log.ERROR, "cannot locate block " + original_file.blocks[i].block_hash + " in last_seen location, hunting...");
-							}
-
-						} else {
-							log.message(log.WARN, "no last_seen value for block " + original_file.blocks[i].block_hash + ", hunting...");
-						}
-
-						// if we don't find the block where we expect it, search all storage locations
-						if(!block_data){
-							for(var storage_location in storage_locations){
-								var selected_location = storage_locations[storage_location];
-								if(fs.existsSync(selected_location.path + original_file.blocks[i].block_hash)){                                    log.message(log.INFO, "found block " + original_file.blocks[i].block_hash + " in " + selected_location.path);
-									original_file.blocks[i].last_seen = selected_location.path;
-									block_data = fs.readFileSync(selected_location.path + original_file.blocks[i].block_hash);
-								} else {
-									log.message(log.ERROR, "unable to locate block " + original_file.blocks[i].block_hash + " in " + selected_location.path);
-								}
-							}
-						}
-
-						if(original_file.encrypted){
-							log.message(log.INFO, "decrypting block");
-							block_data = decrypt(block_data, original_file.access_key);
-						}
-						// append block to file data
-						if(block_data){
-						   original_file_data += block_data;
-						} else {
-							log.message(log.ERROR, "unable to locate missing block in any storage location");
-							break;
-						}
-					}
-
-					var parsed_original_file_data = null;
-					try{
-						// try to parse the original file data
-						parsed_original_file_data = JSON.parse(original_file_data);
-						// append the new data to the array
-						parsed_original_file_data.push(JSON.parse(append_data));
-					} catch(ex){
-						log.message(log.ERROR,"Error parsing existing data for append operation: " + ex);
-						res.statusCode = 500;
-						res.end("Error appending data: error parsing original object, must be JSON array");
-					}
-
-					// finally, store the updated data
-					var updated_data = new Buffer(JSON.stringify(parsed_original_file_data));
-					if(!new_file.write(updated_data)){
-						res.statusCode = 500;
-						res.end("error writing blocks");
-					};
-				}
-
 				var new_file_metadata = new_file.close();
 
 				if(new_file_metadata){
@@ -779,6 +688,7 @@ http.createServer(function(req, res){
 					res.end("error writing blocks");
 				}
 			});
+
 		} else {
 
 			// if file dosen't exist at this URL, return 405 "Method not allowed"
