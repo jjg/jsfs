@@ -730,7 +730,7 @@ http.createServer(function(req, res){
 		break;
 
 	case "HEAD":
-
+/*
 		// todo: look into a more efficient way of looking up inode fingerprints by url
 		var matching_inodes = [];
 		for(var an_inode in superblock){
@@ -739,6 +739,38 @@ http.createServer(function(req, res){
 				if(selected_inode.url.indexOf(target_url > -1)){
 					// todo: consider only returning inodes whose fingerprint matches the token?
 					matching_inodes.push(selected_inode);
+				}
+			}
+		}
+*/
+
+		var matching_inodes = [];
+		for(var an_inode in superblock){
+			if(superblock.hasOwnProperty(an_inode)){
+				var selected_inode = superblock[an_inode];
+				if(selected_inode.url.indexOf(target_url) > -1){    // todo: consider making this match more precise
+					if(!selected_inode.private ||
+						(access_key && access_key === selected_inode.access_key) ||
+						(access_token && token_valid(access_token, selected_inode, req.method)) ||
+						(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
+
+						// if a specific version is requested, return only that version
+						if(version){
+							if(selected_inode.version == version){
+								request_status = 200;
+								matching_inodes.push(selected_inode);
+								break;
+							}
+						}
+
+						// we found at least one file you have access to
+						request_status = 200;
+						matching_inodes.push(selected_inode);
+
+					} else {
+						// we found a file, but you don't have permission to see it
+						request_status = 401;
+					}
 				}
 			}
 		}
@@ -753,24 +785,32 @@ http.createServer(function(req, res){
 			if(matching_inodes.length > 0){
 				requested_file = matching_inodes[0];
 			}
-
+/*
 			if(!selected_inode.private ||
 				(access_key && access_key === selected_inode.access_key) ||
 				(access_token && token_valid(access_token, selected_inode, req.method)) ||
 				(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
-
+*/
 				res.writeHead(200,{
 					"Content-Type": requested_file.content_type,
 					"Content-Length": requested_file.file_size
 				});
 				res.end();
+/*
 			} else {
 				res.statusCode = 401;
 				res.end();
 			}
+*/
 		} else {
+			// return status
+			log.message(log.INFO, "Result: " + request_status);
+			res.statusCode = request_status;
+			res.end();
+/*
 			res.statusCode = 404;
 			res.end();
+*/
 		}
 
 		break;
