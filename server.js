@@ -754,11 +754,6 @@ http.createServer(function(req, res){
 				requested_file = matching_inodes[0];
 			}
 
-/*
-			if(!requested_file.private ||
-				(requested_file.fingerprint === access_token.fingerprint) ||
-				time_token_valid(requested_file, expire_time, time_token)){
-*/
 			if(!selected_inode.private ||
 				(access_key && access_key === selected_inode.access_key) ||
 				(access_token && token_valid(access_token, selected_inode, req.method)) ||
