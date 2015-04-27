@@ -736,7 +736,7 @@ http.createServer(function(req, res){
 		for(var an_inode in superblock){
 			if(superblock.hasOwnProperty(an_inode)){
 				var selected_inode = superblock[an_inode];
-				if(!selected_inode.private && (selected_inode.url.indexOf(target_url) > -1)){
+				if(selected_inode.url.indexOf(target_url > -1)){
 					// todo: consider only returning inodes whose fingerprint matches the token?
 					matching_inodes.push(selected_inode);
 				}
@@ -754,9 +754,16 @@ http.createServer(function(req, res){
 				requested_file = matching_inodes[0];
 			}
 
+/*
 			if(!requested_file.private ||
 				(requested_file.fingerprint === access_token.fingerprint) ||
 				time_token_valid(requested_file, expire_time, time_token)){
+*/
+			if(!selected_inode.private ||
+				(access_key && access_key === selected_inode.access_key) ||
+				(access_token && token_valid(access_token, selected_inode, req.method)) ||
+				(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
+
 				res.writeHead(200,{
 					"Content-Type": requested_file.content_type,
 					"Content-Length": requested_file.file_size
