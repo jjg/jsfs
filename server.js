@@ -730,6 +730,7 @@ http.createServer(function(req, res){
 		break;
 
 	case "HEAD":
+		var request_status = 404;
 		var matching_inodes = [];
 		for(var an_inode in superblock){
 			if(superblock.hasOwnProperty(an_inode)){
