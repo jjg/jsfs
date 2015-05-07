@@ -481,6 +481,7 @@ http.createServer(function(req, res){
 
 					// return file metadata as HTTP headers
 					res.setHeader("Content-Type", requested_file.content_type);
+					res.setHeader("Content-Length", requested_file.file_size);
 
 					// return file blocks
 					for(var i=0; i < requested_file.blocks.length; i++){
