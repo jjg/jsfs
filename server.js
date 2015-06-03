@@ -162,12 +162,6 @@ function analyze_block(block){
 	result.bitrate = wav_header.readUInt32LE(24);
 	result.resolution = wav_header.readUInt16LE(34);
 
-/*
-	log.message(log.DEBUG, "riff indicator: " + wav_header.toString("utf8",0,4));
-	log.message(log.DEBUG, "length: " + wav_header.readUInt32BE(4));
-	log.message(log.DEBUG, "wav_header: " + wav_header.toString('utf8'));
-*/
-
 	return result;
 	
 }
