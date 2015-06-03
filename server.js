@@ -816,10 +816,30 @@ http.createServer(function(req, res){
 			if(matching_inodes.length > 0){
 				requested_file = matching_inodes[0];
 			}
+
+			// construct headers
+			res.setHeader("Content-Type", requested_file.content_type);
+			res.setHeader("Content-Length", requested_file.file_size);
+
+			// add extended object headers if we have them
+			if(requested_file.media_type){
+				 res.setHeader("X-Media-Type", requested_file.media_type);
+				if(requested_file.media_type != "unknown"){
+					res.setHeader("X-Media-Size", requested_file.media_size);
+					res.setHeader("X-Media-Channels", requested_file.media_channels);
+					res.setHeader("X-Media-Bitrate", requested_file.media_bitrate);
+					res.setHeader("X-Media-Resolution", requested_file.media_resolution);
+					res.setHeader("X-Media-Duration", requested_file.media_duration);
+				}
+			}
+
+			//res.writeHead(200);
+/*
 			res.writeHead(200,{
 				"Content-Type": requested_file.content_type,
 				"Content-Length": requested_file.file_size
 			});
+*/
 			res.end();
 		} else {
 			// return status
