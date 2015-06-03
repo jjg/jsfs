@@ -322,7 +322,18 @@ var inode = {
 
 		if(this.file_metadata.blocks.length === 0){
 			// grok known file types
-			log.message(log.INFO, "block analysis result: " + JSON.stringify(analyze_block(block)));
+			var analysis_result = analyze_block(block);
+			log.message(log.INFO, "block analysis result: " + JSON.stringify(analysis_result));
+			
+			// if we found out anything useful, annotate the object's metadata
+			this.file_metadata.media_type = analysis_result.type;
+			if(analysis_result.type != "unknown"){
+				this.file_metadata.media_size = analysis_result.size;
+				this.file_metadata.media_channels = analysis_result.channels;
+				this.file_metadata.media_bitrate = analysis_result.bitrate;
+				this.file_metadata.media_resolution = analysis_result.resolution;
+				this.file_metadata.media_duration = analysis_result.duration;
+			}
 		}
 
 		// if encryption is set, encrypt using the hash above
