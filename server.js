@@ -147,6 +147,31 @@ function decrypt(block, key){
 	return decipher.read();
 }
 
+// examine the contents of a block to generate metadata
+function analyze_block(block){
+
+	var result = {};
+
+	// test for WAVE
+	var wav_header = block.slice(0,44);
+	result.riff = wav_header.toString("utf8", 0, 4);
+	result.length = wav_header.readUInt32LE(4);
+	result.wav = wav_header.toString("utf8", 8, 12);
+	result.type = wav_header.readUInt16LE(20);
+	result.channels = wav_header.readUInt16LE(22);
+	result.bitrate = wav_header.readUInt32LE(24);
+	result.resolution = wav_header.readUInt16LE(34);
+
+/*
+	log.message(log.DEBUG, "riff indicator: " + wav_header.toString("utf8",0,4));
+	log.message(log.DEBUG, "length: " + wav_header.readUInt32BE(4));
+	log.message(log.DEBUG, "wav_header: " + wav_header.toString('utf8'));
+*/
+
+	return result;
+	
+}
+
 function token_valid(access_token, inode, method){
 
 	// generate expected token
@@ -292,6 +317,11 @@ var inode = {
 
 		// grab the next block
 		var block = this.input_buffer.slice(0, this.block_size);
+
+		if(this.file_metadata.blocks.length === 0){
+			// grok known file types
+			log.message(log.INFO, "block analysis result: " + JSON.stringify(analyze_block(block)));
+		}
 
 		// if encryption is set, encrypt using the hash above
 		if(this.file_metadata.encrypted && this.file_metadata.access_key){
