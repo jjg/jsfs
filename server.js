@@ -151,6 +151,7 @@ function decrypt(block, key){
 function analyze_block(block){
 
 	var result = {};
+	result.type = "unknown";
 
 	// test for WAVE
 	if(block.toString("utf8", 0, 4) === "RIFF"
