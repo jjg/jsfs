@@ -153,17 +153,24 @@ function analyze_block(block){
 	var result = {};
 
 	// test for WAVE
-	var wav_header = block.slice(0,44);
-	result.riff = wav_header.toString("utf8", 0, 4);
-	result.length = wav_header.readUInt32LE(4);
-	result.wav = wav_header.toString("utf8", 8, 12);
-	result.type = wav_header.readUInt16LE(20);
-	result.channels = wav_header.readUInt16LE(22);
-	result.bitrate = wav_header.readUInt32LE(24);
-	result.resolution = wav_header.readUInt16LE(34);
+	if(block.toString("utf8", 0, 4) === "RIFF"
+		& block.toString("utf8", 8, 12) === "WAVE"
+		& block.readUInt16LE(20) == 1){
+
+		result.type = "wave";
+	    result.size = block.readUInt32LE(4);
+	    result.channels = block.readUInt16LE(22);
+	    result.bitrate = block.readUInt32LE(24);
+	    result.resolution = block.readUInt16LE(34);
+		result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
+	}
+
+	// todo: test for MP3
+	// todo: test for FLAC
+	// todo: test for AIFF
+	// todo: test for ...
 
 	return result;
-	
 }
 
 function token_valid(access_token, inode, method){
