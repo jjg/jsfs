@@ -147,6 +147,33 @@ function decrypt(block, key){
 	return decipher.read();
 }
 
+// examine the contents of a block to generate metadata
+function analyze_block(block){
+
+	var result = {};
+	result.type = "unknown";
+
+	// test for WAVE
+	if(block.toString("utf8", 0, 4) === "RIFF"
+		& block.toString("utf8", 8, 12) === "WAVE"
+		& block.readUInt16LE(20) == 1){
+
+		result.type = "wave";
+	    result.size = block.readUInt32LE(4);
+	    result.channels = block.readUInt16LE(22);
+	    result.bitrate = block.readUInt32LE(24);
+	    result.resolution = block.readUInt16LE(34);
+		result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
+	}
+
+	// todo: test for MP3
+	// todo: test for FLAC
+	// todo: test for AIFF
+	// todo: test for ...
+
+	return result;
+}
+
 function token_valid(access_token, inode, method){
 
 	// generate expected token
@@ -292,6 +319,22 @@ var inode = {
 
 		// grab the next block
 		var block = this.input_buffer.slice(0, this.block_size);
+
+		if(this.file_metadata.blocks.length === 0){
+			// grok known file types
+			var analysis_result = analyze_block(block);
+			log.message(log.INFO, "block analysis result: " + JSON.stringify(analysis_result));
+			
+			// if we found out anything useful, annotate the object's metadata
+			this.file_metadata.media_type = analysis_result.type;
+			if(analysis_result.type != "unknown"){
+				this.file_metadata.media_size = analysis_result.size;
+				this.file_metadata.media_channels = analysis_result.channels;
+				this.file_metadata.media_bitrate = analysis_result.bitrate;
+				this.file_metadata.media_resolution = analysis_result.resolution;
+				this.file_metadata.media_duration = analysis_result.duration;
+			}
+		}
 
 		// if encryption is set, encrypt using the hash above
 		if(this.file_metadata.encrypted && this.file_metadata.access_key){
@@ -773,10 +816,30 @@ http.createServer(function(req, res){
 			if(matching_inodes.length > 0){
 				requested_file = matching_inodes[0];
 			}
+
+			// construct headers
+			res.setHeader("Content-Type", requested_file.content_type);
+			res.setHeader("Content-Length", requested_file.file_size);
+
+			// add extended object headers if we have them
+			if(requested_file.media_type){
+				 res.setHeader("X-Media-Type", requested_file.media_type);
+				if(requested_file.media_type != "unknown"){
+					res.setHeader("X-Media-Size", requested_file.media_size);
+					res.setHeader("X-Media-Channels", requested_file.media_channels);
+					res.setHeader("X-Media-Bitrate", requested_file.media_bitrate);
+					res.setHeader("X-Media-Resolution", requested_file.media_resolution);
+					res.setHeader("X-Media-Duration", requested_file.media_duration);
+				}
+			}
+
+			//res.writeHead(200);
+/*
 			res.writeHead(200,{
 				"Content-Type": requested_file.content_type,
 				"Content-Length": requested_file.file_size
 			});
+*/
 			res.end();
 		} else {
 			// return status
