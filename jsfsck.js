@@ -61,7 +61,7 @@ for(inode in superblock){
 					log.message(log.ERR, "unable to load block 0, cannot fix inode");
 				}
 			} else {
-				log.message(log.ERROR, "no blocks to analyize in " + selected_file.url);
+				log.message(log.ERROR, "no blocks to analyze in " + selected_file.url);
 			}
 		}
 	}
@@ -84,7 +84,7 @@ function load_superblock(){
             }
         }
     }
-
+/*
     // stat each block to establish its current location and
     // the utilization of each storage location
     for(var storage_location in storage_locations){
@@ -125,6 +125,7 @@ function load_superblock(){
     for(var storage_location in storage_locations){
         log.message(log.INFO, storage_locations[storage_location].usage + " of " + storage_locations[storage_location].capacity + " bytes used on " + storage_locations[storage_location].path);
     }
+*/
 }
 
 function system_stats(){
@@ -184,17 +185,21 @@ function analyze_block(block){
     result.type = "unknown";
 
     // test for WAVE
-    if(block.toString("utf8", 0, 4) === "RIFF"
-        & block.toString("utf8", 8, 12) === "WAVE"
-        & block.readUInt16LE(20) == 1){
+	try{
+	    if(block.toString("utf8", 0, 4) === "RIFF"
+	        & block.toString("utf8", 8, 12) === "WAVE"
+	        & block.readUInt16LE(20) == 1){
 
-        result.type = "wave";
-        result.size = block.readUInt32LE(4);
-        result.channels = block.readUInt16LE(22);
-        result.bitrate = block.readUInt32LE(24);
-        result.resolution = block.readUInt16LE(34);
-        result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
-    }
+	        result.type = "wave";
+	        result.size = block.readUInt32LE(4);
+	        result.channels = block.readUInt16LE(22);
+	        result.bitrate = block.readUInt32LE(24);
+	        result.resolution = block.readUInt16LE(34);
+	        result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
+	    }
+	} catch(ex){
+		log.message(log.INFO, "Exception thrown examining block for WAVE data: " + ex);
+	}
 
     // todo: test for MP3
     // todo: test for FLAC
