@@ -5,8 +5,8 @@ var log = require("./jlog.js");
 var superblock = {};
 var storage_locations = config.STORAGE_LOCATIONS;
 var unique_blocks = [];
-
-// todo: backup superblock
+var error_count = 0;
+var repair_count = 0;
 
 // open backup superblock
 load_superblock();
@@ -20,6 +20,8 @@ for(inode in superblock){
 		} else {
 			log.message(log.WARN, "media_type missing " + selected_file.url);
 
+			error_count++;
+
 			// check for blocks
 			if(selected_file.blocks.length > 0){
 				log.message(log.INFO, selected_file.blocks.length + " blocks in " + selected_file.url);
@@ -27,7 +29,6 @@ for(inode in superblock){
 				// read first block of objects missing the media_type property
 				log.message(log.INFO, "loading block 0 of " + selected_file.url);
 				var selected_block = load_block(selected_file, 0);
-				log.message(log.DEBUG, "selected_block.length: " + selected_block.length);
 				if(selected_block){
 					log.message(log.INFO, "block 0 loaded");
 	
@@ -45,12 +46,15 @@ for(inode in superblock){
 						selected_file.media_duration = analysis_result.duration;
 					}
 
+					log.message(log.INFO, "metadata updated for " + selected_file.url);
+
 					// write updated superblock to disk
 					try{
-						fs.writeFileSync(storage_path + "jsfsck_superblock.json", JSON.stringify(superblock));
+						fs.writeFileSync("./jsfsck_superblock.json", JSON.stringify(superblock));
+						repair_count++;
 						log.message(log.INFO, "updated superblock saved to disk");
 					} catch(ex){
-						log.message(log.ERR, "error saving updated superblock to disk: " + err);
+						log.message(log.ERR, "error saving updated superblock to disk: " + ex);
 					}
 
 				} else {
@@ -63,9 +67,7 @@ for(inode in superblock){
 	}
 }
 
-log.message(log.INFO, "filesystem check complete");
-
-// todo: when all objects have been updated, write superblock and print summary report
+log.message(log.INFO, "filesystem check complete. " + error_count + " errors found, " + repair_count + " repaired");
 
 // utility functions
 function load_superblock(){
@@ -74,7 +76,6 @@ function load_superblock(){
             var storage_path = config.STORAGE_LOCATIONS[location].path;
             try{
                 // try the first storage device first
-                // todo: loop through devices until a superblock is found
                 superblock = JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + "superblock.json"));
                 log.message(log.INFO, "superblock loaded from disk");
                 break;
@@ -100,16 +101,12 @@ function load_superblock(){
                     var selected_location = storage_locations[storage_location];
                     if(fs.existsSync(selected_location.path + selected_block.block_hash)){
                         selected_block.last_seen = selected_location.path;
-
                         // only count unique blocks per device
                         if(unique_blocks.indexOf(selected_block.block_hash) == -1){
                             unique_blocks.push(selected_block.block_hash);
-
-                            // read the block to get the actual size (todo: change if this is too slow)
                             var block_data = fs.readFileSync(selected_location.path + selected_block.block_hash);
                             selected_location.usage = selected_location.usage + block_data.length;
                         }
-
                         break;
                     } else {
                         // todo: this warning should only get thrown if the block is never found,
@@ -165,10 +162,7 @@ function system_stats(){
 }
 
 function load_block(inode, blocknumber){
-	log.message(log.DEBUG, "got load_block");
-
 	var block_data = null;
-
 	for(var storage_location in storage_locations){
 		log.message("searching location " + storage_location);
 		var selected_location = storage_locations[storage_location];
@@ -180,7 +174,6 @@ function load_block(inode, blocknumber){
 			log.message(log.ERROR, "unable to locate block " + inode.blocks[blocknumber].block_hash + " in " + selected_location.path);
 		}
 	}
-
 	return block_data;
 }
 
