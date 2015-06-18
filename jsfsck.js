@@ -8,10 +8,10 @@ var unique_blocks = [];
 var error_count = 0;
 var repair_count = 0;
 
-// open backup superblock
+// load superblock
 load_superblock();
 
-// loop over stored objects that do not have a media_duration property
+// loop over stored objects that do not have a media_type property
 for(inode in superblock){
 	if(superblock.hasOwnProperty(inode)){
 		var selected_file = superblock[inode];
@@ -84,48 +84,6 @@ function load_superblock(){
             }
         }
     }
-/*
-    // stat each block to establish its current location and
-    // the utilization of each storage location
-    for(var storage_location in storage_locations){
-        storage_locations[storage_location].usage = 0;
-    }
-
-    // use global unique_blocks for now
-    for(var file in superblock){
-        if(superblock.hasOwnProperty(file)){
-            var selected_file = superblock[file];
-            for(var block in selected_file.blocks){
-                var selected_block = selected_file.blocks[block];
-                for(var storage_location in storage_locations){
-                    var selected_location = storage_locations[storage_location];
-                    if(fs.existsSync(selected_location.path + selected_block.block_hash)){
-                        selected_block.last_seen = selected_location.path;
-                        // only count unique blocks per device
-                        if(unique_blocks.indexOf(selected_block.block_hash) == -1){
-                            unique_blocks.push(selected_block.block_hash);
-                            var block_data = fs.readFileSync(selected_location.path + selected_block.block_hash);
-                            selected_location.usage = selected_location.usage + block_data.length;
-                        }
-                        break;
-                    } else {
-                        // todo: this warning should only get thrown if the block is never found,
-                        // right now it gets thrown if the block isn't found everywhere; fix that
-                        //log.message(log.WARN, "block " + selected_block.block_hash + " not found in " + selected_location.path);
-                    }
-                }
-
-            }
-        }
-    }
-
-    var stats = system_stats();
-    log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
-
-    for(var storage_location in storage_locations){
-        log.message(log.INFO, storage_locations[storage_location].usage + " of " + storage_locations[storage_location].capacity + " bytes used on " + storage_locations[storage_location].path);
-    }
-*/
 }
 
 function system_stats(){
