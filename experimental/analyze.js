@@ -1,10 +1,10 @@
 var fs = require("fs");
 
-// todo: get filename from commandline 
+// get filename from commandline 
 var filename = process.argv[2];
-console.log("reading " + filename);
+console.log("Analyzing " + filename);
 
-// todo: get first block from file
+// get first block from file
 fs.open(filename, "r", function(status, fd){
 	if(status){
 		console.log(status);
@@ -36,6 +36,39 @@ function analyze_block(block){
     }
 
     // todo: test for MP3
+	try{
+		// debug
+		//console.log(">>>" + block.readUInt16LE(13) + "<<<");
+	
+		var mp3_header = null;
+	
+		for(var i = 0; (i+4) <= block.length; i++){
+			mp3_header = block.readUInt32BE(i);
+
+			//console.log(mp3_header);
+
+			if((mp3_header & 0xFFE00000) == ~~0xFFE00000){
+				//console.log("found mp3 sync word");
+
+				var sync_word = block.readUInt32BE(i).toString(2);
+
+				if(sync_word.substr(11,2) === "11"){
+					if(sync_word.substr(13,2) === "01"){
+						console.log("layer indicator matches mp3");
+
+						console.log(">>>" + sync_word + "<<<");
+					}
+				}
+
+			} else {
+				//console.log("not mp3 sync word");
+			}
+		}
+
+	} catch(ex){
+		console.log("not enough data to analyze for mp3");
+	}
+
     // todo: test for FLAC
     // todo: test for AIFF
     // todo: test for ...
