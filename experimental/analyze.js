@@ -119,7 +119,7 @@ function analyze_mp3(block, length){
 				result.size = length;
 				result.channels = channel_mode[sync_word.substr(24,2)];
 				result.sample_rate = sampling_rate_mpeg1[sync_word.substr(20,2)];
-				result.sample_resolution = 16; // todo: see if this is fixed or variable for mp3
+				result.sample_resolution = 16; // todo: see if this is fixed or variable for mp3?
 				result.bitrate = bit_rate_mpeg1_layer3[sync_word.substr(16,4)];
 				result.duration = (result.size * 8) / result.bitrate;
 
