@@ -4,20 +4,33 @@ var fs = require("fs");
 var filename = process.argv[2];
 console.log("Analyzing " + filename);
 
-// get first block from file
-fs.open(filename, "r", function(status, fd){
-	if(status){
-		console.log(status);
+// get file stats
+fs.stat(filename, function(err, stats){
+	if(err){
+		console.log(err);
 		return;
 	}
-	var buffer = new Buffer(1048576);
-	fs.read(fd, buffer, 0, 1048576, 0, function(err, num){
-		console.log(JSON.stringify(analyze_block(buffer), null, 4));
+
+	// get first block from file
+	fs.open(filename, "r", function(status, fd){
+		if(status){
+			console.log(status);
+			return;
+		}
+		var buffer = new Buffer(1048576);
+		fs.read(fd, buffer, 0, 1048576, 0, function(err, num){
+			console.log("---Analyzing as WAVE --------------------------");
+			console.log(JSON.stringify(analyze_wave(buffer), null, 4));
+			console.log("-----------------------------------------------\n");
+			console.log("---Analyzing as MP3 ---------------------------");
+			console.log(JSON.stringify(analyze_mp3(buffer, stats.size), null, 4));
+			console.log("-----------------------------------------------");
+		});
 	});
 });
 
 // examine the contents of a block to generate metadata
-function analyze_block(block){
+function analyze_wave(block){
 
     var result = {};
     result.type = "unknown";
@@ -35,30 +48,81 @@ function analyze_block(block){
         result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
     }
 
-    // todo: test for MP3
+	return result;
+}
+
+function analyze_mp3(block, length){
+
+	// MPEG property look-up table objects
+	var mpeg_version = {
+		"00":2.5,
+		"01":0,
+		"10":2,
+		"11":1
+	};
+
+	var mpeg_layer = {
+		"00":0,
+		"01":3,
+		"10":2,
+		"11":1
+	};
+
+	var sampling_rate_mpeg1 = {
+		"00":44100,
+		"01":48000,
+		"10":32000,
+		"11":0
+	};
+
+	var bit_rate_mpeg1_layer3 = {
+		"0000":0,
+		"0001":32000,
+		"0010":40000,
+		"0011":48000,
+		"0101":64000,
+		"0110":80000,
+		"0111":96000,
+		"1000":112000,
+		"1001":128000,
+		"1010":160000,
+		"1011":192000,
+		"1100":224000,
+		"1101":256000,
+		"1110":320000,
+		"1111":0
+	};
+
+	var channel_mode = {
+		"00":2,
+		"01":2,
+		"10":2,
+		"11":1
+	};
+
+	var result = {};
+	result.type = "unknown";
+
 	try{
-		// debug
-		//console.log(">>>" + block.readUInt16LE(13) + "<<<");
-	
 		var mp3_header = null;
 	
 		for(var i = 0; (i+4) <= block.length; i++){
 			mp3_header = block.readUInt32BE(i);
 
-			//console.log(mp3_header);
-
 			if((mp3_header & 0xFFE00000) == ~~0xFFE00000){
-				//console.log("found mp3 sync word");
 
+				// extract sync word as string representation of binary value
 				var sync_word = block.readUInt32BE(i).toString(2);
 
-				if(sync_word.substr(11,2) === "11"){
-					if(sync_word.substr(13,2) === "01"){
-						console.log("layer indicator matches mp3");
+				result.type = "mp3";
+				result.size = length;
+				result.channels = channel_mode[sync_word.substr(24,2)];
+				result.bitrate = bit_rate_mpeg1_layer3[sync_word.substr(16,4)];
+				result.resolution = sampling_rate_mpeg1[sync_word.substr(20,2)];
+				result.duration = length / result.bitrate * 8;
 
-						console.log(">>>" + sync_word + "<<<");
-					}
-				}
+				// we found a sync block so we're done
+				//break;
 
 			} else {
 				//console.log("not mp3 sync word");
@@ -69,9 +133,17 @@ function analyze_block(block){
 		console.log("not enough data to analyze for mp3");
 	}
 
-    // todo: test for FLAC
-    // todo: test for AIFF
-    // todo: test for ...
-
     return result;
+}
+
+function analyze_flac(block){
+}
+
+function analyze_aiff(block){
+}
+
+function analyze_alac(block){
+}
+
+function analyse_aac(block){
 }
