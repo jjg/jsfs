@@ -43,9 +43,10 @@ function analyze_wave(block){
         result.type = "wave";
         result.size = block.readUInt32LE(4);
         result.channels = block.readUInt16LE(22);
-        result.bitrate = block.readUInt32LE(24);
-        result.resolution = block.readUInt16LE(34);
-        result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
+		result.sample_rate = block.readUInt16LE(24);
+        result.sample_resolution = block.readUInt16LE(34);
+		result.bitrate = (result.sample_rate * result.sample_resolution) * result.channels; 
+        result.duration = (result.size * 8) / result.bitrate;
     }
 
 	return result;
@@ -117,9 +118,10 @@ function analyze_mp3(block, length){
 				result.type = "mp3";
 				result.size = length;
 				result.channels = channel_mode[sync_word.substr(24,2)];
+				result.sample_rate = sampling_rate_mpeg1[sync_word.substr(20,2)];
+				result.sample_resolution = 16; // todo: see if this is fixed or variable for mp3
 				result.bitrate = bit_rate_mpeg1_layer3[sync_word.substr(16,4)];
-				result.resolution = sampling_rate_mpeg1[sync_word.substr(20,2)];
-				result.duration = length / result.bitrate * 8;
+				result.duration = (result.size * 8) / result.bitrate;
 
 				// we found a sync block so we're done
 				//break;
