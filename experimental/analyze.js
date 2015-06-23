@@ -24,7 +24,10 @@ fs.stat(filename, function(err, stats){
 			console.log("-----------------------------------------------\n");
 			console.log("---Analyzing as MP3 ---------------------------");
 			console.log(JSON.stringify(analyze_mp3(buffer, stats.size), null, 4));
-			console.log("-----------------------------------------------");
+			console.log("-----------------------------------------------\n");
+			console.log("---Analyzing as FLAC --------------------------");
+			console.log(JSON.stringify(analyze_flac(buffer), null, 4));
+			console.log("-----------------------------------------------\n");
 		});
 	});
 });
@@ -139,6 +142,40 @@ function analyze_mp3(block, length){
 }
 
 function analyze_flac(block){
+	var result = {};
+	result.type = "unknown";
+
+	//try{
+
+		for(var i=0;(i+2)<= block.length;i++){							// scan the contents of the block 
+			var flac_audio_frame_header = block.readUInt16BE(i);		// read the next 32 bits (4 bytes)
+
+			if((flac_audio_frame_header & 0x7FFF) !== 0x7FFC){	// test for sync frame
+				continue;
+			}
+
+			console.log("flac audio frame header: >>>" + flac_audio_frame_header.toString(2) + "<<<");
+
+			result.type = "flac";
+			result.sample_rate = flac_audio_frame_header.toString(2).substr(20,4);
+/*
+				result.size = block.readUInt32LE(4);
+				result.channels = block.readUInt16LE(22);
+				result.sample_rate = block.readUInt16LE(24);
+				result.sample_resolution = block.readUInt16LE(34);
+				result.bitrate = (result.sample_rate * result.sample_resolution) * result.channels;
+				result.duration = (result.size * 8) / result.bitrate;
+*/
+
+				// only analyze the first one for now
+			break;
+		}
+	//}catch(ex){
+	//	console.log("exception analyzing for FLAC: " + ex);
+	//}
+
+    return result;
+
 }
 
 function analyze_aiff(block){
