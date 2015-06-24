@@ -885,6 +885,6 @@ http.createServer(function(req, res){
 }
 
 // log the result of the request
-log.message(log.INFO, "Result: " + res.statusCode);
+log.message(log.INFO, "Request completed with status code: " + res.statusCode);
 
 }).listen(config.SERVER_PORT);
