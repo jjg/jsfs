@@ -73,9 +73,12 @@ function load_superblock(){
 						if(unique_blocks.indexOf(selected_block.block_hash) == -1){
 							unique_blocks.push(selected_block.block_hash);
 
+							// estimate device utilization by mutiplying block size by block count
+							selected_location.usage = selected_location.usage + config.BLOCK_SIZE;
+
 							// read the block to get the actual size (todo: change if this is too slow)
-							var block_data = fs.readFileSync(selected_location.path + selected_block.block_hash);
-							selected_location.usage = selected_location.usage + block_data.length;
+							//var block_data = fs.readFileSync(selected_location.path + selected_block.block_hash);
+							//selected_location.usage = selected_location.usage + block_data.length;
 						}
 
 						break;
