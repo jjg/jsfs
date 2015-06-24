@@ -11,6 +11,7 @@ var unique_blocks = [];	// todo: find a less brute-force, more efficient way to 
 
 // *** UTILITIES  & MODULES ***
 var http = require("http");
+var https = require("https");
 var crypto = require("crypto");
 var fs = require("fs");
 var config = require("./config.js");
@@ -277,6 +278,10 @@ var inode = {
 			// write updated superblock to disk
 			save_superblock();
 
+			// todo: if peers are configured, update their superblocks 
+			// todo: loop through each peer
+			// todo: POST inode to peer (X-Metadata-Only header)
+
 			// return metadata for future operations
 			result = this.file_metadata;
 		}
@@ -350,43 +355,85 @@ var inode = {
 		shasum.update(block);
 		block_hash = shasum.digest("hex");
 
-		// save the block to disk
+		// store the block 
 		var block_object = {};
 		block_object.block_hash = block_hash;
 
-		// don't rely on the filesystem to detect duplicate blocks
-		if(unique_blocks.indexOf(block_hash) == -1){
+		// if storage locations exist, save the block to disk
+		if(storage_locations.length > 0){
+			if(unique_blocks.indexOf(block_hash) == -1){
 
-			unique_blocks.push(block_hash);
+				unique_blocks.push(block_hash);
 
-			// sort storage locations by avaliable capacity
-			storage_locations.sort(function(a,b) { return parseFloat(b.capacity - b.usage) - parseFloat(a.capacity - a.usage) });
+				// sort storage locations by avaliable capacity
+				storage_locations.sort(function(a,b) { return parseFloat(b.capacity - b.usage) - parseFloat(a.capacity - a.usage) });
 
-			// select location with highest avaliable capacity
-			block_object.last_seen = storage_locations[0].path;
-			var block_file = storage_locations[0].path + block_hash;
+				// select location with highest avaliable capacity
+				block_object.last_seen = storage_locations[0].path;
+				var block_file = storage_locations[0].path + block_hash;
 
-			// make sure there's enough capacity left to store the block
-			if((storage_locations[0].capacity - storage_locations[0].usage) > block.length){
+				// make sure there's enough capacity left to store the block
+				if((storage_locations[0].capacity - storage_locations[0].usage) > block.length){
 
-				log.message(log.INFO, "storing block:   " + block_hash);
-				fs.writeFileSync(block_file, block, "binary");
-				storage_locations[0].usage = storage_locations[0].usage + block.length;
+					log.message(log.INFO, "storing block:   " + block_hash);
+					fs.writeFileSync(block_file, block, "binary");
+					storage_locations[0].usage = storage_locations[0].usage + block.length;
+
+				} else {
+					log.message(log.ERROR, "no room left to store block " + block_hash);
+					result = false;
+				}
 
 			} else {
-				log.message(log.ERROR, "no room left to store block " + block_hash);
-				result = false;
+
+				// todo: set the last_seen property of the block_object to the location of the original block!!!
+				// this is harder than it might seem, we could be lazy and rely on the GET "go hunting"
+				// mechanism, but that seems hackish...
+				log.message(log.INFO, "duplicate block: " + block_hash);
 			}
-
 		} else {
-
-			// todo: set the last_seen property of the block_object to the location of the original block!!!
-			// this is harder than it might seem, we could be lazy and rely on the GET "go hunting"
-			// mechanism, but that seems hackish...
-			log.message(log.INFO, "duplicate block: " + block_hash);
+			log.message(log.INFO, "No storage locations configured, block not written to disk");
 		}
 
+		// if peers exist, distribute block
+		if(peers.length > 0){
+			// loop through each peer
+			for(peer in peers){
+				var selected_peer = peers[peer];
+				log.message(log.INFO, "Transmitting block to peer " + selected_peer);
+
+				// todo: POST block to peer
+				var options = {
+					hostname: selected_peer,
+					path: "/_bs/" + block_hash,
+					method: "POST",
+					headers: {
+						"Content-Type": "application/octet-stream",
+						"Content-Length": block.length
+					}
+				};
+
+				var req = https.request(options, function(res){
+					log.message(log.DEBUG, "Block POST status: " + res.statusCode);
+					res.setEncoding('utf8');
+					res.on("data", function(chunk){
+						log.message(log.DEBUG, "Block POST body: " + chunk);
+					});
+				});
+
+				req.on("error", function(e){
+					log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
+				});
+
+				req.write(block);
+				req.end();
+			}
+		}
+
+		// update inode
 		this.file_metadata.blocks.push(block_object);
+
+		// advance buffer
 		this.input_buffer = this.input_buffer.slice(this.block_size);
 
 		return result;
@@ -399,6 +446,7 @@ log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 
 
 // *** INIT ***
 storage_locations = config.STORAGE_LOCATIONS;
+var peers = config.PEERS;
 load_superblock();
 
 

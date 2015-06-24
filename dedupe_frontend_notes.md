@@ -9,15 +9,14 @@ Client-side:
 *  method to store blocks remotely
 *  method to POST metadata only to remove server
 
-JSFS is installed locally on the client machine.  It is configued to use a remote JSFS server as its only storage location:
+JSFS is installed locally on the client machine.  A new configuration section called `PEERS` is added which points to the remote storage server: 
 
 ```
-STORAGE_LOCATIONS:[
-	{"path":"https://jsfs.domain.com",
-		"capacity":10000000
-	}
+PEERS:["https://jsfs.domain.com"
 ]
 ```
+
+(note: the STORAGE_LOCATIONS array should be left empty to avoid storing blocks locally as well)
 
 When files are `POST`ed to this local instance, the following steps occur:
 
