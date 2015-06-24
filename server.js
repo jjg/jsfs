@@ -153,6 +153,7 @@ function analyze_block(block){
 	var result = {};
 	result.type = "unknown";
 
+	try{
 	// test for WAVE
 	if(block.toString("utf8", 0, 4) === "RIFF"
 		& block.toString("utf8", 8, 12) === "WAVE"
@@ -170,6 +171,9 @@ function analyze_block(block){
 	// todo: test for FLAC
 	// todo: test for AIFF
 	// todo: test for ...
+	} catch(ex) {
+		log.message(log.WARN, "Exception analyzing media type: " + ex);
+	}
 
 	return result;
 }
