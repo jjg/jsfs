@@ -32,8 +32,9 @@ function save_superblock(){
 		}
 	}
 
-	var stats = system_stats();
-	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
+	// note: disable showing stats to improve performance
+	// var stats = system_stats();
+	// log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
 }
 
 function load_superblock(){
