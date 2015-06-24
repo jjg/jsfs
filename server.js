@@ -414,6 +414,8 @@ load_superblock();
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
 http.createServer(function(req, res){
 
+	log.message(log.DEBUG, "Initial request received");
+
 	// all responses include these headers to support cross-domain requests
 	var allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
 	var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME","X-Access-Key","X-Replacement-Access-Key","X-Access-Token", "X-Encrypted", "X-Private", "X-Append"];
@@ -595,6 +597,7 @@ http.createServer(function(req, res){
 	case "POST":
 
 		// make sure the URL isn't already taken
+		log.message(log.DEBUG, "Begin checking for existing file");
 		var matching_inodes = [];
 		for(var an_inode in superblock){
 			if(superblock.hasOwnProperty(an_inode)){
@@ -607,10 +610,14 @@ http.createServer(function(req, res){
 
 		if(matching_inodes.length < 1){
 
+			log.message(log.DEBUG, "No existing file found, storing new file");
+
 			// store the posted data at the specified URL
 			var file_metadata = null;
 			var new_file = Object.create(inode);
 			new_file.init(target_url);
+
+			log.message(log.DEBUG, "New file object created");
 
 			// set additional file properties (content-type, etc.)
 			if(content_type){
@@ -631,15 +638,21 @@ http.createServer(function(req, res){
 				new_file.file_metadata.access_key = access_key;
 			}
 
+			log.message(log.DEBUG, "File properties set");
+
 			req.on("data", function(chunk){
+				//log.message(log.DEBUG, "Adding chunk to file");
 				if(!new_file.write(chunk)){
 					res.statusCode = 500;
 					res.end("error writing blocks");
 				}
+				//log.message(log.DEBUG, "Finished adding chunk to file");
 			});
 
 			req.on("end", function(){
+				log.message(log.DEBUG, "Closing new file");
 				var new_file_metadata = new_file.close();
+				log.message(log.DEBUG, "File closed");
 
 				if(new_file_metadata){
 					res.end(JSON.stringify(new_file_metadata));
