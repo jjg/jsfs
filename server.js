@@ -415,9 +415,6 @@ http.createServer(function(req, res){
 	res.setHeader("Access-Control-Allow-Headers", allowed_headers.join(","));
 	res.setHeader("Access-Control-Allow-Origin", "*");
 
-	// force non-chunked encoding
-	res.setHeader("transfer-encoding", "");
-
 	// all requests are interrorgated for these values
 	var target_url = require("url").parse(req.url).pathname;
 
