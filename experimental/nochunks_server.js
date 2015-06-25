@@ -13,6 +13,10 @@ server.on("connection", function(client){
 		log.message(log.DEBUG, "streaming file?");
 		stream.pipe(file);
 
+		stream.on("data", function("data"){
+			log.message(log.DEBUG, "chunk size: " + data.length);
+		});
+
 		stream.on("end", function(){
 			log.message(log.DEBUG, "stream.end event fired");
 			client.close();

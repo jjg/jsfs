@@ -14,7 +14,8 @@ fs.readFile("./testfile.wav", function(err, data){
 
 	log.message(log.INFO, "Connecting to server");
 
-	var client = new BinaryClient("ws://localhost:5000");
+	//var client = new BinaryClient("ws://localhost:5000");
+	var client = new BinaryClient("ws://66.170.14.251:5000");
 
 	client.on("open", function(stream){
 		log.message(log.DEBUG, "open event fired");
