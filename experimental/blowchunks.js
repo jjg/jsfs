@@ -19,8 +19,9 @@ fs.readFile("./testfile.wav", function(err, data){
 		path: "/jjg/upload-tests/" + Date.now() + ".wav",
 		method: "POST",
 		headers: {
+			"Transfer-Encoding": "",
 			"Content-Type": "application/octet-stream",
-			"Content-Length": data.length
+			"Content-Length": Buffer.byteLength(data)
 		}
 	};
 
