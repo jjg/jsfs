@@ -31,10 +31,6 @@ function save_superblock(){
 			});
 		}
 	}
-
-	// note: disable showing stats to improve performance
-	// var stats = system_stats();
-	// log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
 }
 
 function load_superblock(){
@@ -53,8 +49,7 @@ function load_superblock(){
 		}
 	}
 
-	// stat each block to establish its current location and
-	// the utilization of each storage location
+	// establish the utilization of each storage location
 	for(var storage_location in storage_locations){
 		storage_locations[storage_location].usage = 0;
 	}
@@ -76,10 +71,6 @@ function load_superblock(){
 
 							// estimate device utilization by mutiplying block size by block count
 							selected_location.usage = selected_location.usage + config.BLOCK_SIZE;
-
-							// read the block to get the actual size (todo: change if this is too slow)
-							//var block_data = fs.readFileSync(selected_location.path + selected_block.block_hash);
-							//selected_location.usage = selected_location.usage + block_data.length;
 						}
 
 						break;
@@ -641,12 +632,12 @@ http.createServer(function(req, res){
 			log.message(log.DEBUG, "File properties set");
 
 			req.on("data", function(chunk){
-				//log.message(log.DEBUG, "Adding chunk to file");
+
+				log.message(log.DEBUG, "chunk size: " + chunk.length);
 				if(!new_file.write(chunk)){
 					res.statusCode = 500;
 					res.end("error writing blocks");
 				}
-				//log.message(log.DEBUG, "Finished adding chunk to file");
 			});
 
 			req.on("end", function(){
@@ -660,12 +651,6 @@ http.createServer(function(req, res){
 					res.statusCode = 500;
 					res.end("error writing blocks");
 				}
-
-				// display utilization stats (todo: this may be temporary so consider putting it elsewhere)
-				for(var storage_location in storage_locations){
-					log.message(log.INFO, storage_locations[storage_location].usage + " bytes used of " + storage_locations[storage_location].capacity + " in " + storage_locations[storage_location].path);
-				}
-
 			});
 
 		} else {
