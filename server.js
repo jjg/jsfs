@@ -31,9 +31,6 @@ function save_superblock(){
 			});
 		}
 	}
-
-	var stats = system_stats();
-	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
 }
 
 function load_superblock(){
@@ -52,8 +49,7 @@ function load_superblock(){
 		}
 	}
 
-	// stat each block to establish its current location and
-	// the utilization of each storage location
+	// establish the utilization of each storage location
 	for(var storage_location in storage_locations){
 		storage_locations[storage_location].usage = 0;
 	}
@@ -73,9 +69,8 @@ function load_superblock(){
 						if(unique_blocks.indexOf(selected_block.block_hash) == -1){
 							unique_blocks.push(selected_block.block_hash);
 
-							// read the block to get the actual size (todo: change if this is too slow)
-							var block_data = fs.readFileSync(selected_location.path + selected_block.block_hash);
-							selected_location.usage = selected_location.usage + block_data.length;
+							// estimate device utilization by mutiplying block size by block count
+							selected_location.usage = selected_location.usage + config.BLOCK_SIZE;
 						}
 
 						break;
@@ -410,6 +405,8 @@ load_superblock();
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
 http.createServer(function(req, res){
 
+	log.message(log.DEBUG, "Initial request received");
+
 	// all responses include these headers to support cross-domain requests
 	var allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
 	var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME","X-Access-Key","X-Replacement-Access-Key","X-Access-Token", "X-Encrypted", "X-Private", "X-Append"];
@@ -591,6 +588,7 @@ http.createServer(function(req, res){
 	case "POST":
 
 		// make sure the URL isn't already taken
+		log.message(log.DEBUG, "Begin checking for existing file");
 		var matching_inodes = [];
 		for(var an_inode in superblock){
 			if(superblock.hasOwnProperty(an_inode)){
@@ -603,10 +601,14 @@ http.createServer(function(req, res){
 
 		if(matching_inodes.length < 1){
 
+			log.message(log.DEBUG, "No existing file found, storing new file");
+
 			// store the posted data at the specified URL
 			var file_metadata = null;
 			var new_file = Object.create(inode);
 			new_file.init(target_url);
+
+			log.message(log.DEBUG, "New file object created");
 
 			// set additional file properties (content-type, etc.)
 			if(content_type){
@@ -627,7 +629,11 @@ http.createServer(function(req, res){
 				new_file.file_metadata.access_key = access_key;
 			}
 
+			log.message(log.DEBUG, "File properties set");
+
 			req.on("data", function(chunk){
+
+				log.message(log.DEBUG, "chunk size: " + chunk.length);
 				if(!new_file.write(chunk)){
 					res.statusCode = 500;
 					res.end("error writing blocks");
@@ -635,7 +641,9 @@ http.createServer(function(req, res){
 			});
 
 			req.on("end", function(){
+				log.message(log.DEBUG, "Closing new file");
 				var new_file_metadata = new_file.close();
+				log.message(log.DEBUG, "File closed");
 
 				if(new_file_metadata){
 					res.end(JSON.stringify(new_file_metadata));
@@ -643,12 +651,6 @@ http.createServer(function(req, res){
 					res.statusCode = 500;
 					res.end("error writing blocks");
 				}
-
-				// display utilization stats (todo: this may be temporary so consider putting it elsewhere)
-				for(var storage_location in storage_locations){
-					log.message(log.INFO, storage_locations[storage_location].usage + " bytes used of " + storage_locations[storage_location].capacity + " in " + storage_locations[storage_location].path);
-				}
-
 			});
 
 		} else {
@@ -868,6 +870,6 @@ http.createServer(function(req, res){
 }
 
 // log the result of the request
-log.message(log.INFO, "Result: " + res.statusCode);
+log.message(log.INFO, "Request completed with status code: " + res.statusCode);
 
 }).listen(config.SERVER_PORT);
