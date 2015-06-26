@@ -285,6 +285,10 @@ var inode = {
 					var selected_peer = peers[peer];
 					log.message(log.INFO, "Transmitting inode to peer " + selected_peer);
 
+					var inode_payload = JSON.stringify(this.file_metadata);
+
+					//log.message(log.DEBUG, "this.file_metadata.length: " + this.file_metadata.length);
+
 					// POST inode to peer
 					var options = {
 						hostname: selected_peer,
@@ -293,7 +297,7 @@ var inode = {
 						method: "POST",
 						headers: {
 							"Content-Type": "application/json",
-							"Content-Length": this.file_metadata.length,
+							"Content-Length": inode_payload.length,
 							"x-inode-only": "true"
 						}
 					};
@@ -318,7 +322,7 @@ var inode = {
 						//log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
 					});
 
-					req.write(this.file_metadata);
+					req.write(inode_payload);
 					req.end();
 				}
 			}
@@ -703,7 +707,7 @@ http.createServer(function(req, res){
 			log.message(log.DEBUG, "No existing file found, storing new file");
 
 			// store the posted data at the specified URL
-			var file_metadata = null;
+			var file_metadata = "";
 
 			if(!inode_only){
 				var new_file = Object.create(inode);
