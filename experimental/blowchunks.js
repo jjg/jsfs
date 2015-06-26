@@ -14,14 +14,13 @@ fs.readFile("./testfile.wav", function(err, data){
 
 	// upload file
 	var options = {
-		hostname: "66.170.14.251",
+		hostname: "localhost", //"66.170.14.251",
 		port: "5000",
 		path: "/jjg/upload-tests/" + Date.now() + ".wav",
 		method: "POST",
 		headers: {
-			"Transfer-Encoding": "",
 			"Content-Type": "application/octet-stream",
-			"Content-Length": Buffer.byteLength(data)
+			"Content-Length": data.length
 		}
 	};
 
