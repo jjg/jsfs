@@ -14,7 +14,7 @@ fs.readFile("./testfile.wav", function(err, data){
 
 	// upload file
 	var options = {
-		hostname: "jsfs2.murfie.com",
+		hostname: "jsfs-g.murfie.com",
 		path: "/jjg/upload-tests/" + Date.now() + ".wav",
 		method: "POST",
 		headers: {
