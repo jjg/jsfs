@@ -1,5 +1,5 @@
 // experiments in forcing chunk size 
-var http = require("http");
+var https = require("https");
 var fs = require("fs");
 var log = require("../jlog.js");
 
@@ -14,8 +14,7 @@ fs.readFile("./testfile.wav", function(err, data){
 
 	// upload file
 	var options = {
-		hostname: "66.170.14.251",
-		port: "5000",
+		hostname: "jsfs2.murfie.com",
 		path: "/jjg/upload-tests/" + Date.now() + ".wav",
 		method: "POST",
 		headers: {
@@ -24,7 +23,7 @@ fs.readFile("./testfile.wav", function(err, data){
 		}
 	};
 
-	var req = http.request(options, function(res){
+	var req = https.request(options, function(res){
 
 		log.message(log.DEBUG, "File POST status: " + res.statusCode);
 
