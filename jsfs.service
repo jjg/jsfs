@@ -1,6 +1,6 @@
 [Service]
 WorkingDirectory=/var/www/jsfs
-ExecStart=/usr/bin/node server.js
+ExecStart=/usr/local/bin/node server.js
 Restart=always
 StandardOutput=syslog
 StandardError=syslog
