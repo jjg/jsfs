@@ -766,6 +766,7 @@ http.createServer(function(req, res){
 					log.message(log.INFO, "Manually adding new inode to superblock");
 					var new_file_metadata = JSON.parse(file_metadata);
 					superblock[new_file_metadata.fingerprint] = new_file_metadata;
+					save_superblock();
 				}
 
 				if(new_file_metadata){
