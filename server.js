@@ -402,9 +402,10 @@ var inode = {
 				var selected_peer = peers[peer];
 				log.message(log.INFO, "Transmitting block to peer " + selected_peer);
 
-				// todo: POST block to peer
+				// POST block to peer
 				var options = {
 					hostname: selected_peer,
+					port: 7302,					// todo: make this configurable?
 					path: "/_bs/" + block_hash,
 					method: "POST",
 					headers: {
@@ -413,16 +414,24 @@ var inode = {
 					}
 				};
 
-				var req = https.request(options, function(res){
+				// todo: use https instead of http in production environments
+				var req = http.request(options, function(res){
+
 					log.message(log.DEBUG, "Block POST status: " + res.statusCode);
+
 					res.setEncoding('utf8');
+
 					res.on("data", function(chunk){
-						log.message(log.DEBUG, "Block POST body: " + chunk);
+						//log.message(log.DEBUG, "Block POST body: " + chunk);
+					});
+					
+					res.on("end", function(){
+						log.message(log.INFO, "Remote block stored");
 					});
 				});
 
 				req.on("error", function(e){
-					log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
+					//log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
 				});
 
 				req.write(block);
