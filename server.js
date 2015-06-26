@@ -279,8 +279,49 @@ var inode = {
 			save_superblock();
 
 			// todo: if peers are configured, update their superblocks 
-			// todo: loop through each peer
-			// todo: POST inode to peer (X-Metadata-Only header)
+			if(peers.length > 0){
+				// loop through each peer
+				for(peer in peers){
+					var selected_peer = peers[peer];
+					log.message(log.INFO, "Transmitting inode to peer " + selected_peer);
+
+					// POST inode to peer
+					var options = {
+						hostname: selected_peer,
+						port: 7302,                 // todo: make this configurable?
+						path: this.file_metadata.url,
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							"Content-Length": this.file_metadata.length,
+							"x-inode-only": "true"
+						}
+					};
+
+					// todo: use https instead of http in production environments
+					var req = http.request(options, function(res){
+
+						log.message(log.DEBUG, "inode POST status: " + res.statusCode);
+
+						res.setEncoding('utf8');
+
+						res.on("data", function(chunk){
+							log.message(log.DEBUG, "inode POST body: " + chunk);
+						});
+
+						res.on("end", function(){
+							log.message(log.INFO, "Remote inode stored");
+						});
+					});
+
+					req.on("error", function(e){
+						//log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
+					});
+
+					req.write(this.file_metadata);
+					req.end();
+				}
+			}
 
 			// return metadata for future operations
 			result = this.file_metadata;
@@ -500,6 +541,7 @@ http.createServer(function(req, res){
 	var expires = url.parse(req.url,true).query.expires || req.headers["x-expires"];
 	var content_type = url.parse(req.url,true).query.content_type || req.headers["content-type"];
 	var version = url.parse(req.url,true).query.version || req.headers["x-version"];
+	var inode_only = url.parse(req.url,true).query.inode_only || req.headers["x-inode-only"];
 
 	log.message(log.INFO, "Received " + req.method + " request for URL " + target_url);
 
@@ -662,45 +704,65 @@ http.createServer(function(req, res){
 
 			// store the posted data at the specified URL
 			var file_metadata = null;
-			var new_file = Object.create(inode);
-			new_file.init(target_url);
 
-			log.message(log.DEBUG, "New file object created");
+			if(!inode_only){
+				var new_file = Object.create(inode);
+				new_file.init(target_url);
 
-			// set additional file properties (content-type, etc.)
-			if(content_type){
-				log.message(log.INFO, "Content-Type: " + content_type);
-				new_file.file_metadata.content_type = content_type;
-			}
+				log.message(log.DEBUG, "New file object created");
 
-			if(private){
-				new_file.file_metadata.private = true;
-			}
+				// set additional file properties (content-type, etc.)
+				if(content_type){
+					log.message(log.INFO, "Content-Type: " + content_type);
+					new_file.file_metadata.content_type = content_type;
+				}
 
-			if(encrypted){
-				new_file.file_metadata.encrypted = true;
-			}
+				if(private){
+					new_file.file_metadata.private = true;
+				}
 
-			// if access_key is supplied with POST, replace the default one
-			if(access_key){
-				new_file.file_metadata.access_key = access_key;
+				if(encrypted){
+					new_file.file_metadata.encrypted = true;
+				}
+
+				// if access_key is supplied with POST, replace the default one
+				if(access_key){
+					new_file.file_metadata.access_key = access_key;
+				}
+
+			} else {
+				log.message(log.INFO, "inode only POST");
 			}
 
 			log.message(log.DEBUG, "File properties set");
 
 			req.on("data", function(chunk){
 
-				log.message(log.DEBUG, "chunk size: " + chunk.length);
-				if(!new_file.write(chunk)){
-					res.statusCode = 500;
-					res.end("error writing blocks");
+				if(inode_only){
+					log.message(log.DEBUG, "Received new inode chunk");
+					file_metadata+=chunk;
+					log.message(log.DEBUG, file_metadata);
+				} else {
+					if(!new_file.write(chunk)){
+						res.statusCode = 500;
+						res.end("error writing blocks");
+					}
 				}
 			});
 
 			req.on("end", function(){
-				log.message(log.DEBUG, "Closing new file");
-				var new_file_metadata = new_file.close();
-				log.message(log.DEBUG, "File closed");
+
+				if(!inode_only){
+					log.message(log.DEBUG, "Closing new file");
+					// todo: couldn't we just use file_metadata here?
+					var new_file_metadata = new_file.close();
+					log.message(log.DEBUG, "File closed");
+				} else {
+					// need to manually add the new inode to the superblock
+					log.message(log.INFO, "Manually adding new inode to superblock");
+					var new_file_metadata = JSON.parse(file_metadata);
+					superblock[new_file_metadata.fingerprint] = new_file_metadata;
+				}
 
 				if(new_file_metadata){
 					res.end(JSON.stringify(new_file_metadata));
