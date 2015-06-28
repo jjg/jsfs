@@ -16,7 +16,7 @@ fs.readFile("./testfile.wav", function(err, data){
 	var options = {
 		hostname: "localhost",
 		port: 7302,
-		path: "/jjg/upload-tests/" + Date.now() + ".wav",
+		path: "/jjg/upload-tests/test.wav", //" + Date.now() + ".wav",
 		method: "POST",
 		headers: {
 			"Content-Type": "application/octet-stream",
