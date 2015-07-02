@@ -291,14 +291,14 @@ var inode = {
 				// loop through each peer
 				for(peer in peers){
 					var selected_peer = peers[peer];
-					log.message(log.INFO, "Transmitting inode to peer " + selected_peer);
+					log.message(log.INFO, "Transmitting inode to peer " + selected_peer.host);
 
 					var inode_payload = JSON.stringify(this.file_metadata);
 
 					// POST inode to peer
 					var options = {
-						hostname: selected_peer,
-						port: 5000,                 // todo: make this configurable?
+						hostname: selected_peer.host,
+						port: selected_peer.port,
 						path: this.file_metadata.url,
 						method: "POST",
 						headers: {
@@ -341,7 +341,7 @@ var inode = {
 					});
 
 					req.on("error", function(e){
-						log.message(log.ERROR, "Error transmitting inode to peer " + selected_peer + ": " + e.message);
+						log.message(log.ERROR, "Error transmitting inode to peer " + selected_peer.host + ": " + e.message);
 						peers_remaining = peers_remaining - 1;
 						this.finalize_peers();
 					});
@@ -479,12 +479,12 @@ var inode = {
 			// loop through each peer
 			for(peer in peers){
 				var selected_peer = peers[peer];
-				log.message(log.INFO, "Transmitting block to peer " + selected_peer);
+				log.message(log.INFO, "Transmitting block to peer " + selected_peer.host);
 
 				// POST block to peer
 				var options = {
-					hostname: selected_peer,
-					port: 5000,					// todo: make this configurable?
+					hostname: selected_peer.host,
+					port: selected_peer.port,
 					path: "/_bs/" + block_hash,
 					method: "POST",
 					headers: {
