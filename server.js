@@ -498,8 +498,10 @@ var inode = {
 						// increment blocks_replicated property
 						P_this.file_metadata.blocks_replicated++;
 						// fire finalization test 
-						//P_this.finalize_peers();
-						//return P_result;
+						P_this.finalize_peers(function(result){
+							// todo: stop blocking if the last block was transferred
+							// (do nothing for now)
+						});
 					});
 				});
 
