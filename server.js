@@ -336,14 +336,17 @@ var inode = {
 									}
 								});
 							}
-
 						});
 					});
 
 					req.on("error", function(e){
 						log.message(log.ERROR, "Error transmitting inode to peer " + selected_peer.host + ": " + e.message);
 						peers_remaining = peers_remaining - 1;
-						this.finalize_peers();
+						P_this.finalize_peers(function(result)
+							if(result){
+								callback(result)
+							}
+						});
 					});
 
 					req.write(inode_payload);
