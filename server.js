@@ -487,6 +487,9 @@ var inode = {
 				var req = http.request(options, function(res){
 
 					log.message(log.DEBUG, "Block POST status: " + res.statusCode);
+					if(res.statusCode === 405){
+						log.message(log.INFO, "Duplicate block " + block_hash + " not transmitted");
+					}
 
 					res.setEncoding('utf8');
 
@@ -506,7 +509,10 @@ var inode = {
 				});
 
 				req.on("error", function(e){
-					log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
+					// errors happend deliberately when a block exists at the peer,
+					// so we don't log them now. A better solutionw would to be to
+					// log non-405 errors but I don't know how to determine that ATM
+					//log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
 				});
 
 				req.write(block);
