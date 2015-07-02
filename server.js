@@ -233,6 +233,8 @@ var inode = {
 		this.file_metadata.content_type = "application/octet-stream";
 		this.file_metadata.file_size = 0;
 		this.file_metadata.block_size = this.block_size;
+		this.file_metadata.blocks_replicated = 0;
+		this.file_metadata.inode_replicated = 0;
 		this.file_metadata.blocks = [];
 
 		// if previous version exists, increment version number before fingerprinting
@@ -282,6 +284,9 @@ var inode = {
 
 			// if peers are configured, update their superblocks
 			if(peers.length > 0){
+
+				var peers_remaining = peers.length;
+
 				// loop through each peer
 				for(peer in peers){
 					var selected_peer = peers[peer];
@@ -303,6 +308,7 @@ var inode = {
 					};
 
 					// todo: use https instead of http in production environments
+					var P_this = this;  // closure-like access to local properties during http callback
 					var req = http.request(options, function(res){
 
 						log.message(log.DEBUG, "inode POST status: " + res.statusCode);
@@ -310,38 +316,39 @@ var inode = {
 						res.setEncoding('utf8');
 
 						res.on("data", function(chunk){
-							log.message(log.DEBUG, "inode POST body: " + chunk);
+							//log.message(log.DEBUG, "inode POST body: " + chunk);
 						});
 
 						res.on("end", function(){
 							log.message(log.INFO, "Remote inode stored");
 
-							// block until the peer has received the inode
-							return result;
+							peers_remaining = peers_remaining - 1;
+
+							// block until all peers have received the inode
+							if(peers_remaining === 0){
+								// update inode_replicated count
+								P_this.file_metadata.inode_replicated++;
+								// fire finalization test
+								P_this.finalize_peers();
+							}
 
 						});
 					});
 
 					req.on("error", function(e){
 						log.message(log.ERROR, "Error transmitting inode to peer " + selected_peer + ": " + e.message);
-						return result;
+						peers_remaining = peers_remaining - 1;
+						this.finalize_peers();
 					});
 
 					req.write(inode_payload);
 					req.end();
 				}
 			} else {
-
 				// no peers so return immediately
-				//result = this.file_metadata;
 				return result;
 			}
-
-			// return metadata for future operations
-			//result = this.file_metadata;
 		}
-
-		return result;
 	},
 	process_buffer: function(flush){
 
@@ -369,6 +376,8 @@ var inode = {
 				result = this.store_block();
 			}
 		}
+
+		log.message(log.DEBUG, "process_buffer result: " + result);
 
 		return result;
 	},
@@ -450,6 +459,12 @@ var inode = {
 			log.message(log.INFO, "No storage locations configured, block not written to disk");
 		}
 
+		// update inode
+		this.file_metadata.blocks.push(block_object);
+
+		// advance buffer
+		this.input_buffer = this.input_buffer.slice(this.block_size);
+
 		// if peers exist, distribute block
 		if(peers.length > 0){
 			// loop through each peer
@@ -470,6 +485,9 @@ var inode = {
 				};
 
 				// todo: use https instead of http in production environments
+				var P_this = this;	// closure-like access to local properties during http callback
+				var P_result = result;
+				log.message(log.DEBUG, "P_result: " + P_result);
 				var req = http.request(options, function(res){
 
 					log.message(log.DEBUG, "Block POST status: " + res.statusCode);
@@ -479,28 +497,42 @@ var inode = {
 					res.on("data", function(chunk){
 						//log.message(log.DEBUG, "Block POST body: " + chunk);
 					});
-					
+			
 					res.on("end", function(){
-						log.message(log.INFO, "Remote block stored");
+						// increment blocks_replicated property
+						P_this.file_metadata.blocks_replicated++;
+						// fire finalization test 
+						//P_this.finalize_peers();
+						return P_result;
 					});
 				});
 
 				req.on("error", function(e){
-					//log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
+					log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
 				});
 
 				req.write(block);
 				req.end();
-			}
+			} 
+		} else {
+			// no peers so return immediately
+			log.message(log.DEBUG, "No peers");
+			return result;
 		}
+	},
+	finalize_peers: function(){
+		log.message(log.INFO, "Testing for peer finalization");
+		log.message(log.DEBUG, "blocks: " + this.file_metadata.blocks.length + ", replicated: " + this.file_metadata.blocks_replicated);
+		log.message(log.DEBUG, "inode replicated: " + this.file_metadata.inode_replicated);
 
-		// update inode
-		this.file_metadata.blocks.push(block_object);
-
-		// advance buffer
-		this.input_buffer = this.input_buffer.slice(this.block_size);
-
-		return result;
+		if(this.file_metadata.blocks_replicated === this.file_metadata.blocks.length
+			&& this.file_metadata.inode_replicated > 0){
+			log.message(log.INFO, "Peer finalization verified");
+			result = this.file_metadata;
+			return result;
+		} else {
+			log.message(log.INFO, "Peer finalization incomplete");
+		}
 	}
 };
 
