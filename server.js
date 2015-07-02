@@ -524,13 +524,6 @@ var inode = {
 				req.end();
 			} 
 		} 
-/*
-        // update inode
-        this.file_metadata.blocks.push(block_object);
-
-        // advance buffer
-        this.input_buffer = this.input_buffer.slice(this.block_size);
-*/
 		return result;
 	},
 	finalize_peers: function(callback){
