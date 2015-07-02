@@ -268,10 +268,7 @@ var inode = {
 		return this.process_buffer();
 	},
 	close: function(callback){
-
-		var result;
-		result = this.process_buffer(true);
-
+		var result  = this.process_buffer(true);
 		if(result){
 
 			// if result wasn't null, return the inode details
@@ -330,7 +327,7 @@ var inode = {
 					req.on("error", function(e){
 						log.message(log.ERROR, "Error transmitting inode to peer " + selected_peer.host + ": " + e.message);
 						peers_remaining = peers_remaining - 1;
-						P_this.finalize_peers(function(result)
+						P_this.finalize_peers(function(result){
 							if(result){
 								callback(result)
 							}
