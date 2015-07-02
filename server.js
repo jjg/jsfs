@@ -262,7 +262,6 @@ var inode = {
 		this.file_metadata.access_key = this.file_metadata.fingerprint;
 	},
 	write: function(chunk){
-		//log.message(log.DEBUG,"got inode.write: " + chunk);
 		this.input_buffer = new Buffer.concat([this.input_buffer, chunk]);
 		return this.process_buffer();
 	},
@@ -272,13 +271,16 @@ var inode = {
 		result = this.process_buffer(true);
 		if(result){
 
+			// if result wasn't null, return the inode details
+			result = this.file_metadata;
+
 			// add file to storage superblock
 			superblock[this.file_metadata.fingerprint] = this.file_metadata;
 
 			// write updated superblock to disk
 			save_superblock();
 
-			// todo: if peers are configured, update their superblocks 
+			// if peers are configured, update their superblocks
 			if(peers.length > 0){
 				// loop through each peer
 				for(peer in peers){
@@ -287,12 +289,10 @@ var inode = {
 
 					var inode_payload = JSON.stringify(this.file_metadata);
 
-					//log.message(log.DEBUG, "this.file_metadata.length: " + this.file_metadata.length);
-
 					// POST inode to peer
 					var options = {
 						hostname: selected_peer,
-						port: 7302,                 // todo: make this configurable?
+						port: 5000,                 // todo: make this configurable?
 						path: this.file_metadata.url,
 						method: "POST",
 						headers: {
@@ -315,20 +315,30 @@ var inode = {
 
 						res.on("end", function(){
 							log.message(log.INFO, "Remote inode stored");
+
+							// block until the peer has received the inode
+							return result;
+
 						});
 					});
 
 					req.on("error", function(e){
-						//log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
+						log.message(log.ERROR, "Error transmitting inode to peer " + selected_peer + ": " + e.message);
+						return result;
 					});
 
 					req.write(inode_payload);
 					req.end();
 				}
+			} else {
+
+				// no peers so return immediately
+				//result = this.file_metadata;
+				return result;
 			}
 
 			// return metadata for future operations
-			result = this.file_metadata;
+			//result = this.file_metadata;
 		}
 
 		return result;
@@ -450,7 +460,7 @@ var inode = {
 				// POST block to peer
 				var options = {
 					hostname: selected_peer,
-					port: 7302,					// todo: make this configurable?
+					port: 5000,					// todo: make this configurable?
 					path: "/_bs/" + block_hash,
 					method: "POST",
 					headers: {
