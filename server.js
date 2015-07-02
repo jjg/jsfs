@@ -267,10 +267,11 @@ var inode = {
 		this.input_buffer = new Buffer.concat([this.input_buffer, chunk]);
 		return this.process_buffer();
 	},
-	close: function(){
+	close: function(callback){
 
 		var result;
 		result = this.process_buffer(true);
+
 		if(result){
 
 			// if result wasn't null, return the inode details
@@ -329,7 +330,11 @@ var inode = {
 								// update inode_replicated count
 								P_this.file_metadata.inode_replicated++;
 								// fire finalization test
-								P_this.finalize_peers();
+								P_this.finalize_peers(function(result){
+									if(result){
+										callback(result);
+									}
+								});
 							}
 
 						});
@@ -346,7 +351,7 @@ var inode = {
 				}
 			} else {
 				// no peers so return immediately
-				return result;
+				callback(result);
 			}
 		}
 	},
@@ -377,7 +382,11 @@ var inode = {
 			}
 		}
 
-		log.message(log.DEBUG, "process_buffer result: " + result);
+		if(result){
+			// do nothing
+		} else {
+			log.message(log.DEBUG, "process_buffer result: " + result);
+		}
 
 		return result;
 	},
@@ -503,7 +512,7 @@ var inode = {
 						P_this.file_metadata.blocks_replicated++;
 						// fire finalization test 
 						//P_this.finalize_peers();
-						return P_result;
+						//return P_result;
 					});
 				});
 
@@ -514,24 +523,33 @@ var inode = {
 				req.write(block);
 				req.end();
 			} 
-		} else {
-			// no peers so return immediately
-			log.message(log.DEBUG, "No peers");
-			return result;
-		}
+		} 
+/*
+        // update inode
+        this.file_metadata.blocks.push(block_object);
+
+        // advance buffer
+        this.input_buffer = this.input_buffer.slice(this.block_size);
+*/
+		return result;
 	},
-	finalize_peers: function(){
+	finalize_peers: function(callback){
+		var result = false;
+
 		log.message(log.INFO, "Testing for peer finalization");
 		log.message(log.DEBUG, "blocks: " + this.file_metadata.blocks.length + ", replicated: " + this.file_metadata.blocks_replicated);
 		log.message(log.DEBUG, "inode replicated: " + this.file_metadata.inode_replicated);
-
+/*
 		if(this.file_metadata.blocks_replicated === this.file_metadata.blocks.length
 			&& this.file_metadata.inode_replicated > 0){
+*/
+		if(this.file_metadata.inode_replicated > 0){
 			log.message(log.INFO, "Peer finalization verified");
 			result = this.file_metadata;
-			return result;
+			callback(result);
 		} else {
 			log.message(log.INFO, "Peer finalization incomplete");
+			callback(result);
 		}
 	}
 };
@@ -790,8 +808,9 @@ http.createServer(function(req, res){
 					log.message(log.DEBUG, file_metadata);
 				} else {
 					if(!new_file.write(chunk)){
+						log.message(log.ERROR, "Error writing data to storage object");
 						res.statusCode = 500;
-						res.end("error writing blocks");
+						res.end();
 					}
 				}
 			});
@@ -800,23 +819,32 @@ http.createServer(function(req, res){
 
 				if(!inode_only){
 					log.message(log.DEBUG, "Closing new file");
-					// todo: couldn't we just use file_metadata here?
-					var new_file_metadata = new_file.close();
-					log.message(log.DEBUG, "File closed");
+					//var new_file_metadata = new_file.close();
+					new_file.close(function(result){
+						if(result){
+							res.end(JSON.stringify(result));
+						} else {
+							log.message(log.ERROR, "Error closing storage object");
+							res.statusCode = 500;
+							res.end();
+						}
+					});
 				} else {
 					// need to manually add the new inode to the superblock
 					log.message(log.INFO, "Manually adding new inode to superblock");
-					var new_file_metadata = JSON.parse(file_metadata);
-					superblock[new_file_metadata.fingerprint] = new_file_metadata;
+					//var new_file_metadata = JSON.parse(file_metadata);
+					superblock[new_file_metadata.fingerprint] = JSON.parse(file_metadata); //new_file_metadata;
 					save_superblock();
 				}
-
+/*
 				if(new_file_metadata){
 					res.end(JSON.stringify(new_file_metadata));
 				} else {
+					log.message(log.ERROR, "Error closing storage object");
 					res.statusCode = 500;
-					res.end("error writing blocks");
+					res.end();
 				}
+*/
 			});
 
 		} else {
