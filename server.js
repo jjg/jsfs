@@ -285,16 +285,12 @@ var inode = {
 
 			// if peers are configured, update their superblocks
 			if(peers.length > 0){
-
 				var peers_remaining = peers.length;
-
 				// loop through each peer
 				for(peer in peers){
 					var selected_peer = peers[peer];
 					log.message(log.INFO, "Transmitting inode to peer " + selected_peer.host);
-
 					var inode_payload = JSON.stringify(this.file_metadata);
-
 					// POST inode to peer
 					var options = {
 						hostname: selected_peer.host,
@@ -307,24 +303,17 @@ var inode = {
 							"x-inode-only": "true"
 						}
 					};
-
 					// todo: use https instead of http in production environments
 					var P_this = this;  // closure-like access to local properties during http callback
 					var req = http.request(options, function(res){
-
 						log.message(log.DEBUG, "inode POST status: " + res.statusCode);
-
 						res.setEncoding('utf8');
-
 						res.on("data", function(chunk){
 							//log.message(log.DEBUG, "inode POST body: " + chunk);
 						});
-
 						res.on("end", function(){
 							log.message(log.INFO, "Remote inode stored");
-
 							peers_remaining = peers_remaining - 1;
-
 							// block until all peers have received the inode
 							if(peers_remaining === 0){
 								// update inode_replicated count
@@ -338,7 +327,6 @@ var inode = {
 							}
 						});
 					});
-
 					req.on("error", function(e){
 						log.message(log.ERROR, "Error transmitting inode to peer " + selected_peer.host + ": " + e.message);
 						peers_remaining = peers_remaining - 1;
@@ -348,7 +336,6 @@ var inode = {
 							}
 						});
 					});
-
 					req.write(inode_payload);
 					req.end();
 				}
