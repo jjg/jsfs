@@ -813,7 +813,8 @@ http.createServer(function(req, res){
 				} else {
 					// need to manually add the new inode to the superblock
 					log.message(log.INFO, "Manually adding new inode to superblock");
-					superblock[new_file_metadata.fingerprint] = JSON.parse(file_metadata);
+					var inode_metadata = JSON.parse(file_metadata);
+					superblock[inode_metadata.fingerprint] = inode_metadata;
 					save_superblock();
 				}
 			});
