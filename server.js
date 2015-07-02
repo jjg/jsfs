@@ -816,6 +816,7 @@ http.createServer(function(req, res){
 					var inode_metadata = JSON.parse(file_metadata);
 					superblock[inode_metadata.fingerprint] = inode_metadata;
 					save_superblock();
+					res.end(file_metadata);
 				}
 			});
 
