@@ -819,7 +819,6 @@ http.createServer(function(req, res){
 
 				if(!inode_only){
 					log.message(log.DEBUG, "Closing new file");
-					//var new_file_metadata = new_file.close();
 					new_file.close(function(result){
 						if(result){
 							res.end(JSON.stringify(result));
@@ -832,19 +831,9 @@ http.createServer(function(req, res){
 				} else {
 					// need to manually add the new inode to the superblock
 					log.message(log.INFO, "Manually adding new inode to superblock");
-					//var new_file_metadata = JSON.parse(file_metadata);
-					superblock[new_file_metadata.fingerprint] = JSON.parse(file_metadata); //new_file_metadata;
+					superblock[new_file_metadata.fingerprint] = JSON.parse(file_metadata);
 					save_superblock();
 				}
-/*
-				if(new_file_metadata){
-					res.end(JSON.stringify(new_file_metadata));
-				} else {
-					log.message(log.ERROR, "Error closing storage object");
-					res.statusCode = 500;
-					res.end();
-				}
-*/
 			});
 
 		} else {
