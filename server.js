@@ -300,9 +300,8 @@ var inode = {
 							"x-inode-only": "true"
 						}
 					};
-					// todo: use https instead of http in production environments
 					var P_this = this;  // closure-like access to local properties during http callback
-					var req = http.request(options, function(res){
+					var req = https.request(options, function(res){
 						log.message(log.DEBUG, "inode POST status: " + res.statusCode);
 						res.setEncoding('utf8');
 						res.on("data", function(chunk){
@@ -480,11 +479,10 @@ var inode = {
 					}
 				};
 
-				// todo: use https instead of http in production environments
 				var P_this = this;	// closure-like access to local properties during http callback
 				var P_result = result;
 				log.message(log.DEBUG, "P_result: " + P_result);
-				var req = http.request(options, function(res){
+				var req = https.request(options, function(res){
 
 					log.message(log.DEBUG, "Block POST status: " + res.statusCode);
 					if(res.statusCode === 405){
