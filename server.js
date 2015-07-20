@@ -868,7 +868,7 @@ http.createServer(function(req, res){
 					// create stub block object for storage processing
 					var block_object = {};
 					block_object.block_hash = shasum.digest("hex");
-					log.message("block_buffer.length: " + block_buffer.length);
+					log.message(log.DEBUG, "block_buffer.length: " + block_buffer.length);
 					log.message(log.DEBUG, "block_only: " + block_only + " - calculated block hash: " + block_object.block_hash);
 					// write block to disk
 					block_object = commit_block_to_disk(block_buffer, block_object);
