@@ -517,7 +517,7 @@ var inode = {
 					path: "/_bs/" + block_hash,
 					method: "POST",
 					headers: {
-						"Content-Type": "application/octet-stream",
+						//"Content-Type": "application/octet-stream",
 						"Content-Length": block.length,
 						"x-block-only": block_hash 
 					}
@@ -533,7 +533,7 @@ var inode = {
 						log.message(log.INFO, "Duplicate block " + block_hash + " not transmitted");
 					}
 
-					res.setEncoding('utf8');
+					//res.setEncoding('utf8');
 
 					res.on("data", function(chunk){
 						//log.message(log.DEBUG, "Block POST body: " + chunk);
@@ -868,6 +868,7 @@ http.createServer(function(req, res){
 					// create stub block object for storage processing
 					var block_object = {};
 					block_object.block_hash = shasum.digest("hex");
+					log.message("block_buffer.length: " + block_buffer.length);
 					log.message(log.DEBUG, "block_only: " + block_only + " - calculated block hash: " + block_object.block_hash);
 					// write block to disk
 					block_object = commit_block_to_disk(block_buffer, block_object);
