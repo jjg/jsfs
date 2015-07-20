@@ -875,7 +875,7 @@ http.createServer(function(req, res){
                         block_object.block_hash = block_hash;
 
                         // todo: write block to disk
-                        block_object = commit_block_to_disk(block, block_object);
+                        block_object = commit_block_to_disk(block_buffer, block_object);
 
 						// end request
 						res.end();
