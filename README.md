@@ -26,7 +26,7 @@ Peering is experimental and has some known issues.  It should not be used in pro
 
 Preliminary federation support has been added to allow one JSFS server to replicate data to a remote server.  This is currently one-way only, so it is most useful for two scenarios:
 
-###Redundancey
+###Redundancy
 By configuring a peer, files stored to one server will be made avaliable at all servers configured as peers.  The blocks of the file are replicated in parallel and the remote server's superblock is updated as well making the file avaliable from the remote server as well as the local one.
 
 Files at the remote peer are stored using the local server's JSFS fully-qualified namespace, so in order to access them the remote server will need to receive requests for the original server's name (DNS or host file changes) or the fully-qualified JSFS name will need to be used in addition to the remote server's hostname (details about this can be found in this Issue: https://github.com/jjg/jsfs/issues/66).
