@@ -174,6 +174,46 @@ function analyze_block(block){
 	return result;
 }
 
+function commit_block_to_disk(block, block_object){
+// if storage locations exist, save the block to disk
+	if(storage_locations.length > 0){
+		if(unique_blocks.indexOf(block_object.block_hash) == -1){
+
+			unique_blocks.push(block_object.block_hash);
+
+			// sort storage locations by avaliable capacity
+			storage_locations.sort(function(a,b) { return parseFloat(b.capacity - b.usage) - parseFloat(a.capacity - a.usage) });
+
+			// select location with highest avaliable capacity
+			block_object.last_seen = storage_locations[0].path;
+			var block_file = storage_locations[0].path + block_object.block_hash;
+
+			// make sure there's enough capacity left to store the block
+			if((storage_locations[0].capacity - storage_locations[0].usage) > block.length){
+
+				log.message(log.INFO, "storing block:   " + block_object.block_hash);
+				fs.writeFileSync(block_file, block, "binary");
+				storage_locations[0].usage = storage_locations[0].usage + block.length;
+
+			} else {
+				log.message(log.ERROR, "no room left to store block " + block_object.block_hash);
+				result = false;
+			}
+
+		} else {
+
+			// todo: set the last_seen property of the block_object to the location of the original block!!!
+			// this is harder than it might seem, we could be lazy and rely on the GET "go hunting"
+			// mechanism, but that seems hackish...
+			log.message(log.INFO, "duplicate block: " + block_object.block_hash);
+		}
+	} else {
+		log.message(log.INFO, "No storage locations configured, block not written to disk");
+	}
+
+	return block_object;
+}
+
 function token_valid(access_token, inode, method){
 
 	// generate expected token
@@ -418,6 +458,9 @@ var inode = {
 		var block_object = {};
 		block_object.block_hash = block_hash;
 
+		// todo: code below has been reloacted to commit_block_to_disk(block_data, block_hash) function, refactor this into that :)
+		block_object = commit_block_to_disk(block, block_object);
+/*
 		// if storage locations exist, save the block to disk
 		if(storage_locations.length > 0){
 			if(unique_blocks.indexOf(block_hash) == -1){
@@ -453,7 +496,7 @@ var inode = {
 		} else {
 			log.message(log.INFO, "No storage locations configured, block not written to disk");
 		}
-
+*/
 		// update inode
 		this.file_metadata.blocks.push(block_object);
 
@@ -475,7 +518,8 @@ var inode = {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/octet-stream",
-						"Content-Length": block.length
+						"Content-Length": block.length,
+						"x-block-only": "true"
 					}
 				};
 
@@ -592,6 +636,7 @@ http.createServer(function(req, res){
 	var content_type = url.parse(req.url,true).query.content_type || req.headers["content-type"];
 	var version = url.parse(req.url,true).query.version || req.headers["x-version"];
 	var inode_only = url.parse(req.url,true).query.inode_only || req.headers["x-inode-only"];
+	var block_only = url.parse(req.url,true).query.block_only || req.headers["x-block-only"];
 
 	log.message(log.INFO, "Received " + req.method + " request for URL " + target_url);
 
