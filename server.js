@@ -810,7 +810,7 @@ http.createServer(function(req, res){
 				// buffer used for block-only updates
 				var block_buffer = "";
 
-			if(!inode_only){
+			if(!inode_only && !block_only){
 					var new_file = Object.create(inode);
 					new_file.init(target_url);
 
@@ -836,7 +836,7 @@ http.createServer(function(req, res){
 					}
 
 				} else {
-					log.message(log.INFO, "inode only POST");
+					log.message(log.INFO, "inode/block only POST");
 				}
 
 				log.message(log.DEBUG, "File properties set");
@@ -849,8 +849,8 @@ http.createServer(function(req, res){
 						log.message(log.DEBUG, file_metadata);
 					} else if (block_only){
 						// todo: append chunk to block 
-						block_buffer += chunk;
-						log.message(log.DEBUG, "block-only chunk received");
+						block_buffer+=chunk;
+						//log.message(log.DEBUG, "block-only chunk received");
 					} else {
 						if(!new_file.write(chunk)){
 							log.message(log.ERROR, "Error writing data to storage object");
@@ -862,6 +862,46 @@ http.createServer(function(req, res){
 
 				req.on("end", function(){
 
+					if(block_only){
+						log.message(log.INFO, "End of block-only request");
+                        // generate a hash of the block to use as a handle/filename
+                        var block_hash = null;
+                        shasum = crypto.createHash("sha1");
+                        shasum.update(block);
+                        block_hash = shasum.digest("hex");
+
+                        // create stub block object for storage processing
+                        var block_object = {};
+                        block_object.block_hash = block_hash;
+
+                        // todo: write block to disk
+                        block_object = commit_block_to_disk(block, block_object);
+
+						// end request
+						res.end();
+					} else if(inode_only){
+						log.message(log.INFO, "End of inode-only request");
+                        // need to manually add the new inode to the superblock
+                        log.message(log.INFO, "Manually adding new inode to superblock");
+                        var inode_metadata = JSON.parse(file_metadata);
+                        superblock[inode_metadata.fingerprint] = inode_metadata;
+                        save_superblock();
+                        res.end(file_metadata);
+					} else {
+						log.message(log.INFO, "End of request");
+                        log.message(log.DEBUG, "Closing new file");
+                        new_file.close(function(result){
+                            if(result){
+                                res.end(JSON.stringify(result));
+                            } else {
+                                log.message(log.ERROR, "Error closing storage object");
+                                res.statusCode = 500;
+                                res.end();
+                            }
+                        });
+					}
+
+/*
 					if(!inode_only){
 						log.message(log.DEBUG, "Closing new file");
 						new_file.close(function(result){
@@ -898,13 +938,13 @@ http.createServer(function(req, res){
 						save_superblock();
 						res.end(file_metadata);
 					}
+*/
 				});
 
 			} else {
-
 				// if file exists at this URL, return 405 "Method not allowed"
 				log.message(log.WARN,"File exists at " + target_url + ", re-POST not allowed");
-			res.statusCode = 405;
+				res.statusCode = 405;
 				res.end();
 			}
 		}
