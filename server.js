@@ -867,7 +867,7 @@ http.createServer(function(req, res){
                         // generate a hash of the block to use as a handle/filename
                         var block_hash = null;
                         shasum = crypto.createHash("sha1");
-                        shasum.update(block);
+                        shasum.update(block_buffer);
                         block_hash = shasum.digest("hex");
 
                         // create stub block object for storage processing
