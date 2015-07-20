@@ -21,6 +21,37 @@ JSFS can now store blocks across physical disk boundaries which is useful when y
 
 In addition to multiple locations, you specify the maximum amount of data that can be stored per-location.  The default config sets this very low (1024 bytes) so you can see what happens when you run out of space and respond accordingly.  Useage and capacity statistics are logged to the console periodically so you can keep an eye on usage before you hit the limit.
  
+##Peers (EXPERIMENTAL)
+Peers can be configured by adding host to the `PEERS` array in the config.js file as shown below:
+
+````
+module.exports = {
+    STORAGE_LOCATIONS:[
+        {"path":"./blocks/","capacity":100000000000}
+    ],
+    PEERS:[
+        {"host":"host.domain.com","port":443}
+    ],
+    BLOCK_SIZE: 1048576,
+    LOG_LEVEL: 0,
+    SERVER_PORT: 7302,
+};
+````
+
+JSFS expects to talk to peers over SSL. If you want to use non-secure connections you'll have to modify the code for now.
+
+Peering is experimental and has some known issues.  They should not be used in production unless you really know what you're doing.  
+
+Preliminary federation support has been added to allow one JSFS server to replicate data to a remote server.  This is currently one-way only, so it is most useful for two scenarios:
+
+###Redundancey
+By configuring a peer, files stored to one server will be made avaliable at all servers configured as peers.  The blocks of the file are replicated in parallel and the remote server's superblock is updated as well making the file avaliable from the remote server as well as the local one.
+
+###Improving network performance
+A JSFS server running locally (or on a local network) can publish data to a remote peer (across a WAN connection for example) potentially faster than POSTing files directly to the remote server.  The reason for this is that JSFS federation works on the block level, cutting large files into blocks that can be transmitted in parallel which ends up being faster across constrained links to to MTU limits, etc.  The second reason is that the local JSFS server will deduplicate the data before transmitting it, therefore only sending unique blocks across the WAN connection.
+
+*note: to use only the deduplicating front-end features of peering leave the STORAGE_LOCATIONS array empty.*
+
 #API
 
 ##Keys and Tokens
