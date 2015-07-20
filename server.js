@@ -519,7 +519,7 @@ var inode = {
 					headers: {
 						"Content-Type": "application/octet-stream",
 						"Content-Length": block.length,
-						"x-block-only": "true"
+						"x-block-only": block_hash 
 					}
 				};
 
@@ -781,122 +781,132 @@ http.createServer(function(req, res){
 
 	case "POST":
 
-		// make sure the URL isn't already taken
-		log.message(log.DEBUG, "Begin checking for existing file");
-		var matching_inodes = [];
-		for(var an_inode in superblock){
-			if(superblock.hasOwnProperty(an_inode)){
-				var selected_inode = superblock[an_inode];
-				if(selected_inode.url === target_url){
-					matching_inodes.push(selected_inode);
-				}
-			}
-		}
-
 		// todo: if block_only, test below to see if we already have the block (i.e.: if(unique_blocks.indexOf(block_hash) > 0) )
-		if(matching_inodes.length < 1){
+		if(block_only && unique_blocks.indexOf(block_only) === -1){
 
-			log.message(log.DEBUG, "No existing file found, storing new file");
-
-			// store the posted data at the specified URL
-			var file_metadata = "";
-
-			// buffer used for block-only updates
-			var block_buffer = "";
-
-			if(!inode_only){
-				var new_file = Object.create(inode);
-				new_file.init(target_url);
-
-				log.message(log.DEBUG, "New file object created");
-
-				// set additional file properties (content-type, etc.)
-				if(content_type){
-					log.message(log.INFO, "Content-Type: " + content_type);
-					new_file.file_metadata.content_type = content_type;
-				}
-
-				if(private){
-					new_file.file_metadata.private = true;
-				}
-
-				if(encrypted){
-					new_file.file_metadata.encrypted = true;
-				}
-
-				// if access_key is supplied with POST, replace the default one
-				if(access_key){
-					new_file.file_metadata.access_key = access_key;
-				}
-
-			} else {
-				log.message(log.INFO, "inode only POST");
-			}
-
-			log.message(log.DEBUG, "File properties set");
-
-			req.on("data", function(chunk){
-
-				if(inode_only){
-					log.message(log.DEBUG, "Received new inode chunk");
-					file_metadata+=chunk;
-					log.message(log.DEBUG, file_metadata);
-				} else if (block_only){
-					// todo: append chunk to block 
-					block_buffer += chunk;
-					log.message(log.DEBUG, "block-only chunk received");
-				} else {
-					if(!new_file.write(chunk)){
-						log.message(log.ERROR, "Error writing data to storage object");
-						res.statusCode = 500;
-						res.end();
+			// make sure the URL isn't already taken
+			log.message(log.DEBUG, "Begin checking for existing file");
+			var matching_inodes = [];
+			for(var an_inode in superblock){
+				if(superblock.hasOwnProperty(an_inode)){
+					var selected_inode = superblock[an_inode];
+					if(selected_inode.url === target_url){
+						matching_inodes.push(selected_inode);
 					}
 				}
-			});
+			}
 
-			req.on("end", function(){
+			if(matching_inodes.length < 1){
 
-				if(!inode_only){
-					log.message(log.DEBUG, "Closing new file");
-					new_file.close(function(result){
-						if(result){
-							res.end(JSON.stringify(result));
-						} else {
-							log.message(log.ERROR, "Error closing storage object");
+				log.message(log.DEBUG, "No existing file found, storing new file");
+
+				// store the posted data at the specified URL
+				var file_metadata = "";
+
+				// buffer used for block-only updates
+				var block_buffer = "";
+
+			if(!inode_only){
+					var new_file = Object.create(inode);
+					new_file.init(target_url);
+
+					log.message(log.DEBUG, "New file object created");
+
+					// set additional file properties (content-type, etc.)
+					if(content_type){
+						log.message(log.INFO, "Content-Type: " + content_type);
+						new_file.file_metadata.content_type = content_type;
+					}
+
+					if(private){
+						new_file.file_metadata.private = true;
+					}
+
+					if(encrypted){
+						new_file.file_metadata.encrypted = true;
+					}
+
+					// if access_key is supplied with POST, replace the default one
+					if(access_key){
+						new_file.file_metadata.access_key = access_key;
+					}
+
+				} else {
+					log.message(log.INFO, "inode only POST");
+				}
+
+				log.message(log.DEBUG, "File properties set");
+
+				req.on("data", function(chunk){
+
+					if(inode_only){
+						log.message(log.DEBUG, "Received new inode chunk");
+						file_metadata+=chunk;
+						log.message(log.DEBUG, file_metadata);
+					} else if (block_only){
+						// todo: append chunk to block 
+						block_buffer += chunk;
+						log.message(log.DEBUG, "block-only chunk received");
+					} else {
+						if(!new_file.write(chunk)){
+							log.message(log.ERROR, "Error writing data to storage object");
 							res.statusCode = 500;
 							res.end();
 						}
-					});
-				} else if(block_only){
+					}
+				});
 
-					// generate a hash of the block to use as a handle/filename
-					var block_hash = null;
-					shasum = crypto.createHash("sha1");
-					shasum.update(block);
-					block_hash = shasum.digest("hex");
+				req.on("end", function(){
 
-					// create stub block object for storage processing
-					var block_object = {};
-					block_object.block_hash = block_hash;
+					if(!inode_only){
+						log.message(log.DEBUG, "Closing new file");
+						new_file.close(function(result){
+							if(result){
+								res.end(JSON.stringify(result));
+							} else {
+								log.message(log.ERROR, "Error closing storage object");
+								res.statusCode = 500;
+								res.end();
+							}
+						});
+					} else if(block_only){
 
-					// todo: write block to disk
-					block_object = commit_block_to_disk(block, block_object);
+						log.message(log.INFO, "Storing block-only update");
 
-				} else {
-					// need to manually add the new inode to the superblock
-					log.message(log.INFO, "Manually adding new inode to superblock");
-					var inode_metadata = JSON.parse(file_metadata);
-					superblock[inode_metadata.fingerprint] = inode_metadata;
-					save_superblock();
-					res.end(file_metadata);
-				}
-			});
+						// generate a hash of the block to use as a handle/filename
+						var block_hash = null;
+						shasum = crypto.createHash("sha1");
+						shasum.update(block);
+						block_hash = shasum.digest("hex");
+
+						// create stub block object for storage processing
+						var block_object = {};
+						block_object.block_hash = block_hash;
+
+						// todo: write block to disk
+						block_object = commit_block_to_disk(block, block_object);
+
+					} else {
+						// need to manually add the new inode to the superblock
+						log.message(log.INFO, "Manually adding new inode to superblock");
+						var inode_metadata = JSON.parse(file_metadata);
+						superblock[inode_metadata.fingerprint] = inode_metadata;
+						save_superblock();
+						res.end(file_metadata);
+					}
+				});
+
+			} else {
+
+				// if file exists at this URL, return 405 "Method not allowed"
+				log.message(log.WARN,"File exists at " + target_url + ", re-POST not allowed");
+			res.statusCode = 405;
+				res.end();
+			}
 
 		} else {
-
-			// if file exists at this URL, return 405 "Method not allowed"
-			log.message(log.WARN,"File exists at " + target_url + ", re-POST not allowed");
-			res.statusCode = 405;
+			log.message(log.INFO, "Block-only update complete: block exists");
+			res.statusCode = 200;
 			res.end();
 		}
 
