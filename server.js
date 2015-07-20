@@ -793,12 +793,16 @@ http.createServer(function(req, res){
 			}
 		}
 
+		// todo: if block_only, test below to see if we already have the block (i.e.: if(unique_blocks.indexOf(block_hash) > 0) )
 		if(matching_inodes.length < 1){
 
 			log.message(log.DEBUG, "No existing file found, storing new file");
 
 			// store the posted data at the specified URL
 			var file_metadata = "";
+
+			// buffer used for block-only updates
+			var block_buffer = "";
 
 			if(!inode_only){
 				var new_file = Object.create(inode);
@@ -837,6 +841,10 @@ http.createServer(function(req, res){
 					log.message(log.DEBUG, "Received new inode chunk");
 					file_metadata+=chunk;
 					log.message(log.DEBUG, file_metadata);
+				} else if (block_only){
+					// todo: append chunk to block 
+					block_buffer += chunk;
+					log.message(log.DEBUG, "block-only chunk received");
 				} else {
 					if(!new_file.write(chunk)){
 						log.message(log.ERROR, "Error writing data to storage object");
@@ -859,6 +867,21 @@ http.createServer(function(req, res){
 							res.end();
 						}
 					});
+				} else if(block_only){
+
+					// generate a hash of the block to use as a handle/filename
+					var block_hash = null;
+					shasum = crypto.createHash("sha1");
+					shasum.update(block);
+					block_hash = shasum.digest("hex");
+
+					// create stub block object for storage processing
+					var block_object = {};
+					block_object.block_hash = block_hash;
+
+					// todo: write block to disk
+					block_object = commit_block_to_disk(block, block_object);
+
 				} else {
 					// need to manually add the new inode to the superblock
 					log.message(log.INFO, "Manually adding new inode to superblock");
