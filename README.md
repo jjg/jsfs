@@ -32,11 +32,11 @@ By configuring a peer, files stored to one server will be made avaliable at all 
 Files at the remote peer are stored using the local server's JSFS fully-qualified namespace, so in order to access them the remote server will need to receive requests for the original server's name (DNS or host file changes) or the fully-qualified JSFS name will need to be used in addition to the remote server's hostname (details about this can be found in this Issue: https://github.com/jjg/jsfs/issues/66).
 
 ###Improving network performance
-A JSFS server running locally (or on a local network) can publish data to a remote peer (across a WAN connection for example) potentially faster than POSTing files directly to the remote server.  The reason for this is that JSFS federation works on the block level, cutting large files into blocks that can be transmitted in parallel which ends up being faster across constrained links to to MTU limits, etc.  The second reason is that the local JSFS server will deduplicate the data before transmitting it, therefore only sending unique blocks across the WAN connection.
+A JSFS server running locally (or on a local network) can publish data to a remote peer (across a WAN connection for example) potentially faster than POSTing files directly to the remote server.  The reason for this is that JSFS federation works on the block level, cutting large files into blocks that can be transmitted in parallel which ends up being faster across constrained links due to MTU limits, etc.  The second reason is that the local JSFS server will deduplicate the data before transmitting it, therefore only sending unique blocks across the WAN connection.
 
-*note: to use only the deduplicating front-end features of peering leave the STORAGE_LOCATIONS array empty.*
+*Note: to use only the deduplicating front-end features of peering leave the `STORAGE_LOCATIONS` array empty.*
 
-Peers can be configured by adding host to the `PEERS` array in the config.js file as shown below:
+Peers can be configured by adding a host to the `PEERS` array in the config.js file as shown below:
 
 ````
 module.exports = {
