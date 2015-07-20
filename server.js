@@ -836,7 +836,7 @@ http.createServer(function(req, res){
 			// store the posted data at the specified URL
 			var file_metadata = "";
 			// buffer used for block-only updates
-			var block_buffer = new Buffer(); //"";
+			var block_buffer = new Buffer(""); //"";
 
 			req.on("data", function(chunk){
 
