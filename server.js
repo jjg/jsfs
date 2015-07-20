@@ -457,46 +457,8 @@ var inode = {
 		// store the block 
 		var block_object = {};
 		block_object.block_hash = block_hash;
-
-		// todo: code below has been reloacted to commit_block_to_disk(block_data, block_hash) function, refactor this into that :)
 		block_object = commit_block_to_disk(block, block_object);
-/*
-		// if storage locations exist, save the block to disk
-		if(storage_locations.length > 0){
-			if(unique_blocks.indexOf(block_hash) == -1){
 
-				unique_blocks.push(block_hash);
-
-				// sort storage locations by avaliable capacity
-				storage_locations.sort(function(a,b) { return parseFloat(b.capacity - b.usage) - parseFloat(a.capacity - a.usage) });
-
-				// select location with highest avaliable capacity
-				block_object.last_seen = storage_locations[0].path;
-				var block_file = storage_locations[0].path + block_hash;
-
-				// make sure there's enough capacity left to store the block
-				if((storage_locations[0].capacity - storage_locations[0].usage) > block.length){
-
-					log.message(log.INFO, "storing block:   " + block_hash);
-					fs.writeFileSync(block_file, block, "binary");
-					storage_locations[0].usage = storage_locations[0].usage + block.length;
-
-				} else {
-					log.message(log.ERROR, "no room left to store block " + block_hash);
-					result = false;
-				}
-
-			} else {
-
-				// todo: set the last_seen property of the block_object to the location of the original block!!!
-				// this is harder than it might seem, we could be lazy and rely on the GET "go hunting"
-				// mechanism, but that seems hackish...
-				log.message(log.INFO, "duplicate block: " + block_hash);
-			}
-		} else {
-			log.message(log.INFO, "No storage locations configured, block not written to disk");
-		}
-*/
 		// update inode
 		this.file_metadata.blocks.push(block_object);
 
@@ -781,7 +743,7 @@ http.createServer(function(req, res){
 
 	case "POST":
 
-		// if block_only, test below to see if we already have the block (i.e.: if(unique_blocks.indexOf(block_hash) > 0) )
+		// if block_only, test below to see if we already have the block
 		if(block_only && unique_blocks.indexOf(block_only) > -1){
             log.message(log.INFO, "Block-only update complete: block exists");
             res.statusCode = 200;
@@ -836,19 +798,16 @@ http.createServer(function(req, res){
 			// store the posted data at the specified URL
 			var file_metadata = "";
 			// buffer used for block-only updates
-			var block_buffer = new Buffer(""); //"";
+			var block_buffer = new Buffer("");
 
 			req.on("data", function(chunk){
-
 				if(inode_only){
 					log.message(log.DEBUG, "Received new inode chunk");
 					file_metadata+=chunk;
 					log.message(log.DEBUG, file_metadata);
 				} else if (block_only){
-					// todo: append chunk to block 
+					// append chunk to block 
 					block_buffer = new Buffer.concat([block_buffer, chunk]);
-					//block_buffer+=chunk;
-					//log.message(log.DEBUG, "block-only chunk received");
 				} else {
 					if(!new_file.write(chunk)){
 						log.message(log.ERROR, "Error writing data to storage object");
@@ -865,11 +824,11 @@ http.createServer(function(req, res){
 					var block_hash = null;
 					shasum = crypto.createHash("sha1");
 					shasum.update(block_buffer);
-					//block_hash = shasum.digest("hex");
 					// create stub block object for storage processing
 					var block_object = {};
 					block_object.block_hash = shasum.digest("hex");
-					log.message(log.DEBUG, "block_only: " + block_only + " - calculated block hash: " + block_object.block_hash);
+					// todo: consider doing a checksum verification here
+					//log.message(log.DEBUG, "block_only: " + block_only + " - calculated block hash: " + block_object.block_hash);
 					// write block to disk
 					block_object = commit_block_to_disk(block_buffer, block_object);
 					res.end();
