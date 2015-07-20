@@ -782,7 +782,11 @@ http.createServer(function(req, res){
 	case "POST":
 
 		// todo: if block_only, test below to see if we already have the block (i.e.: if(unique_blocks.indexOf(block_hash) > 0) )
-		if(block_only && unique_blocks.indexOf(block_only) < 0){
+		if(block_only && unique_blocks.indexOf(block_only) > -1){
+            log.message(log.INFO, "Block-only update complete: block exists");
+            res.statusCode = 200;
+            res.end();
+		} else {
 
 			// make sure the URL isn't already taken
 			log.message(log.DEBUG, "Begin checking for existing file");
@@ -903,11 +907,6 @@ http.createServer(function(req, res){
 			res.statusCode = 405;
 				res.end();
 			}
-
-		} else {
-			log.message(log.INFO, "Block-only update complete: block exists");
-			res.statusCode = 200;
-			res.end();
 		}
 
 		break;
