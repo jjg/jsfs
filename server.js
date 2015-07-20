@@ -861,13 +861,13 @@ http.createServer(function(req, res){
 				if(block_only){
 					log.message(log.INFO, "End of block-only request");
 					// generate a hash of the block to use as a handle/filename
-					var block_hash = null;
-					shasum = crypto.createHash("sha1");
-					shasum.update(block_buffer);
-					block_hash = shasum.digest("hex");
+					//var block_hash = null;
+					//shasum = crypto.createHash("sha1");
+					//shasum.update(block_buffer);
+					//block_hash = shasum.digest("hex");
 					// create stub block object for storage processing
 					var block_object = {};
-					block_object.block_hash = block_hash;
+					block_object.block_hash = block_only;
 					// write block to disk
 					block_object = commit_block_to_disk(block_buffer, block_object);
 					res.end();
