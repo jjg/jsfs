@@ -782,7 +782,7 @@ http.createServer(function(req, res){
 	case "POST":
 
 		// todo: if block_only, test below to see if we already have the block (i.e.: if(unique_blocks.indexOf(block_hash) > 0) )
-		if(block_only && unique_blocks.indexOf(block_only) === -1){
+		if(block_only && unique_blocks.indexOf(block_only) < 0){
 
 			// make sure the URL isn't already taken
 			log.message(log.DEBUG, "Begin checking for existing file");
