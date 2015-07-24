@@ -921,17 +921,18 @@ http.createServer(function(req, res){
 			});
 
 			req.on("end", function(){
-				var new_file_metadata = new_file.close();
-
-				if(new_file_metadata){
-					res.writeHead(204,
-						{"x-version": new_file_metadata.version}
-					);
-					res.end();
-				} else {
-					res.statusCode = 500;
-					res.end("error writing blocks");
-				}
+				new_file.close(function(result){
+					if(result){
+						res.writeHead(204,
+							{"x-version": result.version}
+						);
+						res.end();
+					} else {
+						log.message(log.ERROR, "Error closing storage object");
+						res.statusCode = 500;
+						res.end();
+					}
+				});
 			});
 
 		} else {
