@@ -564,10 +564,12 @@ http.createServer(function(req, res){
 	// all responses include these headers to support cross-domain requests
 	var allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
 	var allowed_headers = ["Accept", "Accept-Version", "Content-Type", "Api-Version", "Origin", "X-Requested-With","Range","X_FILENAME","X-Access-Key","X-Replacement-Access-Key","X-Access-Token", "X-Encrypted", "X-Private", "X-Append"];
+	var exposed_headers = ["X-Media-Type", "X-Media-Size", "X-Media-Channels", "X-Media-Bitrate", "X-Media-Resolution", "X-Media-Duration"];
 
 	res.setHeader("Access-Control-Allow-Methods", allowed_methods.join(","));
 	res.setHeader("Access-Control-Allow-Headers", allowed_headers.join(","));
 	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.setHeader("Access-Control-Expoised-Headers", exposed_headers.join(","));
 
 	// all requests are interrorgated for these values
 	var target_url = require("url").parse(req.url).pathname;
