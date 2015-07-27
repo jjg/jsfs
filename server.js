@@ -427,7 +427,7 @@ var inode = {
 			// grok known file types
 			var analysis_result = analyze_block(block);
 			log.message(log.INFO, "block analysis result: " + JSON.stringify(analysis_result));
-			
+
 			// if we found out anything useful, annotate the object's metadata
 			this.file_metadata.media_type = analysis_result.type;
 			if(analysis_result.type != "unknown"){
@@ -454,7 +454,7 @@ var inode = {
 		shasum.update(block);
 		block_hash = shasum.digest("hex");
 
-		// store the block 
+		// store the block
 		var block_object = {};
 		block_object.block_hash = block_hash;
 		block_object = commit_block_to_disk(block, block_object);
@@ -481,7 +481,7 @@ var inode = {
 					headers: {
 						//"Content-Type": "application/octet-stream",
 						"Content-Length": block.length,
-						"x-block-only": block_hash 
+						"x-block-only": block_hash
 					}
 				};
 
@@ -500,11 +500,11 @@ var inode = {
 					res.on("data", function(chunk){
 						//log.message(log.DEBUG, "Block POST body: " + chunk);
 					});
-			
+
 					res.on("end", function(){
 						// increment blocks_replicated property
 						P_this.file_metadata.blocks_replicated++;
-						// fire finalization test 
+						// fire finalization test
 						P_this.finalize_peers(function(result){
 							// todo: stop blocking if the last block was transferred
 							// (do nothing for now)
@@ -521,8 +521,8 @@ var inode = {
 
 				req.write(block);
 				req.end();
-			} 
-		} 
+			}
+		}
 		return result;
 	},
 	finalize_peers: function(callback){
@@ -569,7 +569,7 @@ http.createServer(function(req, res){
 	res.setHeader("Access-Control-Allow-Methods", allowed_methods.join(","));
 	res.setHeader("Access-Control-Allow-Headers", allowed_headers.join(","));
 	res.setHeader("Access-Control-Allow-Origin", "*");
-	res.setHeader("Access-Control-Expoised-Headers", exposed_headers.join(","));
+	res.setHeader("Access-Control-Expose-Headers", exposed_headers.join(","));
 
 	// all requests are interrorgated for these values
 	var target_url = require("url").parse(req.url).pathname;
@@ -763,7 +763,7 @@ http.createServer(function(req, res){
 						}
 					}
 				}
-	
+
 				if(matching_inodes.length < 1){
 					log.message(log.DEBUG, "No existing file found, storing new file");
 					// store the posted data at the specified URL
@@ -808,7 +808,7 @@ http.createServer(function(req, res){
 					file_metadata+=chunk;
 					log.message(log.DEBUG, file_metadata);
 				} else if (block_only){
-					// append chunk to block 
+					// append chunk to block
 					block_buffer = new Buffer.concat([block_buffer, chunk]);
 				} else {
 					if(!new_file.write(chunk)){
