@@ -844,16 +844,18 @@ http.createServer(function(req, res){
 					res.end(file_metadata);
 				} else {
 					log.message(log.INFO, "End of request");
-					log.message(log.DEBUG, "Closing new file");
-					new_file.close(function(result){
-						if(result){
-							res.end(JSON.stringify(result));
-						} else {
-							log.message(log.ERROR, "Error closing storage object");
-							res.statusCode = 500;
-							res.end();
-						}
-					});
+					if(new_file){
+						log.message(log.DEBUG, "Closing new file");
+						new_file.close(function(result){
+							if(result){
+								res.end(JSON.stringify(result));
+							} else {
+								log.message(log.ERROR, "Error closing storage object");
+								res.statusCode = 500;
+								res.end();
+							}
+						});
+					}
 				}
 			});
 		}
