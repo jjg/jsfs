@@ -86,12 +86,14 @@ function load_superblock(){
 		}
 	}
 
-	var stats = system_stats();
-	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
+	log.message(log.INFO, "Unique block index initialized");
 
-	for(var storage_location in storage_locations){
-		log.message(log.INFO, storage_locations[storage_location].usage + " of " + storage_locations[storage_location].capacity + " bytes used on " + storage_locations[storage_location].path);
-	}
+	//var stats = system_stats();
+	//log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
+
+	//for(var storage_location in storage_locations){
+	//	log.message(log.INFO, storage_locations[storage_location].usage + " of " + storage_locations[storage_location].capacity + " bytes used on " + storage_locations[storage_location].path);
+	//}
 }
 
 function system_stats(){
