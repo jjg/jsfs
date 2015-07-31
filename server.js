@@ -17,6 +17,7 @@ var fs = require("fs");
 var config = require("./config.js");
 var log = require("./jlog.js");
 var url = require("url");
+var cp = require("child_process");
 
 function save_superblock(){
 	for(var location in config.STORAGE_LOCATIONS){
@@ -50,6 +51,18 @@ function load_superblock(){
 		}
 	}
 
+	// start child process to initialize the unique block index
+	var unique_block_initializer = cp.fork("unique_block_initializer.js");
+	unique_block_initializer.send({superblock:superblock});
+	unique_block_initializer.on("message", function(message){
+		log.message(log.DEBUG, "Received message from unique_block_initializer");
+		log.message(log.DEBUG, JSON.stringify(message));
+		// todo: extract block hash and append it to unique block index
+		// i.e.: unique_blocks.push(selected_block.block_hash);
+	});
+	
+
+/*
 	// establish the utilization of each storage location
 	for(var storage_location in storage_locations){
 		storage_locations[storage_location].usage = 0;
@@ -94,6 +107,7 @@ function load_superblock(){
 	//for(var storage_location in storage_locations){
 	//	log.message(log.INFO, storage_locations[storage_location].usage + " of " + storage_locations[storage_location].capacity + " bytes used on " + storage_locations[storage_location].path);
 	//}
+*/
 }
 
 function system_stats(){
