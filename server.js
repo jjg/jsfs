@@ -61,15 +61,22 @@ function load_superblock(){
 		}
 		if(message.processing_complete){
 			log.message(log.INFO, "unique_block_initializer: superblock processing complete");
+			unique_block_initializer.disconnect();
 		}
 	});
+	unique_block_initializer.on("disconnect", function(){
+		log.message(log.DEBUG, "unique_block_initializer disconnected");
+	});
+	unique_block_initializer.on("exit", function(){
+		log.message(log.DEBUG, "unique_block_initializer exited");
+	});
 
-    // establish the utilization of each storage location
+    // initialize utilization of each storage location
     for(var storage_location in storage_locations){
         storage_locations[storage_location].usage = 0;
     }
 
-	// start child process to calculate storage utilization
+	// start child process to calculate actual storage utilization
 	var storage_utilization_initializer = cp.fork("storage_utilization_initializer");
 	log.message(log.INFO, "Starting storage_utilization_initializer");
 	storage_utilization_initializer.send({superblock:superblock,storage_locations:storage_locations});
@@ -83,56 +90,17 @@ function load_superblock(){
 			var selected_storage_location = storage_locations[storage_location];
 			log.message(log.INFO, selected_storage_location.usage + " bytes out of " + selected_storage_location.capacity + " (" + (selected_storage_location.usage/selected_storage_location.capacity) * 100 + "%) used on " + selected_storage_location.path);
 		}
+
+		storage_utilization_initializer.disconnect();
+	});
+	storage_utilization_initializer.on("disconnect", function(){
+		log.message(log.DEBUG, "storage_utilization_initializer disconnected");
+	});
+	storage_utilization_initializer.on("exit", function(){
+		log.message(log.DEBUG, "storage_utilization_initializer exited");
 	});
 
 	log.message(log.INFO, "Ready to process requests");		
-
-/*
-	// establish the utilization of each storage location
-	for(var storage_location in storage_locations){
-		storage_locations[storage_location].usage = 0;
-	}
-
-	// use global unique_blocks for now
-	for(var file in superblock){
-		if(superblock.hasOwnProperty(file)){
-			var selected_file = superblock[file];
-			for(var block in selected_file.blocks){
-				var selected_block = selected_file.blocks[block];
-				//for(var storage_location in storage_locations){
-				//	var selected_location = storage_locations[storage_location];
-					//if(fs.existsSync(selected_location.path + selected_block.block_hash)){
-					//	selected_block.last_seen = selected_location.path;
-
-						// only count unique blocks per device
-						if(unique_blocks.indexOf(selected_block.block_hash) == -1){
-							unique_blocks.push(selected_block.block_hash);
-
-							// estimate device utilization by mutiplying block size by block count
-							//selected_location.usage = selected_location.usage + config.BLOCK_SIZE;
-						}
-
-					//	break;
-					//} else {
-						// todo: this warning should only get thrown if the block is never found,
-						// right now it gets thrown if the block isn't found everywhere; fix that
-						//log.message(log.WARN, "block " + selected_block.block_hash + " not found in " + selected_location.path);
-					//}
-				//}
-
-			}
-		}
-	}
-
-	log.message(log.INFO, "Unique block index initialized");
-
-	//var stats = system_stats();
-	//log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
-
-	//for(var storage_location in storage_locations){
-	//	log.message(log.INFO, storage_locations[storage_location].usage + " of " + storage_locations[storage_location].capacity + " bytes used on " + storage_locations[storage_location].path);
-	//}
-*/
 }
 
 function system_stats(){

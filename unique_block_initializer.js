@@ -16,7 +16,6 @@ process.on("message", function(message){
 				}
 			}
 		}
-		// todo: tell parent we're done & trigger deallocation of child
 		process.send({processing_complete:true});
 	}
 });
