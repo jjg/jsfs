@@ -61,26 +61,26 @@ function load_superblock(){
 			var selected_file = superblock[file];
 			for(var block in selected_file.blocks){
 				var selected_block = selected_file.blocks[block];
-				for(var storage_location in storage_locations){
-					var selected_location = storage_locations[storage_location];
-					if(fs.existsSync(selected_location.path + selected_block.block_hash)){
-						selected_block.last_seen = selected_location.path;
+				//for(var storage_location in storage_locations){
+				//	var selected_location = storage_locations[storage_location];
+					//if(fs.existsSync(selected_location.path + selected_block.block_hash)){
+					//	selected_block.last_seen = selected_location.path;
 
 						// only count unique blocks per device
 						if(unique_blocks.indexOf(selected_block.block_hash) == -1){
 							unique_blocks.push(selected_block.block_hash);
 
 							// estimate device utilization by mutiplying block size by block count
-							selected_location.usage = selected_location.usage + config.BLOCK_SIZE;
+							//selected_location.usage = selected_location.usage + config.BLOCK_SIZE;
 						}
 
-						break;
-					} else {
+					//	break;
+					//} else {
 						// todo: this warning should only get thrown if the block is never found,
 						// right now it gets thrown if the block isn't found everywhere; fix that
 						//log.message(log.WARN, "block " + selected_block.block_hash + " not found in " + selected_location.path);
-					}
-				}
+					//}
+				//}
 
 			}
 		}
