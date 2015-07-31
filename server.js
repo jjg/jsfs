@@ -59,7 +59,6 @@ function load_superblock(){
 		if(message.unique_block){
 			unique_blocks.push(message.unique_block);
 		}
-	
 		if(message.processing_complete){
 			log.message(log.INFO, "unique_block_initializer: superblock processing complete");
 		}
@@ -69,30 +68,23 @@ function load_superblock(){
     for(var storage_location in storage_locations){
         storage_locations[storage_location].usage = 0;
     }
-/*
+
 	// start child process to calculate storage utilization
 	var storage_utilization_initializer = cp.fork("storage_utilization_initializer");
 	log.message(log.INFO, "Starting storage_utilization_initializer");
 	storage_utilization_initializer.send({superblock:superblock,storage_locations:storage_locations});
 	storage_utilization_initializer.on("message", function(message){
-		log.message(log.DEBUG, "Received message from storage_utilization_initializer");
-		//log.message(log.DEBUG, JSON.stringify(message));
-		// update storage allocations based on result from initialization
+		// update storage location utilization data
 		for(var storage_location in storage_locations){
 			storage_locations[storage_location].usage += message.storage_locations[storage_location].usage;
 		}
-
 		// print some storage location stats once we know the utilization
 		for(var storage_location in storage_locations){
 			var selected_storage_location = storage_locations[storage_location];
 			log.message(log.INFO, selected_storage_location.usage + " bytes out of " + selected_storage_location.capacity + " (" + (selected_storage_location.usage/selected_storage_location.capacity) * 100 + "%) used on " + selected_storage_location.path);
 		}
 	});
-*/
-/*
-	var stats = system_stats();
-	log.message(log.INFO, stats.file_count + " files stored in " + stats.block_count + " blocks, " + stats.unique_blocks + " unique (" + Math.round((stats.unique_blocks / stats.block_count) * 100) + "%)");
-*/
+
 	log.message(log.INFO, "Ready to process requests");		
 
 /*
