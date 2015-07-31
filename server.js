@@ -51,11 +51,6 @@ function load_superblock(){
 		}
 	}
 
-    // establish the utilization of each storage location
-    for(var storage_location in storage_locations){
-        storage_locations[storage_location].usage = 0;
-    }
-
 	// start child process to initialize the unique block index
 	var unique_block_initializer = cp.fork("unique_block_initializer.js");
 	unique_block_initializer.send({superblock:superblock});
@@ -67,6 +62,20 @@ function load_superblock(){
 			log.message(log.DEBUG, "Adding block " + message.unique_block + " to unique block index");
 			unique_blocks.push(message.unique_block);
 		}
+	});
+
+    // establish the utilization of each storage location
+    for(var storage_location in storage_locations){
+        storage_locations[storage_location].usage = 0;
+    }
+
+	// start child process to calculate storage utilization
+	var storage_utilization_initializer = cp.fork("storage_utilization_initializer");
+	storage_utilization_initializer.send({storage_locations:storage_locations});
+	storage_utilization_initializer.on("message", function(message){
+		log.message(log.DEBUG, "Received message from storage_utilization_initializer");
+		log.message(log.DEBUG, JSON.stringify(message));
+		// todo: update storage allocations based on result from initialization
 	});
 
 	log.message(log.INFO, "Ready to process requests");		
