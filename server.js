@@ -58,9 +58,13 @@ function load_superblock(){
 		log.message(log.DEBUG, "Received message from unique_block_initializer");
 		log.message(log.DEBUG, JSON.stringify(message));
 		// todo: extract block hash and append it to unique block index
-		// i.e.: unique_blocks.push(selected_block.block_hash);
+		if(message.unique_block){
+			log.message(log.DEBUG, "Adding block " + message.unique_block + " to unique block index");
+			unique_blocks.push(message.unique_block);
+		}
 	});
-	
+
+		
 
 /*
 	// establish the utilization of each storage location
@@ -205,16 +209,16 @@ function commit_block_to_disk(block, block_object){
 			var block_file = storage_locations[0].path + block_object.block_hash;
 
 			// make sure there's enough capacity left to store the block
-			if((storage_locations[0].capacity - storage_locations[0].usage) > block.length){
+			//if((storage_locations[0].capacity - storage_locations[0].usage) > block.length){
 
 				log.message(log.INFO, "storing block:   " + block_object.block_hash);
 				fs.writeFileSync(block_file, block, "binary");
 				storage_locations[0].usage = storage_locations[0].usage + block.length;
 
-			} else {
-				log.message(log.ERROR, "no room left to store block " + block_object.block_hash);
-				result = false;
-			}
+			//} else {
+			//	log.message(log.ERROR, "no room left to store block " + block_object.block_hash);
+			//	result = false;
+			//}
 
 		} else {
 
