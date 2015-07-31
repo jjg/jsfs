@@ -57,14 +57,14 @@ function load_superblock(){
 	unique_block_initializer.on("message", function(message){
 		log.message(log.DEBUG, "Received message from unique_block_initializer");
 		log.message(log.DEBUG, JSON.stringify(message));
-		// todo: extract block hash and append it to unique block index
+		// extract block hash and append it to unique block index
 		if(message.unique_block){
 			log.message(log.DEBUG, "Adding block " + message.unique_block + " to unique block index");
 			unique_blocks.push(message.unique_block);
 		}
 	});
 
-		
+	log.message(log.INFO, "Ready to process requests");		
 
 /*
 	// establish the utilization of each storage location
