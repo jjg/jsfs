@@ -73,8 +73,8 @@ function load_superblock(){
 	var storage_utilization_initializer = cp.fork("storage_utilization_initializer");
 	storage_utilization_initializer.send({superblock:superblock,storage_locations:storage_locations});
 	storage_utilization_initializer.on("message", function(message){
-		log.message(log.DEBUG, "Received message from storage_utilization_initializer");
-		log.message(log.DEBUG, JSON.stringify(message));
+		//log.message(log.DEBUG, "Received message from storage_utilization_initializer");
+		//log.message(log.DEBUG, JSON.stringify(message));
 		// update storage allocations based on result from initialization
 		for(var storage_location in storage_locations){
 			storage_locations[storage_location].usage += message.storage_locations[storage_location].usage;
