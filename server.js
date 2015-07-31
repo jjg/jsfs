@@ -54,19 +54,14 @@ function load_superblock(){
 	// start child process to initialize the unique block index
 	var unique_block_initializer = cp.fork("unique_block_initializer.js");
 	log.message(log.INFO, "Starting unique_block_initializer");
-	//unique_block_initializer.send({superblock:superblock});
-	unique_block_initializer.send({load_superblock:true});
+	unique_block_initializer.send({superblock:superblock});
 	unique_block_initializer.on("message", function(message){
-		//log.message(log.DEBUG, "Received message from unique_block_initializer");
-		//log.message(log.DEBUG, JSON.stringify(message));
-		// extract block hash and append it to unique block index
-		if(message.hasOwnProperty("superblock_loaded")){
-			log.message(log.INFO, "Superblock loaded message from unique_block_initializer");
-			unique_block_initializer.send({process_superblock:true});
-		}
 		if(message.unique_block){
-			//log.message(log.DEBUG, "Adding block " + message.unique_block + " to unique block index");
 			unique_blocks.push(message.unique_block);
+		}
+	
+		if(message.processing_complete){
+			log.message(log.INFO, "unique_block_initializer: superblock processing complete");
 		}
 	});
 
