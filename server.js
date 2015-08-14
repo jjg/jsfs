@@ -32,7 +32,7 @@ function save_superblock(){
 					// and corrupts the superblock file, this backup should be untouched
 					fs.writeFile(storage_path + "backup_superblock.json", JSON.stringify(superblock), function(err){
 						if(err){
-							log.message(log.WARN, "error saving backup superblocki: " + err);
+							log.message(log.WARN, "error saving backup superblock: " + err);
 						} else {
 							log.message(log.INFO, "backup superblock saved to " + storage_path);
 						}
