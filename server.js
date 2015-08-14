@@ -23,12 +23,20 @@ function save_superblock(){
 	for(var location in config.STORAGE_LOCATIONS){
 		if(config.STORAGE_LOCATIONS.hasOwnProperty(location)){
 			var storage_path = config.STORAGE_LOCATIONS[location].path;
-
 			fs.writeFile(storage_path + "superblock.json", JSON.stringify(superblock), function(err){
 				if(err){
-					log.message(log.ERROR, "error saving superblock to disk");
+					log.message(log.ERROR, "error saving superblock to " + storage_path);
 				} else {
 					log.message(log.INFO, "superblock saved to " + storage_path);
+					// save a second copy to a different file, this way if the write above fails,
+					// and corrupts the superblock file, this backup should be untouched
+					fs.writeFile(storage_path + "backup_superblock.json", JSON.stringify(superblock), function(err){
+						if(err){
+							log.message(log.WARN, "error saving backup superblock: " + err);
+						} else {
+							log.message(log.INFO, "backup superblock saved to " + storage_path);
+						}
+					});
 				}
 			});
 		}
