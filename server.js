@@ -233,6 +233,14 @@ function commit_block_to_disk(block, block_object){
 
 function token_valid(access_token, inode, method){
 
+	// don't bother validating tokens for HEAD, OPTIONS requests
+	// jjg - 08172015: might make sense to address this by removing the check from
+	// the method handlers below, but since I'm not sure if this is
+	// permanent, this is cleaner for now
+	if(method === "HEAD" || method === "OPTIONS"){
+		return true;
+	}
+
 	// generate expected token
 	var shasum = crypto.createHash("sha1");
 	shasum.update(inode.access_key + method);
@@ -250,6 +258,11 @@ function token_valid(access_token, inode, method){
 }
 
 function time_token_valid(access_token, inode, expires, method){
+
+	// don't bother validating tokens for HEAD, OPTIONS requests
+	if(method === "HEAD" || method === "OPTIONS"){
+		return true;
+	}
 
 	// make sure requested time is still valid
 	if(expires < (new Date()).getTime()){
