@@ -234,6 +234,9 @@ function commit_block_to_disk(block, block_object){
 function token_valid(access_token, inode, method){
 
 	// don't bother validating tokens for HEAD, OPTIONS requests
+	// jjg - 08172015: might make sense to address this by removing the check from
+	// the method handlers below, but since I'm not sure if this is
+	// permanent, this is cleaner for now
 	if(method === "HEAD" || method === "OPTIONS"){
 		return true;
 	}
