@@ -579,6 +579,7 @@ var inode = {
 // *** CONFIGURATION ***
 log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
 
+log.message(log.INFO, "Starting up...");
 
 // *** INIT ***
 storage_locations = config.STORAGE_LOCATIONS;
