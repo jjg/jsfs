@@ -578,9 +578,8 @@ var inode = {
 
 // *** CONFIGURATION ***
 log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
-log.path = "./jlog.log";
 
-log.message(log.INFO, "Starting up...");
+log.message(log.INFO, "JSFS starting up...");
 
 // *** INIT ***
 storage_locations = config.STORAGE_LOCATIONS;
