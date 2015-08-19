@@ -96,7 +96,7 @@ function load_superblock(){
 		// print some storage location stats once we know the utilization
 		for(var storage_location in storage_locations){
 			var selected_storage_location = storage_locations[storage_location];
-			log.message(log.INFO, selected_storage_location.usage + " bytes out of " + selected_storage_location.capacity + " (" + (selected_storage_location.usage/selected_storage_location.capacity) * 100 + "%) used on " + selected_storage_location.path);
+			log.message(log.INFO, (((selected_storage_location.usage/1024)/1024)/1024) + " out of " + (((selected_storage_location.capacity/1024)/1024)/1024) + " gigabytes (" + Math.round((selected_storage_location.usage/selected_storage_location.capacity) * 100) + "%) used on " + selected_storage_location.path);
 		}
 
 		storage_utilization_initializer.disconnect();
@@ -1103,7 +1103,7 @@ http.createServer(function(req, res){
 // print utilization stats (probably remove these later)
 for(var storage_location in storage_locations){
 	var selected_storage_location = storage_locations[storage_location];
-	log.message(log.INFO, selected_storage_location.usage + " bytes out of " + selected_storage_location.capacity + " (" + (selected_storage_location.usage/selected_storage_location.capacity) * 100 + "%) used on " + selected_storage_location.path);
+	log.message(log.INFO, (((selected_storage_location.usage/1024)/1024)/1024) + " out of " + (((selected_storage_location.capacity/1024)/1024)/1024) + " gigabytes (" + Math.round((selected_storage_location.usage/selected_storage_location.capacity) * 100) + "%) used on " + selected_storage_location.path);
 }
 
 
