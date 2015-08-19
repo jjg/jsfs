@@ -4,6 +4,7 @@ var log = require("./jlog.js");
 var config = require("./config.js");
 
 log.level = config.LOG_LEVEL;
+log.path = "./jlog.log";
 
 process.on("message", function(message){
 	if(message.hasOwnProperty("superblock") && message.hasOwnProperty("storage_locations")){

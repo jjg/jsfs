@@ -10,7 +10,7 @@ module.exports = {
 		if(severity >= this.level){
 			console.log(Date() + "\t" + Math.round((process.memoryUsage().rss/1024)/1024) + "MB\t" + severity + "\t" + log_message);
 			if(this.path){
-				fs.appendFile(this.path, Date() + "\t" + severity + "\t" + log_message + "\n", function(err){
+				fs.appendFile(this.path, Date() + "\t" + Math.round((process.memoryUsage().rss/1024)/1024) + "MB\t" + severity + "\t" + log_message + "\n", function(err){
 					if(err){
 						console.log("Error logging message to file: " + err);
 					}
