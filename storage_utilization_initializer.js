@@ -1,5 +1,9 @@
 // loop through superblock and storage locations to establish storage utilization
 var fs = require("fs");
+var log = require("./jlog.js");
+var config = require("./config.js");
+
+log.level = config.LOG_LEVEL;
 
 process.on("message", function(message){
 	if(message.hasOwnProperty("superblock") && message.hasOwnProperty("storage_locations")){
@@ -19,6 +23,7 @@ process.on("message", function(message){
 						}
 					}
 				}
+				log.message(log.DEBUG, "\tSUI: processed inode " + inode);
 			}
 		}
 		process.send({storage_locations:storage_locations});

@@ -1,5 +1,7 @@
 // parse superblock and pass unique blocks back to parent
 var unique_blocks = [];
+var log = require("./jlog.js");
+var config = require("./config.js");
 
 process.on("message", function(message){
 	if(message.superblock){
@@ -15,6 +17,7 @@ process.on("message", function(message){
 					}
 				}
 			}
+			log.message(log.DEBUG, "\tUBI: processed inode " + inode);
 		}
 		process.send({processing_complete:true});
 	}
