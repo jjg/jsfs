@@ -3,8 +3,7 @@ var unique_blocks = [];
 var log = require("./jlog.js");
 var config = require("./config.js");
 
-log.level = 0;
-log.path = "./jlog.log";
+log.level = config.LOG_LEVEL;
 
 process.on("message", function(message){
 	if(message.superblock){
