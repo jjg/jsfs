@@ -20,11 +20,12 @@ process.on("message", function(message){
 					for(var storage_location in storage_locations){
 						//log.message(log.DEBUG, "\tSUI: storage_location");
 						var selected_storage_location = storage_locations[storage_location];
-						if(fs.existsSync(selected_storage_location.path + selected_block.block_hash)){
-							//log.message(log.DEBUG, "\tSUI: existsSync");
-							// todo: update block's last_seen property in the live object back at the parent?
+						// todo: update block's last_seen property in the live object back at the parent?
+						try{
 							var block_stats = fs.statSync(selected_storage_location.path + selected_block.block_hash);
 							selected_storage_location.usage += block_stats.size;
+						} catch(error){
+							log.message(log.ERROR, "\tSUI: missing block " + selected_storage_location.path + selected_block.block_hash);
 						}
 					}
 				}
