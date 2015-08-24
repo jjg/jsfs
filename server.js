@@ -590,6 +590,9 @@ load_superblock();
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
 http.createServer(function(req, res){
 
+	// override default 2 minute time-out
+	res.setTimeout(10 * 60 * 1000);
+
 	log.message(log.DEBUG, "Initial request received");
 
 	// all responses include these headers to support cross-domain requests
