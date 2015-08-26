@@ -591,7 +591,7 @@ load_superblock();
 http.createServer(function(req, res){
 
 	// override default 2 minute time-out
-	res.setTimeout(10 * 60 * 1000);
+	res.setTimeout(config.REQUEST_TIMEOUT * 60 * 1000);
 
 	log.message(log.DEBUG, "Initial request received");
 
