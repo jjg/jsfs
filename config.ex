@@ -1,6 +1,6 @@
 module.exports = {
 	STORAGE_LOCATIONS:[
-		{"path":"./blocks/","capacity":100000000000}
+		{"path":"./blocks/","capacity":4294967296}
 	],
 	PEERS:[
 		//{"host":"host.domain.com","port":7302}
@@ -8,5 +8,6 @@ module.exports = {
 	BLOCK_SIZE: 1048576,
 	LOG_LEVEL: 0,
 	SERVER_PORT: 7302,
-	REQUEST_TIMEOUT: 30 // minutes
+	REQUEST_TIMEOUT: 30, // minutes,
+	ABEND_ON_MISSING_SUPERBLOCK: false 
 };

@@ -54,7 +54,23 @@ function load_superblock(){
 				log.message(log.INFO, "superblock loaded from disk");
 				break;
 			} catch(ex) {
-				log.message(log.WARN, "unable to load superblock from disk: " + ex);
+				log.message(log.ERROR, "unable to load superblock from disk: " + ex);
+
+				// if we don't have a superblock, attempt to load backup superblock
+				try{
+					log.message(log.WARN, "attempting to load backup superblock...");
+					superblock = JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + "backup_superblock.json"));
+					log.message(log.WARN, "backup superblock loaded, verify pool contents manually");
+					break;
+				} catch(ex){
+					log.message(log.ERROR, "unable to load backup superblock: " + ex);
+					if(config.ABEND_ON_MISSING_SUPERBLOCK){
+						log.message(log.ERROR, "Unable to load primary or backup superblock and configured to exit on missing superblock, exiting.");
+						process.exit(1);
+					} else {
+						log.message(log.WARN, "Unable to load primary or backup superblock and configured to continue with missing superblock.  Creating new superblock and continuing start-up");
+					}
+				}
 			}
 		}
 	}
