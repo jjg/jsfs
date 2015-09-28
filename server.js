@@ -828,6 +828,7 @@ http.createServer(function(req, res){
 					log.message(log.WARN,"Regular file exists at " + target_url + ", re-POST not allowed");
 					res.statusCode = 405;
 					res.end();
+					return;
 				}
 			}
 
