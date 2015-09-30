@@ -128,7 +128,7 @@ function load_superblock(){
 		log.message(log.DEBUG, "storage_utilization_initializer exited");
 	});
 
-	log.message(log.INFO, "Ready to process requests");		
+	log.message(log.INFO, "Ready to process requests");
 }
 */
 
@@ -171,11 +171,11 @@ function system_stats(){
 
 // TODO: save inode to disk
 function save_inode(inode){
-	fs.writeFile(config.STORAGE_LOCATIONS[0].path + "/" + inode.fingerprint + ".json", JSON.stringify(inode), function(err){
+	fs.writeFile(config.STORAGE_LOCATIONS[0].path + "/" + inode.fingerprint + ".json", JSON.stringify(inode), function(error){
 		if(error){
 			log.message(log.ERROR, "Error saving inode: " + error);
 		} else {
-			log.message(log.INFO, "Inode loaded from disk");
+			log.message(log.INFO, "Inode saved to disk");
 		}
 	});
 }
@@ -636,6 +636,11 @@ log.message(log.INFO, "JSFS starting up...");
 
 // *** INIT ***
 storage_locations = config.STORAGE_LOCATIONS;
+// TODO: actually add-up storage utilization on start-up
+for(var storage_location in storage_locations){
+    storage_locations[storage_location].usage = 0;
+}
+
 var peers = config.PEERS;
 
 /*
