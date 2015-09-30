@@ -1,4 +1,4 @@
-// jsfs - Javascript filesystem with a REST interface
+/// jsfs - Javascript filesystem with a REST interface
 
 // *** CONVENTIONS ***
 // strings are double-quoted, variables use underscores, constants are ALL CAPS
@@ -171,7 +171,7 @@ function system_stats(){
 
 // TODO: save inode to disk
 function save_inode(inode){
-	fs.writeFile(config.STORAGE_LOCATIONS[0].path + "/" + inode.fingerprint + ".json", JSON.stringify(inode), function(error){
+	fs.writeFile(config.STORAGE_LOCATIONS[0].path + inode.fingerprint + ".json", JSON.stringify(inode), function(error){
 		if(error){
 			log.message(log.ERROR, "Error saving inode: " + error);
 		} else {
@@ -183,14 +183,18 @@ function save_inode(inode){
 // TODO: load inode from disk
 function load_inode(url){
 
+	var inodes = []; 	// return an array for when we support versions again
+
+	log.message(log.DEBUG, "url: " + url);
+
 	// calculate fingerprint
 	shasum = crypto.createHash("sha1");
-	shasum.update(url + "0");						// TODO: don't use hard-coded version
+	shasum.update(JSON.stringify(url + 0));						// TODO: don't use hard-coded version
  	var inode_fingerprint =  shasum.digest("hex");
 
-	var inode = JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + "/" + inode_fingerprint + ".json"));
+	inodes.push(JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + inode_fingerprint + ".json")));
 
-	return inode;
+	return inodes;
 }
 
 // simple encrypt-decrypt functions
@@ -744,7 +748,10 @@ http.createServer(function(req, res){
 */
 
 			// TODO: load requested inode
-			var matching_inodes = load_inode(url);
+			var matching_inodes = load_inode(target_url);
+			if(matching_inodes.length > 0){
+				request_status = 200;
+			}
 
 			// sort by version
 			matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
