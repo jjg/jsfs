@@ -5,7 +5,7 @@
 
 // *** GLOBALS ***
 // the plan is to eliminate these eventually...
-var superblock = {};
+//var superblock = {};
 var storage_locations = {};
 var unique_blocks = [];	// todo: find a less brute-force, more efficient way to track this
 
@@ -19,6 +19,7 @@ var log = require("./jlog.js");
 var url = require("url");
 var cp = require("child_process");
 
+/*
 function save_superblock(){
 	for(var location in config.STORAGE_LOCATIONS){
 		if(config.STORAGE_LOCATIONS.hasOwnProperty(location)){
@@ -42,7 +43,9 @@ function save_superblock(){
 		}
 	}
 }
+*/
 
+/*
 function load_superblock(){
 	for(var location in config.STORAGE_LOCATIONS){
 		if(config.STORAGE_LOCATIONS.hasOwnProperty(location)){
@@ -75,6 +78,7 @@ function load_superblock(){
 		}
 	}
 
+	// TODO: re-implement unique block indexer
 	// start child process to initialize the unique block index
 	var unique_block_initializer = cp.fork("unique_block_initializer.js");
 	log.message(log.INFO, "Starting unique_block_initializer");
@@ -126,7 +130,10 @@ function load_superblock(){
 
 	log.message(log.INFO, "Ready to process requests");		
 }
+*/
 
+// TODO: re-implement system stats
+/*
 function system_stats(){
 
 	var stats = {};
@@ -159,6 +166,31 @@ function system_stats(){
 
 	stats.unique_blocks = stats.unique_blocks_accumulator.length;
 	return stats;
+}
+*/
+
+// TODO: save inode to disk
+function save_inode(inode){
+	fs.writeFile(config.STORAGE_LOCATIONS[0].path + "/" + inode.fingerprint + ".json", JSON.stringify(inode), function(err){
+		if(error){
+			log.message(log.ERROR, "Error saving inode: " + error);
+		} else {
+			log.message(log.INFO, "Inode loaded from disk");
+		}
+	});
+}
+
+// TODO: load inode from disk
+function load_inode(url){
+
+	// calculate fingerprint
+	shasum = crypto.createHash("sha1");
+	shasum.update(url + "0");						// TODO: don't use hard-coded version
+ 	var inode_fingerprint =  shasum.digest("hex");
+
+	var inode = JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + "/" + inode_fingerprint + ".json"));
+
+	return inode;
 }
 
 // simple encrypt-decrypt functions
@@ -323,6 +355,8 @@ var inode = {
 		this.file_metadata.inode_replicated = 0;
 		this.file_metadata.blocks = [];
 
+		// TODO: re-implement versioning
+/*
 		// if previous version exists, increment version number before fingerprinting
 		var url_versions = [];
 		for(var an_inode in superblock){
@@ -340,7 +374,7 @@ var inode = {
 			// increment version by one
 			this.file_metadata.version = url_versions[0] + 1;
 		}
-
+*/
 		// create fingerprint to uniquely identify this file
 		shasum = crypto.createHash("sha1");
 		shasum.update(JSON.stringify(this.file_metadata.url + this.file_metadata.version));
@@ -360,12 +394,15 @@ var inode = {
 			// if result wasn't null, return the inode details
 			result = this.file_metadata;
 
+			// TODO: write inode to disk
+			save_inode(this.file_metadata);
+/*
 			// add file to storage superblock
 			superblock[this.file_metadata.fingerprint] = this.file_metadata;
 
 			// write updated superblock to disk
 			save_superblock();
-
+*/
 			// if peers are configured, update their superblocks
 			if(peers.length > 0){
 				var peers_remaining = peers.length;
@@ -600,8 +637,10 @@ log.message(log.INFO, "JSFS starting up...");
 // *** INIT ***
 storage_locations = config.STORAGE_LOCATIONS;
 var peers = config.PEERS;
-load_superblock();
 
+/*
+load_superblock();
+*/
 
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
 http.createServer(function(req, res){
@@ -659,7 +698,7 @@ http.createServer(function(req, res){
 		case "GET":
 
 			var request_status = 404;
-
+/*
 			// if url ends in "/", return a list of public files
 			var return_index = false;
 			if(target_url.slice(-1) == "/"){
@@ -697,10 +736,14 @@ http.createServer(function(req, res){
 					}
 				}
 			}
+*/
+
+			// TODO: load requested inode
+			var matching_inodes = load_inode(url);
 
 			// sort by version
 			matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
-
+/*
 			// this feels like awkward logic but good enough for now
 			if(return_index){
 
@@ -722,7 +765,7 @@ http.createServer(function(req, res){
 				res.write(JSON.stringify(index_inodes));
 				res.end();
 			} else {
-
+*/
 				// return the first file located at the requested URL
 				if(matching_inodes.length > 0){
 
@@ -789,7 +832,9 @@ http.createServer(function(req, res){
 					res.statusCode = request_status;
 					res.end();
 				}
+/*
 			}
+*/
 
 		break;
 
@@ -804,7 +849,9 @@ http.createServer(function(req, res){
 			if(!block_only && !inode_only){				// handle as regular file
 				// make sure the URL isn't already taken
 				log.message(log.DEBUG, "Begin checking for existing file");
+				// TODO: re-implement existing file checks
 				var matching_inodes = [];
+/*
 				for(var an_inode in superblock){
 					if(superblock.hasOwnProperty(an_inode)){
 						var selected_inode = superblock[an_inode];
@@ -813,7 +860,7 @@ http.createServer(function(req, res){
 						}
 					}
 				}
-
+*/
 				if(matching_inodes.length < 1){
 					log.message(log.DEBUG, "No existing file found, storing new file");
 					// store the posted data at the specified URL
@@ -890,8 +937,13 @@ http.createServer(function(req, res){
 					// manually add the new inode to the superblock
 					log.message(log.INFO, "Manually adding new inode to superblock");
 					var inode_metadata = JSON.parse(file_metadata);
+
+					// TODO: store inode
+					save_inode(inode_metadata);
+/*
 					superblock[inode_metadata.fingerprint] = inode_metadata;
 					save_superblock();
+*/
 					res.end(file_metadata);
 				} else {
 					log.message(log.INFO, "End of request");
