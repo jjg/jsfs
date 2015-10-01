@@ -7,7 +7,7 @@
 // the plan is to eliminate these eventually...
 //var superblock = {};
 var storage_locations = {};
-var unique_blocks = [];	// todo: find a less brute-force, more efficient way to track this
+//var unique_blocks = [];	// todo: find a less brute-force, more efficient way to track this
 
 // *** UTILITIES  & MODULES ***
 var http = require("http");
@@ -244,7 +244,30 @@ function analyze_block(block){
 }
 
 function commit_block_to_disk(block, block_object){
-// if storage locations exist, save the block to disk
+
+	// if storage locations exist, save the block to disk
+	if(storage_locations.length > 0){
+
+		// TODO: select the best storage location for this block
+		var block_filename = storage_locations[0].path + block_object.block_hash;
+		block_object.last_seen = storage_locations[0].path;
+	
+		// check if block exists
+		try{
+			var block_file_stats = fs.statSync(block_filename);
+			log.message(log.INFO, "Duplicate block " + block_object.block_hash + " not written to disk");
+		} catch(ex) {
+
+			// write block to disk
+			log.message(log.INFO, "New block " + block_object.block_hash + " written to disk");
+			fs.writeFileSync(block_filename, block, "binary");
+		}
+	} else {
+		log.message(log.WARN, "No storage locations configured, block not written to disk");
+	}
+	return block_object;
+
+/*
 	if(storage_locations.length > 0){
 		if(unique_blocks.indexOf(block_object.block_hash) == -1){
 
@@ -279,8 +302,8 @@ function commit_block_to_disk(block, block_object){
 	} else {
 		log.message(log.INFO, "No storage locations configured, block not written to disk");
 	}
-
 	return block_object;
+*/
 }
 
 function token_valid(access_token, inode, method){
