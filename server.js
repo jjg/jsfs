@@ -881,10 +881,10 @@ http.createServer(function(req, res){
             res.end();
 		} else {
 			if(!block_only && !inode_only){				// handle as regular file
-				// make sure the URL isn't already taken
+
+				// check if a file exists at this url 
 				log.message(log.DEBUG, "Begin checking for existing file");
-				// TODO: re-implement existing file checks
-				var matching_inodes = [];
+				var inode = load_inode(target_url);
 /*
 				for(var an_inode in superblock){
 					if(superblock.hasOwnProperty(an_inode)){
@@ -895,44 +895,55 @@ http.createServer(function(req, res){
 					}
 				}
 */
-				if(matching_inodes.length < 1){
-					log.message(log.DEBUG, "No existing file found, storing new file");
-					// store the posted data at the specified URL
-					var file_metadata = "";
-					// buffer used for block-only updates
-					var block_buffer = "";
-					var new_file = Object.create(Inode);
-					new_file.init(target_url);
-					log.message(log.DEBUG, "New file object created");
-					// set additional file properties (content-type, etc.)
-					if(content_type){
-						log.message(log.INFO, "Content-Type: " + content_type);
-						new_file.file_metadata.content_type = content_type;
+
+				if(inode){
+					// TODO: check authorization
+          if((access_key && access_key === inode.access_key) ||
+            (access_token && token_valid(access_token, inode, req.method)) ||
+            (access_token && expires && time_token_valid(access_token, inode, expires, req.method))){
+						log.message(log.INFO, "File update request authorized");
+					} else {
+						log.message(log.WARN, "File update request unauthorized");
+						res.statusCode = 401;
+						res.end();
+						break;
 					}
-					if(private){
-						new_file.file_metadata.private = true;
-					}
-					if(encrypted){
-						new_file.file_metadata.encrypted = true;
-					}
-					// if access_key is supplied with POST, replace the default one
-					if(access_key){
-						new_file.file_metadata.access_key = access_key;
-					}
-					log.message(log.INFO, "File properties set");
 				} else {
-					// regular file exists at this URL, return 405 "Method not allowed"
-					log.message(log.WARN,"Regular file exists at " + target_url + ", re-POST not allowed");
-					res.statusCode = 405;
-					res.end();
-					return;
+					log.message(log.DEBUG, "No existing file found, storing new file");
 				}
+
+				// store the posted data at the specified URL
+				//var file_metadata = "";
+				// buffer used for block-only updates
+				//var block_buffer = "";
+				var new_file = Object.create(Inode);
+				new_file.init(target_url);
+				log.message(log.DEBUG, "New file object created");
+				// set additional file properties (content-type, etc.)
+				if(content_type){
+					log.message(log.INFO, "Content-Type: " + content_type);
+					new_file.file_metadata.content_type = content_type;
+				}
+				if(private){
+					new_file.file_metadata.private = true;
+				}
+				if(encrypted){
+					new_file.file_metadata.encrypted = true;
+				}
+				// if access_key is supplied with POST, replace the default one
+				if(access_key){
+					new_file.file_metadata.access_key = access_key;
+				}
+				log.message(log.INFO, "File properties set");
+			} else {
+	      var file_metadata = "";
+  	    var block_buffer = new Buffer("");
 			}
 
 			// store the posted data at the specified URL
-			var file_metadata = "";
+			//var file_metadata = "";
 			// buffer used for block-only updates
-			var block_buffer = new Buffer("");
+			//var block_buffer = new Buffer("");
 
 			req.on("data", function(chunk){
 				if(inode_only){
@@ -972,7 +983,7 @@ http.createServer(function(req, res){
 					log.message(log.INFO, "Manually adding new inode to superblock");
 					var inode_metadata = JSON.parse(file_metadata);
 
-					// TODO: store inode
+					// store inode
 					save_inode(inode_metadata);
 /*
 					superblock[inode_metadata.fingerprint] = inode_metadata;
