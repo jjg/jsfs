@@ -873,6 +873,7 @@ http.createServer(function(req, res){
 		break;
 
 	case "POST":
+	case "PUT":
 
 		// if block_only, test below to see if we already have the block
 		if(block_only && unique_blocks.indexOf(block_only) > -1){
@@ -1009,7 +1010,7 @@ http.createServer(function(req, res){
 		}
 
 		break;
-
+/*
 	case "PUT":
 
 		// make sure there's a file to update
@@ -1095,7 +1096,7 @@ http.createServer(function(req, res){
 		}
 
 		break;
-
+*/
 	case "DELETE":
 
 		// remove the data stored at the specified URL
