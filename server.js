@@ -5,9 +5,7 @@
 
 // *** GLOBALS ***
 // the plan is to eliminate these eventually...
-//var superblock = {};
 var storage_locations = {};
-//var unique_blocks = [];	// todo: find a less brute-force, more efficient way to track this
 
 // *** UTILITIES  & MODULES ***
 var http = require("http");
@@ -17,159 +15,8 @@ var fs = require("fs");
 var config = require("./config.js");
 var log = require("./jlog.js");
 var url = require("url");
-var cp = require("child_process");
 
-/*
-function save_superblock(){
-	for(var location in config.STORAGE_LOCATIONS){
-		if(config.STORAGE_LOCATIONS.hasOwnProperty(location)){
-			var storage_path = config.STORAGE_LOCATIONS[location].path;
-			fs.writeFile(storage_path + "superblock.json", JSON.stringify(superblock), function(err){
-				if(err){
-					log.message(log.ERROR, "error saving superblock to " + storage_path);
-				} else {
-					log.message(log.INFO, "superblock saved to " + storage_path);
-					// save a second copy to a different file, this way if the write above fails,
-					// and corrupts the superblock file, this backup should be untouched
-					fs.writeFile(storage_path + "backup_superblock.json", JSON.stringify(superblock), function(err){
-						if(err){
-							log.message(log.WARN, "error saving backup superblock: " + err);
-						} else {
-							log.message(log.INFO, "backup superblock saved to " + storage_path);
-						}
-					});
-				}
-			});
-		}
-	}
-}
-*/
-
-/*
-function load_superblock(){
-	for(var location in config.STORAGE_LOCATIONS){
-		if(config.STORAGE_LOCATIONS.hasOwnProperty(location)){
-			var storage_path = config.STORAGE_LOCATIONS[location].path;
-			try{
-				// try the first storage device first
-				// todo: loop through devices until a superblock is found
-				superblock = JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + "superblock.json"));
-				log.message(log.INFO, "superblock loaded from disk");
-				break;
-			} catch(ex) {
-				log.message(log.ERROR, "unable to load superblock from disk: " + ex);
-
-				// if we don't have a superblock, attempt to load backup superblock
-				try{
-					log.message(log.WARN, "attempting to load backup superblock...");
-					superblock = JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + "backup_superblock.json"));
-					log.message(log.WARN, "backup superblock loaded, verify pool contents manually");
-					break;
-				} catch(ex){
-					log.message(log.ERROR, "unable to load backup superblock: " + ex);
-					if(config.ABEND_ON_MISSING_SUPERBLOCK){
-						log.message(log.ERROR, "Unable to load primary or backup superblock and configured to exit on missing superblock, exiting.");
-						process.exit(1);
-					} else {
-						log.message(log.WARN, "Unable to load primary or backup superblock and configured to continue with missing superblock.  Creating new superblock and continuing start-up");
-					}
-				}
-			}
-		}
-	}
-
-	// TODO: re-implement unique block indexer
-	// start child process to initialize the unique block index
-	var unique_block_initializer = cp.fork("unique_block_initializer.js");
-	log.message(log.INFO, "Starting unique_block_initializer");
-	unique_block_initializer.send({superblock:superblock});
-	unique_block_initializer.on("message", function(message){
-		if(message.unique_block){
-			unique_blocks.push(message.unique_block);
-		}
-		if(message.processing_complete){
-			log.message(log.INFO, "unique_block_initializer: superblock processing complete");
-			unique_block_initializer.disconnect();
-		}
-	});
-	unique_block_initializer.on("disconnect", function(){
-		log.message(log.DEBUG, "unique_block_initializer disconnected");
-	});
-	unique_block_initializer.on("exit", function(){
-		log.message(log.DEBUG, "unique_block_initializer exited");
-	});
-
-    // initialize utilization of each storage location
-    for(var storage_location in storage_locations){
-        storage_locations[storage_location].usage = 0;
-    }
-
-	// start child process to calculate actual storage utilization
-	var storage_utilization_initializer = cp.fork("storage_utilization_initializer");
-	log.message(log.INFO, "Starting storage_utilization_initializer");
-	storage_utilization_initializer.send({superblock:superblock,storage_locations:storage_locations});
-	storage_utilization_initializer.on("message", function(message){
-		// update storage location utilization data
-		for(var storage_location in storage_locations){
-			storage_locations[storage_location].usage += message.storage_locations[storage_location].usage;
-		}
-		// print some storage location stats once we know the utilization
-		for(var storage_location in storage_locations){
-			var selected_storage_location = storage_locations[storage_location];
-			log.message(log.INFO, (((selected_storage_location.usage/1024)/1024)/1024) + " out of " + (((selected_storage_location.capacity/1024)/1024)/1024) + " gigabytes (" + Math.round((selected_storage_location.usage/selected_storage_location.capacity) * 100) + "%) used on " + selected_storage_location.path);
-		}
-
-		storage_utilization_initializer.disconnect();
-	});
-	storage_utilization_initializer.on("disconnect", function(){
-		log.message(log.DEBUG, "storage_utilization_initializer disconnected");
-	});
-	storage_utilization_initializer.on("exit", function(){
-		log.message(log.DEBUG, "storage_utilization_initializer exited");
-	});
-
-	log.message(log.INFO, "Ready to process requests");
-}
-*/
-
-// TODO: re-implement system stats
-/*
-function system_stats(){
-
-	var stats = {};
-	stats.file_count = 0;
-	stats.block_count = 0;
-	stats.unique_blocks = 0;
-	stats.unique_blocks_accumulator = [];
-
-	for(var file in superblock){
-		if(superblock.hasOwnProperty(file)){
-
-			var selected_file = superblock[file];
-
-			// count blocks
-			stats.block_count = stats.block_count + selected_file.blocks.length;
-
-			// accumulate unique blocks
-			for(var i=0;i<selected_file.blocks.length;i++){
-
-				// I think this can be done more efficiently, but this works for now
-				if(stats.unique_blocks_accumulator.indexOf(selected_file.blocks[i].block_hash) == -1){
-					stats.unique_blocks_accumulator.push(selected_file.blocks[i].block_hash);
-				}
-			}
-
-			// increment file count
-			stats.file_count++;
-		}
-	}
-
-	stats.unique_blocks = stats.unique_blocks_accumulator.length;
-	return stats;
-}
-*/
-
-// TODO: save inode to disk
+// save inode to disk
 function save_inode(inode){
 	fs.writeFile(config.STORAGE_LOCATIONS[0].path + inode.fingerprint + ".json", JSON.stringify(inode), function(error){
 		if(error){
@@ -189,8 +36,6 @@ function load_inode(url){
 	shasum = crypto.createHash("sha1");
 	shasum.update(url);
  	var inode_fingerprint =  shasum.digest("hex");
-
-	// TODO: trap exception if file can't be read
 	try{
 		inode = (JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + inode_fingerprint + ".json")));
 
@@ -218,32 +63,30 @@ function decrypt(block, key){
 
 // examine the contents of a block to generate metadata
 function analyze_block(block){
-
 	var result = {};
 	result.type = "unknown";
-
 	try{
-	// test for WAVE
-	if(block.toString("utf8", 0, 4) === "RIFF"
-		& block.toString("utf8", 8, 12) === "WAVE"
-		& block.readUInt16LE(20) == 1){
 
-		result.type = "wave";
-	    result.size = block.readUInt32LE(4);
-	    result.channels = block.readUInt16LE(22);
-	    result.bitrate = block.readUInt32LE(24);
-	    result.resolution = block.readUInt16LE(34);
-		result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
-	}
+		// test for WAVE
+		if(block.toString("utf8", 0, 4) === "RIFF"
+			& block.toString("utf8", 8, 12) === "WAVE"
+			& block.readUInt16LE(20) == 1){
 
-	// todo: test for MP3
-	// todo: test for FLAC
-	// todo: test for AIFF
-	// todo: test for ...
+			result.type = "wave";
+			result.size = block.readUInt32LE(4);
+			result.channels = block.readUInt16LE(22);
+			result.bitrate = block.readUInt32LE(24);
+			result.resolution = block.readUInt16LE(34);
+			result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
+		}
+
+		// todo: test for MP3
+		// todo: test for FLAC
+		// todo: test for AIFF
+		// todo: test for ...
 	} catch(ex) {
 		log.message(log.WARN, "Exception analyzing media type: " + ex);
 	}
-
 	return result;
 }
 
@@ -270,44 +113,6 @@ function commit_block_to_disk(block, block_object){
 		log.message(log.WARN, "No storage locations configured, block not written to disk");
 	}
 	return block_object;
-
-/*
-	if(storage_locations.length > 0){
-		if(unique_blocks.indexOf(block_object.block_hash) == -1){
-
-			unique_blocks.push(block_object.block_hash);
-
-			// sort storage locations by avaliable capacity
-			storage_locations.sort(function(a,b) { return parseFloat(b.capacity - b.usage) - parseFloat(a.capacity - a.usage) });
-
-			// select location with highest avaliable capacity
-			block_object.last_seen = storage_locations[0].path;
-			var block_file = storage_locations[0].path + block_object.block_hash;
-
-			// make sure there's enough capacity left to store the block
-			if((storage_locations[0].capacity - storage_locations[0].usage) > block.length){
-
-				log.message(log.INFO, "storing block:   " + block_object.block_hash);
-				fs.writeFileSync(block_file, block, "binary");
-				storage_locations[0].usage = storage_locations[0].usage + block.length;
-
-			} else {
-				log.message(log.ERROR, "no room left to store block " + block_object.block_hash);
-				result = false;
-			}
-
-		} else {
-
-			// todo: set the last_seen property of the block_object to the location of the original block!!!
-			// this is harder than it might seem, we could be lazy and rely on the GET "go hunting"
-			// mechanism, but that seems hackish...
-			log.message(log.INFO, "duplicate block: " + block_object.block_hash);
-		}
-	} else {
-		log.message(log.INFO, "No storage locations configured, block not written to disk");
-	}
-	return block_object;
-*/
 }
 
 function token_valid(access_token, inode, method){
@@ -348,6 +153,7 @@ function time_token_valid(access_token, inode, expires, method){
 		log.message(log.WARN,"expires is in the past");
 		return false;
 	} else {
+
 		// make sure token is valid
 		// generate expected token
 		var shasum = crypto.createHash("sha1");
@@ -386,26 +192,6 @@ var Inode = {
 		this.file_metadata.inode_replicated = 0;
 		this.file_metadata.blocks = [];
 
-		// TODO: re-implement versioning
-/*
-		// if previous version exists, increment version number before fingerprinting
-		var url_versions = [];
-		for(var an_inode in superblock){
-			if(superblock.hasOwnProperty(an_inode)){
-				var selected_inode = superblock[an_inode];
-				if(selected_inode.url === this.file_metadata.url){
-					url_versions.push(selected_inode.version);
-				}
-			}
-		}
-
-		if(url_versions.length > 0){
-			// sort versions
-			url_versions.sort(function(a,b) { return parseFloat(b) - parseFloat(a) });
-			// increment version by one
-			this.file_metadata.version = url_versions[0] + 1;
-		}
-*/
 		// create fingerprint to uniquely identify this file
 		shasum = crypto.createHash("sha1");
 		shasum.update(this.file_metadata.url);
@@ -425,15 +211,9 @@ var Inode = {
 			// if result wasn't null, return the inode details
 			result = this.file_metadata;
 
-			// TODO: write inode to disk
+			// write inode to disk
 			save_inode(this.file_metadata);
-/*
-			// add file to storage superblock
-			superblock[this.file_metadata.fingerprint] = this.file_metadata;
 
-			// write updated superblock to disk
-			save_superblock();
-*/
 			// if peers are configured, update their superblocks
 			if(peers.length > 0){
 				var peers_remaining = peers.length;
@@ -496,11 +276,8 @@ var Inode = {
 		}
 	},
 	process_buffer: function(flush){
-
 		var result = true;
-
 		if(flush){
-
 			log.message(0, "flushing remaining buffer");
 
 			// update original file size
@@ -510,34 +287,29 @@ var Inode = {
 			while(this.input_buffer.length > 0){
 				result = this.store_block();
 			}
-
 		} else {
-
 			while(this.input_buffer.length > this.block_size){
 
 				// update original file size
 				this.file_metadata.file_size = this.file_metadata.file_size + this.block_size;
-
 				result = this.store_block();
 			}
 		}
-
 		if(result){
+
 			// do nothing
 		} else {
 			log.message(log.DEBUG, "process_buffer result: " + result);
 		}
-
 		return result;
 	},
 	store_block: function(){
-
 		var result = true;
 
 		// grab the next block
 		var block = this.input_buffer.slice(0, this.block_size);
-
 		if(this.file_metadata.blocks.length === 0){
+
 			// grok known file types
 			var analysis_result = analyze_block(block);
 			log.message(log.INFO, "block analysis result: " + JSON.stringify(analysis_result));
@@ -558,6 +330,7 @@ var Inode = {
 			log.message(log.INFO, "encrypting block");
 			block = encrypt(block, this.file_metadata.access_key);
 		} else {
+
 			// if even one block can't be encrypted, say so and stop trying
 			this.file_metadata.encrypted = false;
 		}
@@ -581,6 +354,7 @@ var Inode = {
 
 		// if peers exist, distribute block
 		if(peers.length > 0){
+
 			// loop through each peer
 			for(peer in peers){
 				var selected_peer = peers[peer];
@@ -641,7 +415,6 @@ var Inode = {
 	},
 	finalize_peers: function(callback){
 		var result = false;
-
 		log.message(log.INFO, "Testing for peer finalization");
 		log.message(log.DEBUG, "blocks: " + this.file_metadata.blocks.length + ", replicated: " + this.file_metadata.blocks_replicated);
 		log.message(log.DEBUG, "inode replicated: " + this.file_metadata.inode_replicated);
@@ -663,21 +436,11 @@ var Inode = {
 // *** CONFIGURATION ***
 log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
 
-log.message(log.INFO, "JSFS starting up...");
+log.message(log.INFO, "JSFS ready to process requests");
 
 // *** INIT ***
 storage_locations = config.STORAGE_LOCATIONS;
-/*
-for(var storage_location in storage_locations){
-    storage_locations[storage_location].usage = 0;
-}
-*/
-
 var peers = config.PEERS;
-
-/*
-load_superblock();
-*/
 
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
 http.createServer(function(req, res){
@@ -734,141 +497,71 @@ http.createServer(function(req, res){
 
 		case "GET":
 
-			var request_status = 404;
-/*
-			// if url ends in "/", return a list of public files
-			var return_index = false;
-			if(target_url.slice(-1) == "/"){
-				target_url = target_url.slice(0,target_url.length - 1);
-				return_index = true;
-			}
-
-			var matching_inodes = [];
-			for(var an_inode in superblock){
-				if(superblock.hasOwnProperty(an_inode)){
-					var selected_inode = superblock[an_inode];
-					if(selected_inode.url.indexOf(target_url) > -1){	// todo: consider making this match more precise
-						if(!selected_inode.private ||
-							(access_key && access_key === selected_inode.access_key) ||
-							(access_token && token_valid(access_token, selected_inode, req.method)) ||
-							(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
-
-							// if a specific version is requested, return only that version
-							if(version){
-								if(selected_inode.version == version){
-									request_status = 200;
-									matching_inodes.push(selected_inode);
-									break;
-								}
-							}
-
-							// we found at least one file you have access to
-							request_status = 200;
-							matching_inodes.push(selected_inode);
-
-						} else {
-							// we found a file, but you don't have permission to see it
-							request_status = 401;
-						}
-					}
-				}
-			}
-*/
-
 			// load requested inode
 			var inode = load_inode(target_url);
 
-			// sort by version
-			//matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
-/*
-			// this feels like awkward logic but good enough for now
-			if(return_index){
+			// return the first file located at the requested URL
+			if(inode){
+				requested_file = inode;
 
-				// don't return internal-use-only metadata
-				var index_inodes = [];
-				for(var an_inode in matching_inodes){
-					if(matching_inodes.hasOwnProperty(an_inode)){
-						var selected_inode = matching_inodes[an_inode];
-						var index_inode = {};
-						index_inode.url = selected_inode.url;
-						index_inode.created = selected_inode.created;
-						index_inode.version = selected_inode.version;
-						index_inode.content_type = selected_inode.content_type;
-						index_inode.file_size = selected_inode.file_size;
+				// return status
+				res.statusCode = 200;
 
-						index_inodes.push(index_inode);
+				// return file metadata as HTTP headers
+				res.setHeader("Content-Type", requested_file.content_type);
+				res.setHeader("Content-Length", requested_file.file_size);
+
+				// return file blocks
+				for(var i=0; i < requested_file.blocks.length; i++){
+					var block_data = null;
+					if(requested_file.blocks[i].last_seen){
+						var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
+
+						try{
+							block_data = fs.readFileSync(block_filename);
+						} catch(ex){
+							log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
+						}
+					} else {
+						log.message(log.WARN, "no last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
+					}
+
+					// if we don't find the block where we expect it, search all storage locations
+					if(!block_data){
+						for(var storage_location in storage_locations){
+							var selected_location = storage_locations[storage_location];
+							if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
+								log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
+								requested_file.blocks[i].last_seen = selected_location.path;
+								block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
+							} else {
+								log.message(log.ERROR, "unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
+							}
+						}
+					}
+					if(requested_file.encrypted){
+						log.message(log.INFO, "decrypting block");
+						block_data = decrypt(block_data, requested_file.access_key);
+					}
+
+					// send block to caller
+					if(block_data){
+						res.write(block_data);
+					} else {
+						log.message(log.ERROR, "unable to locate missing block in any storage location");
+						res.statusCode = 500;
+						res.end("unable to return file, missing blocks");
+						break;
 					}
 				}
-				res.write(JSON.stringify(index_inodes));
+
+				// finish request
 				res.end();
 			} else {
-*/
-				// return the first file located at the requested URL
-				if(inode){
-					requested_file = inode;
-
-					// return status
-					res.statusCode = 200;
-
-					// return file metadata as HTTP headers
-					res.setHeader("Content-Type", requested_file.content_type);
-					res.setHeader("Content-Length", requested_file.file_size);
-
-					// return file blocks
-					for(var i=0; i < requested_file.blocks.length; i++){
-						var block_data = null;
-						if(requested_file.blocks[i].last_seen){
-							var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
-
-							try{
-								block_data = fs.readFileSync(block_filename);
-							} catch(ex){
-								log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
-							}
-						} else {
-							log.message(log.WARN, "no last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
-						}
-
-						// if we don't find the block where we expect it, search all storage locations
-						if(!block_data){
-							for(var storage_location in storage_locations){
-								var selected_location = storage_locations[storage_location];
-								if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
-									log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
-									requested_file.blocks[i].last_seen = selected_location.path;
-									block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
-								} else {
-									log.message(log.ERROR, "unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
-								}
-							}
-						}
-						if(requested_file.encrypted){
-							log.message(log.INFO, "decrypting block");
-							block_data = decrypt(block_data, requested_file.access_key);
-						}
-						// send block to caller
-						if(block_data){
-							res.write(block_data);
-						} else {
-							log.message(log.ERROR, "unable to locate missing block in any storage location");
-							res.statusCode = 500;
-							res.end("unable to return file, missing blocks");
-							break;
-						}
-					}
-
-					// finish request
-					res.end();
-				} else {
-
-					// return status
-					log.message(log.INFO, "Result: " + request_status);
-					res.statusCode = request_status;
-					res.end();
-				}
-/*
+				log.message(log.WARN, "Result: 404");
+				res.statusCode = 404;
+				res.end();
 			}
-*/
 
 		break;
 
@@ -886,19 +579,9 @@ http.createServer(function(req, res){
 				// check if a file exists at this url 
 				log.message(log.DEBUG, "Begin checking for existing file");
 				var inode = load_inode(target_url);
-/*
-				for(var an_inode in superblock){
-					if(superblock.hasOwnProperty(an_inode)){
-						var selected_inode = superblock[an_inode];
-						if(selected_inode.url === target_url){
-							matching_inodes.push(selected_inode);
-						}
-					}
-				}
-*/
-
 				if(inode){
-					// TODO: check authorization
+
+					// check authorization
           if((access_key && access_key === inode.access_key) ||
             (access_token && token_valid(access_token, inode, req.method)) ||
             (access_token && expires && time_token_valid(access_token, inode, expires, req.method))){
@@ -914,12 +597,10 @@ http.createServer(function(req, res){
 				}
 
 				// store the posted data at the specified URL
-				//var file_metadata = "";
-				// buffer used for block-only updates
-				//var block_buffer = "";
 				var new_file = Object.create(Inode);
 				new_file.init(target_url);
 				log.message(log.DEBUG, "New file object created");
+
 				// set additional file properties (content-type, etc.)
 				if(content_type){
 					log.message(log.INFO, "Content-Type: " + content_type);
@@ -931,7 +612,8 @@ http.createServer(function(req, res){
 				if(encrypted){
 					new_file.file_metadata.encrypted = true;
 				}
-				// if access_key is supplied with POST, replace the default one
+
+				// if access_key is supplied with update, replace the default one
 				if(access_key){
 					new_file.file_metadata.access_key = access_key;
 				}
@@ -941,17 +623,13 @@ http.createServer(function(req, res){
   	    var block_buffer = new Buffer("");
 			}
 
-			// store the posted data at the specified URL
-			//var file_metadata = "";
-			// buffer used for block-only updates
-			//var block_buffer = new Buffer("");
-
 			req.on("data", function(chunk){
 				if(inode_only){
 					log.message(log.DEBUG, "Received new inode chunk");
 					file_metadata+=chunk;
 					log.message(log.DEBUG, file_metadata);
 				} else if (block_only){
+
 					// append chunk to block
 					block_buffer = new Buffer.concat([block_buffer, chunk]);
 				} else {
@@ -966,30 +644,29 @@ http.createServer(function(req, res){
 			req.on("end", function(){
 				if(block_only){
 					log.message(log.INFO, "End of block-only request");
+
 					// generate a hash of the block to use as a handle/filename
 					var block_hash = null;
 					shasum = crypto.createHash("sha1");
 					shasum.update(block_buffer);
+
 					// create stub block object for storage processing
 					var block_object = {};
 					block_object.block_hash = shasum.digest("hex");
-					// todo: consider doing a checksum verification here
-					//log.message(log.DEBUG, "block_only: " + block_only + " - calculated block hash: " + block_object.block_hash);
+
+					// TODO: consider doing a checksum verification here
 					// write block to disk
 					block_object = commit_block_to_disk(block_buffer, block_object);
 					res.end();
 				} else if(inode_only){
 					log.message(log.INFO, "End of inode-only request");
+
 					// manually add the new inode to the superblock
 					log.message(log.INFO, "Manually adding new inode to superblock");
 					var inode_metadata = JSON.parse(file_metadata);
 
 					// store inode
 					save_inode(inode_metadata);
-/*
-					superblock[inode_metadata.fingerprint] = inode_metadata;
-					save_superblock();
-*/
 					res.end(file_metadata);
 				} else {
 					log.message(log.INFO, "End of request");
@@ -1010,93 +687,7 @@ http.createServer(function(req, res){
 		}
 
 		break;
-/*
-	case "PUT":
 
-		// make sure there's a file to update
-		var matching_inodes = [];
-		for(var an_inode in superblock){
-			if(superblock.hasOwnProperty(an_inode)){
-				var selected_inode = superblock[an_inode];
-				if(selected_inode.url.indexOf(target_url) > -1){    // todo: consider making this match more precise
-					if((access_key && access_key === selected_inode.access_key) ||
-						(access_token && token_valid(access_token, selected_inode, req.method)) ||
-						(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
-						matching_inodes.push(selected_inode);
-					}
-				 }
-			}
-		}
-
-		// sort by version
-		matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
-
-		if(matching_inodes.length > 0){
-
-			var original_file = matching_inodes[0];
-
-			// update the posted data at the specified URL
-			var new_file = Object.create(inode);
-			new_file.init(target_url);
-
-			// copy original file properties
-			new_file.file_metadata.created = original_file.created;
-			new_file.file_metadata.updated = (new Date()).getTime();
-			//new_file.file_metadata.fingerprint = original_file.fingerprint;
-			new_file.file_metadata.content_type = original_file.content_type;
-			new_file.file_metadata.private = original_file.private;
-			new_file.file_metadata.encrypted = original_file.encrypted;
-			if(replacement_access_key){
-				new_file.file_metadata.access_key = replacement_access_key;
-			} else {
-				new_file.file_metadata.access_key = original_file.access_key;
-			}
-
-			// update file properties (if requested)
-			if(content_type){
-				log.message(log.INFO, "Content-Type: " + content_type);
-				new_file.file_metadata.content_type = content_type;
-			}
-
-			if(private){
-				new_file.file_metadata.private = true;
-			}
-
-			if(encrypted){
-				new_file.file_metadata.encrypted = true;
-			}
-
-			req.on("data", function(chunk){
-				if(!new_file.write(chunk)){
-					res.statusCode = 500;
-					res.end("error writing blocks");
-				};
-			});
-
-			req.on("end", function(){
-				new_file.close(function(result){
-					if(result){
-						res.writeHead(204,
-							{"x-version": result.version}
-						);
-						res.end();
-					} else {
-						log.message(log.ERROR, "Error closing storage object");
-						res.statusCode = 500;
-						res.end();
-					}
-				});
-			});
-
-		} else {
-
-			// if file dosen't exist at this URL, return 405 "Method not allowed"
-			res.statusCode = 405;
-			res.end();
-		}
-
-		break;
-*/
 	case "DELETE":
 
 		// remove the data stored at the specified URL
@@ -1123,85 +714,13 @@ http.createServer(function(req, res){
 			res.statusCode = 404;
 			res.end();
 		}
-/*
-		// make sure there's a file to update
-		var matching_inodes = [];
-		var goodResp, badResp;
-		for(var an_inode in superblock){
-			if(superblock.hasOwnProperty(an_inode)){
-				var selected_inode = superblock[an_inode];
-				if(selected_inode.url === target_url){
-					if(access_key && selected_inode.access_key === access_key){
-						// hard delete
-						delete superblock[selected_inode.fingerprint];
-					} else if((access_token && token_valid(access_token, selected_inode, req.method)) ||
-								(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
-						// soft delete
-						selected_inode.private = true;
-					}
-					save_superblock();
-					goodResp = 204;
-				} else {
-					badResp = 404;
-				}
-			}
-		}
-
-		res.statusCode = goodResp ? goodResp : badResp;
-		res.end();
-*/
 
 		break;
 
 	case "HEAD":
-		var request_status = 404;
-/*
-		var matching_inodes = [];
-		for(var an_inode in superblock){
-			if(superblock.hasOwnProperty(an_inode)){
-				var selected_inode = superblock[an_inode];
-				if(selected_inode.url.indexOf(target_url) > -1){    // todo: consider making this match more precise
-					if(!selected_inode.private ||
-						(access_key && access_key === selected_inode.access_key) ||
-						(access_token && token_valid(access_token, selected_inode, req.method)) ||
-						(access_token && expires && time_token_valid(access_token, selected_inode, expires, req.method))){
-
-						// if a specific version is requested, return only that version
-						if(version){
-							if(selected_inode.version == version){
-								request_status = 200;
-								matching_inodes.push(selected_inode);
-								break;
-							}
-						}
-
-						// we found at least one file you have access to
-						request_status = 200;
-						matching_inodes.push(selected_inode);
-
-					} else {
-						// we found a file, but you don't have permission to see it
-						request_status = 401;
-					}
-				}
-			}
-		}
-
-		if(matching_inodes.length > 0) {
-
-			// sort by version
-			matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
-
-			// select most recent version
-			var requested_file = null;
-			if(matching_inodes.length > 0){
-				requested_file = matching_inodes[0];
-			}
-*/
-
 		var requested_file = load_inode(target_url);
-
 		if(requested_file){
+
 			// construct headers
 			res.setHeader("Content-Type", requested_file.content_type);
 			res.setHeader("Content-Length", requested_file.file_size);
@@ -1217,17 +736,8 @@ http.createServer(function(req, res){
 					res.setHeader("X-Media-Duration", requested_file.media_duration);
 				}
 			}
-
-			//res.writeHead(200);
-/*
-			res.writeHead(200,{
-				"Content-Type": requested_file.content_type,
-				"Content-Length": requested_file.file_size
-			});
-*/
 			res.end();
 		} else {
-			// return status
 			log.message(log.INFO, "Result: 404");
 			res.statusCode = 404;
 			res.end();
@@ -1247,15 +757,5 @@ http.createServer(function(req, res){
 		res.writeHead(405);
 		res.end("method " + req.method + " is not supported");
 }
-/*
-// print utilization stats (probably remove these later)
-for(var storage_location in storage_locations){
-	var selected_storage_location = storage_locations[storage_location];
-	log.message(log.INFO, (((selected_storage_location.usage/1024)/1024)/1024) + " out of " + (((selected_storage_location.capacity/1024)/1024)/1024) + " gigabytes (" + Math.round((selected_storage_location.usage/selected_storage_location.capacity) * 100) + "%) used on " + selected_storage_location.path);
-}
-*/
-
-// log the result of the request
-log.message(log.INFO, "Request completed with status code: " + res.statusCode);
 
 }).listen(config.SERVER_PORT);
