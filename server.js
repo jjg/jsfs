@@ -1100,7 +1100,30 @@ http.createServer(function(req, res){
 	case "DELETE":
 
 		// remove the data stored at the specified URL
+		var inode = load_inode(target_url);
+		if(inode){
 
+			// authorize (only keyholder can delete)
+			if(inode.access_key === access_key){
+
+				// delete inode file
+				log.message(log.INFO, "Delete request authorized");
+
+				// TODO: use actual storage location (not hard-coded one as below)
+				fs.unlinkSync(storage_locations[0].path + inode.fingerprint + ".json");
+				res.statusCode = 204;
+				res.end();
+			} else {
+				log.message(log.WARN, "Delete request unauthorized");
+				res.statusCode = 401;
+				res.end();
+			}
+		} else {
+			log.message(log.WARN, "Delete request file not found");
+			res.statusCode = 404;
+			res.end();
+		}
+/*
 		// make sure there's a file to update
 		var matching_inodes = [];
 		var goodResp, badResp;
@@ -1126,6 +1149,8 @@ http.createServer(function(req, res){
 
 		res.statusCode = goodResp ? goodResp : badResp;
 		res.end();
+*/
+
 		break;
 
 	case "HEAD":
