@@ -660,10 +660,11 @@ log.message(log.INFO, "JSFS starting up...");
 
 // *** INIT ***
 storage_locations = config.STORAGE_LOCATIONS;
-// TODO: actually add-up storage utilization on start-up
+/*
 for(var storage_location in storage_locations){
     storage_locations[storage_location].usage = 0;
 }
+*/
 
 var peers = config.PEERS;
 
@@ -1197,13 +1198,13 @@ http.createServer(function(req, res){
 		res.writeHead(405);
 		res.end("method " + req.method + " is not supported");
 }
-
+/*
 // print utilization stats (probably remove these later)
 for(var storage_location in storage_locations){
 	var selected_storage_location = storage_locations[storage_location];
 	log.message(log.INFO, (((selected_storage_location.usage/1024)/1024)/1024) + " out of " + (((selected_storage_location.capacity/1024)/1024)/1024) + " gigabytes (" + Math.round((selected_storage_location.usage/selected_storage_location.capacity) * 100) + "%) used on " + selected_storage_location.path);
 }
-
+*/
 
 // log the result of the request
 log.message(log.INFO, "Request completed with status code: " + res.statusCode);
