@@ -3,10 +3,6 @@
 // *** CONVENTIONS ***
 // strings are double-quoted, variables use underscores, constants are ALL CAPS
 
-// *** GLOBALS ***
-// the plan is to eliminate these eventually...
-var storage_locations = {};
-
 // *** UTILITIES  & MODULES ***
 var http = require("http");
 var https = require("https");
@@ -93,11 +89,11 @@ function analyze_block(block){
 function commit_block_to_disk(block, block_object){
 
 	// if storage locations exist, save the block to disk
-	if(storage_locations.length > 0){
+	if(config.STORAGE_LOCATIONS.length > 0){
 
 		// TODO: select the best storage location for this block
-		var block_filename = storage_locations[0].path + block_object.block_hash;
-		block_object.last_seen = storage_locations[0].path;
+		var block_filename = config.STORAGE_LOCATIONS[0].path + block_object.block_hash;
+		block_object.last_seen = config.STORAGE_LOCATIONS[0].path;
 	
 		// check if block exists
 		try{
@@ -439,7 +435,6 @@ log.level = config.LOG_LEVEL;	// the minimum level of log messages to record: 0 
 log.message(log.INFO, "JSFS ready to process requests");
 
 // *** INIT ***
-storage_locations = config.STORAGE_LOCATIONS;
 var peers = config.PEERS;
 
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
