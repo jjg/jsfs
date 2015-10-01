@@ -523,11 +523,13 @@ http.createServer(function(req, res){
 
 					// if we don't find the block where we expect it, search all storage locations
 					if(!block_data){
-						for(var storage_location in storage_locations){
-							var selected_location = storage_locations[storage_location];
+						for(var storage_location in config.STORAGE_LOCATIONS){
+							var selected_location = config.STORAGE_LOCATIONS[storage_location];
 							if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
 								log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
 								requested_file.blocks[i].last_seen = selected_location.path;
+
+								// TODO: update inode on disk to include discovered block location
 								block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
 							} else {
 								log.message(log.ERROR, "unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
