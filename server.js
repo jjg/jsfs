@@ -180,21 +180,18 @@ function save_inode(inode){
 	});
 }
 
-// TODO: load inode from disk
+// load inode from disk
 function load_inode(url){
-
-	var inodes = []; 	// return an array for when we support versions again
-
+	var inode = null;
 	log.message(log.DEBUG, "url: " + url);
 
 	// calculate fingerprint
 	shasum = crypto.createHash("sha1");
-	shasum.update(JSON.stringify(url + 0));						// TODO: don't use hard-coded version
+	shasum.update(url);
  	var inode_fingerprint =  shasum.digest("hex");
+	inode = (JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + inode_fingerprint + ".json")));
 
-	inodes.push(JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + inode_fingerprint + ".json")));
-
-	return inodes;
+	return inode;
 }
 
 // simple encrypt-decrypt functions
@@ -363,7 +360,7 @@ function time_token_valid(access_token, inode, expires, method){
 }
 
 // base storage object
-var inode = {
+var Inode = {
 	init: function(url){
 		this.input_buffer = new Buffer("");
 		this.block_size = config.BLOCK_SIZE;
@@ -404,7 +401,7 @@ var inode = {
 */
 		// create fingerprint to uniquely identify this file
 		shasum = crypto.createHash("sha1");
-		shasum.update(JSON.stringify(this.file_metadata.url + this.file_metadata.version));
+		shasum.update(this.file_metadata.url);
 		this.file_metadata.fingerprint =  shasum.digest("hex");
 
 		// use fingerprint as default key
@@ -770,14 +767,11 @@ http.createServer(function(req, res){
 			}
 */
 
-			// TODO: load requested inode
-			var matching_inodes = load_inode(target_url);
-			if(matching_inodes.length > 0){
-				request_status = 200;
-			}
+			// load requested inode
+			var inode = load_inode(target_url);
 
 			// sort by version
-			matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
+			//matching_inodes.sort(function(a,b) { return parseFloat(b.version) - parseFloat(a.version) });
 /*
 			// this feels like awkward logic but good enough for now
 			if(return_index){
@@ -802,12 +796,11 @@ http.createServer(function(req, res){
 			} else {
 */
 				// return the first file located at the requested URL
-				if(matching_inodes.length > 0){
-
-					requested_file = matching_inodes[0];
+				if(inode){
+					requested_file = inode;
 
 					// return status
-					res.statusCode = request_status;
+					res.statusCode = 200;
 
 					// return file metadata as HTTP headers
 					res.setHeader("Content-Type", requested_file.content_type);
@@ -815,7 +808,6 @@ http.createServer(function(req, res){
 
 					// return file blocks
 					for(var i=0; i < requested_file.blocks.length; i++){
-
 						var block_data = null;
 						if(requested_file.blocks[i].last_seen){
 							var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
@@ -825,7 +817,6 @@ http.createServer(function(req, res){
 							} catch(ex){
 								log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
 							}
-
 						} else {
 							log.message(log.WARN, "no last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
 						}
@@ -843,7 +834,6 @@ http.createServer(function(req, res){
 								}
 							}
 						}
-
 						if(requested_file.encrypted){
 							log.message(log.INFO, "decrypting block");
 							block_data = decrypt(block_data, requested_file.access_key);
@@ -858,10 +848,11 @@ http.createServer(function(req, res){
 							break;
 						}
 					}
+
 					// finish request
 					res.end();
-
 				} else {
+
 					// return status
 					log.message(log.INFO, "Result: " + request_status);
 					res.statusCode = request_status;
@@ -902,7 +893,7 @@ http.createServer(function(req, res){
 					var file_metadata = "";
 					// buffer used for block-only updates
 					var block_buffer = "";
-					var new_file = Object.create(inode);
+					var new_file = Object.create(Inode);
 					new_file.init(target_url);
 					log.message(log.DEBUG, "New file object created");
 					// set additional file properties (content-type, etc.)
