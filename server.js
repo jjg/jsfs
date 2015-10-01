@@ -189,7 +189,14 @@ function load_inode(url){
 	shasum = crypto.createHash("sha1");
 	shasum.update(url);
  	var inode_fingerprint =  shasum.digest("hex");
-	inode = (JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + inode_fingerprint + ".json")));
+
+	// TODO: trap exception if file can't be read
+	try{
+		inode = (JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + inode_fingerprint + ".json")));
+
+	} catch(ex) {
+		log.message(log.WARN, "Unable to load inode for requested URL: " + ex);
+	}
 
 	return inode;
 }
@@ -1111,6 +1118,7 @@ http.createServer(function(req, res){
 
 	case "HEAD":
 		var request_status = 404;
+/*
 		var matching_inodes = [];
 		for(var an_inode in superblock){
 			if(superblock.hasOwnProperty(an_inode)){
@@ -1152,7 +1160,11 @@ http.createServer(function(req, res){
 			if(matching_inodes.length > 0){
 				requested_file = matching_inodes[0];
 			}
+*/
 
+		var requested_file = load_inode(target_url);
+
+		if(requested_file){
 			// construct headers
 			res.setHeader("Content-Type", requested_file.content_type);
 			res.setHeader("Content-Length", requested_file.file_size);
@@ -1179,8 +1191,8 @@ http.createServer(function(req, res){
 			res.end();
 		} else {
 			// return status
-			log.message(log.INFO, "Result: " + request_status);
-			res.statusCode = request_status;
+			log.message(log.INFO, "Result: 404");
+			res.statusCode = 404;
 			res.end();
 		}
 
