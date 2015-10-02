@@ -553,7 +553,9 @@ http.createServer(function(req, res){
 								log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
 								requested_file.blocks[i].last_seen = selected_location.path;
 
-								// TODO: update inode on disk to include discovered block location
+								// update inode on disk to include discovered block location
+								save_inode(requested_file);
+
 								block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
 							} else {
 								log.message(log.ERROR, "unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
