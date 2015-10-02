@@ -12,6 +12,9 @@ var config = require("./config.js");
 var log = require("./jlog.js");
 var url = require("url");
 
+// global to keep track of storage location rotation
+var next_storage_location = 0;
+
 // save inode to disk
 function save_inode(inode){
 
@@ -39,6 +42,8 @@ function load_inode(url){
  	var inode_fingerprint =  shasum.digest("hex");
 	try{
 		inode = (JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + inode_fingerprint + ".json")));
+		
+		// TODO: look for backup copies of the inode on other storage devices
 	} catch(ex) {
 		log.message(log.WARN, "Unable to load inode for requested URL: " + ex);
 	}
@@ -93,19 +98,33 @@ function commit_block_to_disk(block, block_object){
 	// if storage locations exist, save the block to disk
 	if(config.STORAGE_LOCATIONS.length > 0){
 
-		// TODO: select the best storage location for this block
-		var block_filename = config.STORAGE_LOCATIONS[0].path + block_object.block_hash;
-		block_object.last_seen = config.STORAGE_LOCATIONS[0].path;
-	
-		// check if block exists
-		try{
-			var block_file_stats = fs.statSync(block_filename);
-			log.message(log.INFO, "Duplicate block " + block_object.block_hash + " not written to disk");
-		} catch(ex) {
+		// check all storage locations to see if we already have this block
+		var found_block_count = 0;
+		for(storage_location in config.STORAGE_LOCATIONS){
+			var selected_location = config.STORAGE_LOCATIONS[storage_location];
 
-			// write block to disk
-			log.message(log.INFO, "New block " + block_object.block_hash + " written to disk");
-			fs.writeFileSync(block_filename, block, "binary");
+			// check if block exists
+			try{
+				var block_file_stats = fs.statSync(selected_location.path + block_object.block_hash);
+				found_block_count++;
+				log.message(log.INFO, "Block " + block_object.block_hash + " found in " + selected_location.path);
+			} catch(ex) {
+				log.message(log.WARN, "Block " + block_object.block_hash + " not found in " + selected_location.path);
+			}
+		}
+		if(found_block_count < 1){
+
+			// write new block to disk
+			log.message(log.DEBUG, "next_storage_location: " + next_storage_location);
+			fs.writeFileSync(config.STORAGE_LOCATIONS[next_storage_location].path + block_object.block_hash, block, "binary");
+			log.message(log.INFO, "New block " + block_object.block_hash + " written to " + config.STORAGE_LOCATIONS[next_storage_location].path);
+			// increment (or reset) storage location (striping)
+			next_storage_location++;
+			if(next_storage_location === config.STORAGE_LOCATIONS.length){
+				next_storage_location = 0;
+			}
+		} else {
+			log.message(log.INFO, "Duplicate block " + block_object.block_hash + " not written to disk");
 		}
 	} else {
 		log.message(log.WARN, "No storage locations configured, block not written to disk");
