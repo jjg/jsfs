@@ -14,13 +14,18 @@ var url = require("url");
 
 // save inode to disk
 function save_inode(inode){
-	fs.writeFile(config.STORAGE_LOCATIONS[0].path + inode.fingerprint + ".json", JSON.stringify(inode), function(error){
-		if(error){
-			log.message(log.ERROR, "Error saving inode: " + error);
-		} else {
-			log.message(log.INFO, "Inode saved to disk");
-		}
-	});
+
+	// store a copy of each inode in each storage location for redundancy
+	for(storage_location in config.STORAGE_LOCATIONS){
+		var selected_location = config.STORAGE_LOCATIONS[storage_location];
+		fs.writeFile(selected_location.path + inode.fingerprint + ".json", JSON.stringify(inode), function(error){
+			if(error){
+				log.message(log.ERROR, "Error saving inode: " + error);
+			} else {
+				log.message(log.INFO, "Inode saved to disk");
+			}
+		});
+	}
 }
 
 // load inode from disk
