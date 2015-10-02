@@ -34,11 +34,9 @@ function load_inode(url){
  	var inode_fingerprint =  shasum.digest("hex");
 	try{
 		inode = (JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + inode_fingerprint + ".json")));
-
 	} catch(ex) {
 		log.message(log.WARN, "Unable to load inode for requested URL: " + ex);
 	}
-
 	return inode;
 }
 
@@ -67,7 +65,6 @@ function analyze_block(block){
 		if(block.toString("utf8", 0, 4) === "RIFF"
 			& block.toString("utf8", 8, 12) === "WAVE"
 			& block.readUInt16LE(20) == 1){
-
 			result.type = "wave";
 			result.size = block.readUInt32LE(4);
 			result.channels = block.readUInt16LE(22);
