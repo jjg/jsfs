@@ -723,8 +723,16 @@ http.createServer(function(req, res){
 				// delete inode file
 				log.message(log.INFO, "Delete request authorized");
 
-				// TODO: use actual storage location (not hard-coded one as below)
-				fs.unlinkSync(storage_locations[0].path + inode.fingerprint + ".json");
+				// remove inode from all configured storage locations 
+				for(storage_location in config.STORAGE_LOCATIONS){
+					var selected_location = config.STORAGE_LOCATIONS[storage_location];
+					try{
+						fs.unlinkSync(selected_location.path + inode.fingerprint + ".json");
+						log.message(log.DEBUG, "Inode " + inode.fingerprint + " removed from " + selected_location.path);
+					} catch(ex) {
+						log.message(log.WARN, "Inode " + inode.fingerprint + " doesn't exist in location " + selected_location.path);
+					}
+				}
 				res.statusCode = 204;
 				res.end();
 			} else {

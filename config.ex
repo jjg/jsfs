@@ -1,6 +1,8 @@
 module.exports = {
 	STORAGE_LOCATIONS:[
-		{"path":"./blocks/","capacity":4294967296}
+		{"path":"./blocks/"}
+		//{"path":"./blocks1/"},
+		//{"path":"./blocks2/"}
 	],
 	PEERS:[
 		//{"host":"host.domain.com","port":7302}
