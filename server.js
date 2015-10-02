@@ -112,12 +112,15 @@ function commit_block_to_disk(block, block_object){
 				log.message(log.WARN, "Block " + block_object.block_hash + " not found in " + selected_location.path);
 			}
 		}
+
+		// TODO: consider increasing found count to enable block redundancy
 		if(found_block_count < 1){
 
 			// write new block to disk
 			log.message(log.DEBUG, "next_storage_location: " + next_storage_location);
 			fs.writeFileSync(config.STORAGE_LOCATIONS[next_storage_location].path + block_object.block_hash, block, "binary");
 			log.message(log.INFO, "New block " + block_object.block_hash + " written to " + config.STORAGE_LOCATIONS[next_storage_location].path);
+
 			// increment (or reset) storage location (striping)
 			next_storage_location++;
 			if(next_storage_location === config.STORAGE_LOCATIONS.length){
