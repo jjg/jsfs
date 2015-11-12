@@ -83,10 +83,10 @@ function analyze_block(block){
       result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
     }
 
-    // todo: test for MP3
-    // todo: test for FLAC
-    // todo: test for AIFF
-    // todo: test for ...
+    // TODO: test for MP3
+    // TODO: test for FLAC
+    // TODO: test for AIFF
+    // TODO: test for ...
   } catch(ex) {
     log.message(log.WARN, "Exception analyzing media type: " + ex);
   }
@@ -107,17 +107,16 @@ function commit_block_to_disk(block, block_object){
       try{
         var block_file_stats = fs.statSync(selected_location.path + block_object.block_hash);
         found_block_count++;
-        log.message(log.INFO, "Block " + block_object.block_hash + " found in " + selected_location.path);
+        log.message(log.INFO, "Duplicate block " + block_object.block_hash + " found in " + selected_location.path);
       } catch(ex) {
-        log.message(log.WARN, "Block " + block_object.block_hash + " not found in " + selected_location.path);
+        log.message(log.INFO, "Block " + block_object.block_hash + " not found in " + selected_location.path);
       }
     }
 
     // TODO: consider increasing found count to enable block redundancy
     if(found_block_count < 1){
 
-      // write new block to disk
-      log.message(log.DEBUG, "next_storage_location: " + next_storage_location);
+      // write new block to next storage location 
       fs.writeFileSync(config.STORAGE_LOCATIONS[next_storage_location].path + block_object.block_hash, block, "binary");
       log.message(log.INFO, "New block " + block_object.block_hash + " written to " + config.STORAGE_LOCATIONS[next_storage_location].path);
 
