@@ -381,6 +381,20 @@ http.createServer(function(req, res){
       if(inode){
         requested_file = inode;
 
+        // check authorization
+        if(inode.private){
+          if((access_key && access_key === inode.access_key) ||
+            (access_token && token_valid(access_token, inode, req.method)) ||
+            (access_token && expires && time_token_valid(access_token, inode, expires, req.method))){
+            log.message(log.INFO, "GET request authorized");
+          } else {
+            log.message(log.WARN, "GET request unauthorized");
+            res.statusCode = 401;
+            res.end();
+            break;
+          }
+        }
+
         // return status
         res.statusCode = 200;
 
