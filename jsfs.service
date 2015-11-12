@@ -1,6 +1,7 @@
 [Service]
 WorkingDirectory=/var/www/jsfs
-ExecStart=/usr/local/bin/node server.js
+ExecStart=/usr/local/bin/node boot.js
+ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 StandardOutput=syslog
 StandardError=syslog
@@ -8,6 +9,6 @@ SyslogIdentifier=jsfs
 User=web
 Group=web
 Environment='NODE_ENV=production'
- 
+
 [Install]
 WantedBy=multi-user.target
