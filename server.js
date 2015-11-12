@@ -232,66 +232,7 @@ var Inode = {
 
       // write inode to disk
       save_inode(this.file_metadata);
-
-      // if peers are configured, update their superblocks
-      if(peers.length > 0){
-        var peers_remaining = peers.length;
-        // loop through each peer
-        for(peer in peers){
-          var selected_peer = peers[peer];
-          log.message(log.INFO, "Transmitting inode to peer " + selected_peer.host);
-          var inode_payload = JSON.stringify(this.file_metadata);
-          // POST inode to peer
-          var options = {
-            hostname: selected_peer.host,
-            port: selected_peer.port,
-            path: this.file_metadata.url,
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Content-Length": inode_payload.length,
-              "x-inode-only": "true"
-            }
-          };
-          var P_this = this;  // closure-like access to local properties during http callback
-          var req = https.request(options, function(res){
-            log.message(log.DEBUG, "inode POST status: " + res.statusCode);
-            res.setEncoding('utf8');
-            res.on("data", function(chunk){
-              //log.message(log.DEBUG, "inode POST body: " + chunk);
-            });
-            res.on("end", function(){
-              log.message(log.INFO, "Remote inode stored");
-              peers_remaining = peers_remaining - 1;
-              // block until all peers have received the inode
-              if(peers_remaining === 0){
-                // update inode_replicated count
-                P_this.file_metadata.inode_replicated++;
-                // fire finalization test
-                P_this.finalize_peers(function(result){
-                  if(result){
-                    callback(result);
-                  }
-                });
-              }
-            });
-          });
-          req.on("error", function(e){
-            log.message(log.ERROR, "Error transmitting inode to peer " + selected_peer.host + ": " + e.message);
-            peers_remaining = peers_remaining - 1;
-            P_this.finalize_peers(function(result){
-              if(result){
-                callback(result)
-              }
-            });
-          });
-          req.write(inode_payload);
-          req.end();
-        }
-      } else {
-        // no peers so return immediately
-        callback(result);
-      }
+      callback(result);
     }
   },
   process_buffer: function(flush){
@@ -370,95 +311,13 @@ var Inode = {
 
     // advance buffer
     this.input_buffer = this.input_buffer.slice(this.block_size);
-
-    // if peers exist, distribute block
-    if(peers.length > 0){
-
-      // loop through each peer
-      for(peer in peers){
-        var selected_peer = peers[peer];
-        log.message(log.INFO, "Transmitting block to peer " + selected_peer.host);
-
-        // POST block to peer
-        var options = {
-          hostname: selected_peer.host,
-          port: selected_peer.port,
-          path: "/_bs/" + block_hash,
-          method: "POST",
-          headers: {
-            //"Content-Type": "application/octet-stream",
-            "Content-Length": block.length,
-            "x-block-only": block_hash
-          }
-        };
-
-        var P_this = this;  // closure-like access to local properties during http callback
-        var P_result = result;
-        log.message(log.DEBUG, "P_result: " + P_result);
-        var req = https.request(options, function(res){
-
-          log.message(log.DEBUG, "Block POST status: " + res.statusCode);
-          if(res.statusCode === 405){
-            log.message(log.INFO, "Duplicate block " + block_hash + " not transmitted");
-          }
-
-          //res.setEncoding('utf8');
-
-          res.on("data", function(chunk){
-            //log.message(log.DEBUG, "Block POST body: " + chunk);
-          });
-
-          res.on("end", function(){
-            // increment blocks_replicated property
-            P_this.file_metadata.blocks_replicated++;
-            // fire finalization test
-            P_this.finalize_peers(function(result){
-              // todo: stop blocking if the last block was transferred
-              // (do nothing for now)
-            });
-          });
-        });
-
-        req.on("error", function(e){
-          // errors happend deliberately when a block exists at the peer,
-          // so we don't log them now. A better solutionw would to be to
-          // log non-405 errors but I don't know how to determine that ATM
-          //log.message(log.ERROR, "Error POSTing block: " + block_hash + ", " + e.message);
-        });
-
-        req.write(block);
-        req.end();
-      }
-    }
     return result;
-  },
-  finalize_peers: function(callback){
-    var result = false;
-    log.message(log.INFO, "Testing for peer finalization");
-    log.message(log.DEBUG, "blocks: " + this.file_metadata.blocks.length + ", replicated: " + this.file_metadata.blocks_replicated);
-    log.message(log.DEBUG, "inode replicated: " + this.file_metadata.inode_replicated);
-/*
-    if(this.file_metadata.blocks_replicated === this.file_metadata.blocks.length
-      && this.file_metadata.inode_replicated > 0){
-*/
-    if(this.file_metadata.inode_replicated > 0){
-      log.message(log.INFO, "Peer finalization verified");
-      result = this.file_metadata;
-      callback(result);
-    } else {
-      log.message(log.INFO, "Peer finalization incomplete");
-      callback(result);
-    }
   }
 };
 
 // *** CONFIGURATION ***
 log.level = config.LOG_LEVEL; // the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
-
 log.message(log.INFO, "JSFS ready to process requests");
-
-// *** INIT ***
-var peers = config.PEERS;
 
 // at the highest level, jsfs is an HTTP server that accepts GET, POST, PUT, DELETE and OPTIONS methods
 http.createServer(function(req, res){
@@ -538,10 +397,10 @@ http.createServer(function(req, res){
             try{
               block_data = fs.readFileSync(block_filename);
             } catch(ex){
-              log.message(log.ERROR, "cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
+              log.message(log.WARN, "Cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
             }
           } else {
-            log.message(log.WARN, "no last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
+            log.message(log.WARN, "No last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
           }
 
           // if we don't find the block where we expect it, search all storage locations
@@ -549,15 +408,16 @@ http.createServer(function(req, res){
             for(var storage_location in config.STORAGE_LOCATIONS){
               var selected_location = config.STORAGE_LOCATIONS[storage_location];
               if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
-                log.message(log.INFO, "found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
+                log.message(log.INFO, "Found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
                 requested_file.blocks[i].last_seen = selected_location.path;
 
                 // update inode on disk to include discovered block location
+                // TODO: maybe do this once per file instead of once per block?
                 save_inode(requested_file);
 
                 block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
               } else {
-                log.message(log.ERROR, "unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
+                log.message(log.ERROR, "Unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
               }
             }
           }
@@ -570,9 +430,9 @@ http.createServer(function(req, res){
           if(block_data){
             res.write(block_data);
           } else {
-            log.message(log.ERROR, "unable to locate missing block in any storage location");
+            log.message(log.ERROR, "Unable to locate missing block in any storage location");
             res.statusCode = 500;
-            res.end("unable to return file, missing blocks");
+            res.end("Unable to return file, missing blocks");
             break;
           }
         }
@@ -589,124 +449,72 @@ http.createServer(function(req, res){
 
   case "POST":
   case "PUT":
+    // check if a file exists at this url 
+    log.message(log.DEBUG, "Begin checking for existing file");
+    var inode = load_inode(target_url);
+    if(inode){
 
-    // if block_only, test below to see if we already have the block
-    if(block_only && unique_blocks.indexOf(block_only) > -1){
-            log.message(log.INFO, "Block-only update complete: block exists");
-            res.statusCode = 200;
-            res.end();
-    } else {
-      if(!block_only && !inode_only){       // handle as regular file
-
-        // check if a file exists at this url 
-        log.message(log.DEBUG, "Begin checking for existing file");
-        var inode = load_inode(target_url);
-        if(inode){
-
-          // check authorization
-          if((access_key && access_key === inode.access_key) ||
-            (access_token && token_valid(access_token, inode, req.method)) ||
-            (access_token && expires && time_token_valid(access_token, inode, expires, req.method))){
-            log.message(log.INFO, "File update request authorized");
-          } else {
-            log.message(log.WARN, "File update request unauthorized");
-            res.statusCode = 401;
-            res.end();
-            break;
-          }
-        } else {
-          log.message(log.DEBUG, "No existing file found, storing new file");
-        }
-
-        // store the posted data at the specified URL
-        var new_file = Object.create(Inode);
-        new_file.init(target_url);
-        log.message(log.DEBUG, "New file object created");
-
-        // set additional file properties (content-type, etc.)
-        if(content_type){
-          log.message(log.INFO, "Content-Type: " + content_type);
-          new_file.file_metadata.content_type = content_type;
-        }
-        if(private){
-          new_file.file_metadata.private = true;
-        }
-        if(encrypted){
-          new_file.file_metadata.encrypted = true;
-        }
-
-        // if access_key is supplied with update, replace the default one
-        if(access_key){
-          new_file.file_metadata.access_key = access_key;
-        }
-        log.message(log.INFO, "File properties set");
+      // check authorization
+      if((access_key && access_key === inode.access_key) ||
+        (access_token && token_valid(access_token, inode, req.method)) ||
+        (access_token && expires && time_token_valid(access_token, inode, expires, req.method))){
+        log.message(log.INFO, "File update request authorized");
       } else {
-        var file_metadata = "";
-        var block_buffer = new Buffer("");
+        log.message(log.WARN, "File update request unauthorized");
+        res.statusCode = 401;
+        res.end();
+        break;
       }
+    } else {
+      log.message(log.DEBUG, "No existing file found, storing new file");
+    }
 
-      req.on("data", function(chunk){
-        if(inode_only){
-          log.message(log.DEBUG, "Received new inode chunk");
-          file_metadata+=chunk;
-          log.message(log.DEBUG, file_metadata);
-        } else if (block_only){
+    // store the posted data at the specified URL
+    var new_file = Object.create(Inode);
+    new_file.init(target_url);
+    log.message(log.DEBUG, "New file object created");
 
-          // append chunk to block
-          block_buffer = new Buffer.concat([block_buffer, chunk]);
-        } else {
-          if(!new_file.write(chunk)){
-            log.message(log.ERROR, "Error writing data to storage object");
+    // set additional file properties (content-type, etc.)
+    if(content_type){
+      log.message(log.INFO, "Content-Type: " + content_type);
+      new_file.file_metadata.content_type = content_type;
+    }
+    if(private){
+      new_file.file_metadata.private = true;
+    }
+    if(encrypted){
+      new_file.file_metadata.encrypted = true;
+    }
+
+    // if access_key is supplied with update, replace the default one
+    if(access_key){
+      new_file.file_metadata.access_key = access_key;
+    }
+    log.message(log.INFO, "File properties set");
+
+    req.on("data", function(chunk){
+      if(!new_file.write(chunk)){
+        log.message(log.ERROR, "Error writing data to storage object");
+        res.statusCode = 500;
+        res.end();
+      }
+    });
+
+    req.on("end", function(){
+      log.message(log.INFO, "End of request");
+      if(new_file){
+        log.message(log.DEBUG, "Closing new file");
+        new_file.close(function(result){
+          if(result){
+            res.end(JSON.stringify(result));
+          } else {
+            log.message(log.ERROR, "Error closing storage object");
             res.statusCode = 500;
             res.end();
           }
-        }
-      });
-
-      req.on("end", function(){
-        if(block_only){
-          log.message(log.INFO, "End of block-only request");
-
-          // generate a hash of the block to use as a handle/filename
-          var block_hash = null;
-          shasum = crypto.createHash("sha1");
-          shasum.update(block_buffer);
-
-          // create stub block object for storage processing
-          var block_object = {};
-          block_object.block_hash = shasum.digest("hex");
-
-          // TODO: consider doing a checksum verification here
-          // write block to disk
-          block_object = commit_block_to_disk(block_buffer, block_object);
-          res.end();
-        } else if(inode_only){
-          log.message(log.INFO, "End of inode-only request");
-
-          // manually add the new inode to the superblock
-          log.message(log.INFO, "Manually adding new inode to superblock");
-          var inode_metadata = JSON.parse(file_metadata);
-
-          // store inode
-          save_inode(inode_metadata);
-          res.end(file_metadata);
-        } else {
-          log.message(log.INFO, "End of request");
-          if(new_file){
-            log.message(log.DEBUG, "Closing new file");
-            new_file.close(function(result){
-              if(result){
-                res.end(JSON.stringify(result));
-              } else {
-                log.message(log.ERROR, "Error closing storage object");
-                res.statusCode = 500;
-                res.end();
-              }
-            });
-          }
-        }
-      });
-    }
+        });
+      }
+    });
 
     break;
 
