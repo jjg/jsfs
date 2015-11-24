@@ -367,6 +367,8 @@ http.createServer(function(req, res){
   var version = url.parse(req.url,true).query.version || req.headers["x-version"];
   var inode_only = url.parse(req.url,true).query.inode_only || req.headers["x-inode-only"];
   var block_only = url.parse(req.url,true).query.block_only || req.headers["x-block-only"];
+  //var src = url.parse(req.url,true).query.src || req.headers["x-src"];
+  var dst_url = url.parse(req.url,true).query.dst || req.headers["x-dst"];
 
   log.message(log.INFO, "Received " + req.method + " request for URL " + target_url);
 
@@ -568,6 +570,92 @@ http.createServer(function(req, res){
     }
 
     break;
+
+  case "COPY":
+    // copy the file specified in the request url to the url specified in the "dst" param
+
+    log.message(log.DEBUG, "COPY source url (target_url): " + target_url);
+    log.message(log.DEBUG, "COPY destination url (dst_url): " + dst_url);
+
+    // attempt to load requested inode
+    var src_inode = load_inode(target_url);
+
+    if(src_inode){
+
+      // check source authorization
+      if(src_inode.private){
+        if((access_key && access_key === src_inode.access_key) ||
+          (access_token && token_valid(access_token, src_inode, req.method)) ||
+          (access_token && expires && time_token_valid(access_token, src_inode, expires, req.method))){
+          log.message(log.INFO, "COPY request authorized");
+        } else {
+          log.message(log.WARN, "COPY request unauthorized");
+          res.statusCode = 401;
+          res.end();
+          break;
+        }
+      }
+
+      // make sure dst is avaliable
+      var dst_inode = load_inode(dst_url);
+
+      if(dst_inode){
+        // TODO: consider providing an override flag to allow this if a valid key is provided for the dst
+        log.message(log.WARN, "Destination inode exists, copy unauthorized");
+        res.statusCode = 401;
+        res.end();
+        break;
+      }
+
+      // TODO: copy select src inode data:
+      log.message(log.DEBUG, "Source inode properties: " + JSON.stringify(src_inode));
+      dst_inode = Object.create(Inode);
+      dst_inode.init(dst_url);
+
+      dst_inode.block_size = src_inode.block_size;
+      dst_inode.file_metadata.private = src_inode.file_metadata.private;
+      dst_inode.file_metadata.encrypted = src_inode.file_metadata.encrypted;
+      dst_inode.file_metadata.access_key = src_inode.file_metadata.access_key;
+      dst_inode.file_metadata.content_type = src_inode.file_metadata.content_type;
+      dst_inode.file_metadata.file_size = src_inode.file_metadata.file_size;
+      dst_inode.file_metadata.block_size = src_inode.file_metadata.block_size;
+      dst_inode.file_metadata.blocks_replicated = src_inode.file_metadata.blocks_replicated;
+      dst_inode.file_metadata.inode_replicated = src_inode.file_metadata.inode_replicated;
+      dst_inode.file_metadata.blocks = src_inode.file_metadata.blocks;
+/*
+      this.block_size = config.BLOCK_SIZE;
+      this.file_metadata = {};
+      this.file_metadata.url = url;
+      this.file_metadata.created = (new Date()).getTime();
+      this.file_metadata.version = 0;
+      this.file_metadata.private = false;
+      this.file_metadata.encrypted = false;
+      this.file_metadata.fingerprint = null;
+      this.file_metadata.access_key = null;
+      this.file_metadata.content_type = "application/octet-stream";
+      this.file_metadata.file_size = 0;
+      this.file_metadata.block_size = this.block_size;
+      this.file_metadata.blocks_replicated = 0;
+      this.file_metadata.inode_replicated = 0;
+      this.file_metadata.blocks = [];
+*/
+      // store new inode
+      save_inode(dst_inode);
+
+      // return result
+      res.statusCode = 200;
+      res.end();
+      break;
+
+    } else {
+      // return status that source file wasn't found
+      log.message(log.INFO, "Source file not found: " + target_url);
+      res.statusCode = 404;
+      res.end()
+      break;
+    }
+
+    //break;
 
   case "HEAD":
     var requested_file = load_inode(target_url);
