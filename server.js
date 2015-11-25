@@ -597,6 +597,8 @@ http.createServer(function(req, res){
       }
 
       // make sure dst is avaliable
+      // TODO: dst_url needs to have the right host, right now it has none
+
       var dst_inode = load_inode(dst_url);
 
       if(dst_inode){
