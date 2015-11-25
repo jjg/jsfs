@@ -613,15 +613,15 @@ http.createServer(function(req, res){
       dst_inode.init(dst_url);
 
       dst_inode.block_size = src_inode.block_size;
-      dst_inode.file_metadata.private = src_inode.file_metadata.private;
-      dst_inode.file_metadata.encrypted = src_inode.file_metadata.encrypted;
-      dst_inode.file_metadata.access_key = src_inode.file_metadata.access_key;
-      dst_inode.file_metadata.content_type = src_inode.file_metadata.content_type;
-      dst_inode.file_metadata.file_size = src_inode.file_metadata.file_size;
-      dst_inode.file_metadata.block_size = src_inode.file_metadata.block_size;
-      dst_inode.file_metadata.blocks_replicated = src_inode.file_metadata.blocks_replicated;
-      dst_inode.file_metadata.inode_replicated = src_inode.file_metadata.inode_replicated;
-      dst_inode.file_metadata.blocks = src_inode.file_metadata.blocks;
+      dst_inode.file_metadata.private = src_inode.private;
+      dst_inode.file_metadata.encrypted = src_inode.encrypted;
+      dst_inode.file_metadata.access_key = src_inode.access_key;
+      dst_inode.file_metadata.content_type = src_inode.content_type;
+      dst_inode.file_metadata.file_size = src_inode.file_size;
+      dst_inode.file_metadata.block_size = src_inode.block_size;
+      dst_inode.file_metadata.blocks_replicated = src_inode.blocks_replicated;
+      dst_inode.file_metadata.inode_replicated = src_inode.inode_replicated;
+      dst_inode.file_metadata.blocks = src_inode.blocks;
 /*
       this.block_size = config.BLOCK_SIZE;
       this.file_metadata = {};
@@ -639,8 +639,8 @@ http.createServer(function(req, res){
       this.file_metadata.inode_replicated = 0;
       this.file_metadata.blocks = [];
 */
-      // store new inode
-      save_inode(dst_inode);
+      // TODO: store new inode
+      //save_inode(dst_inode);
 
       // return result
       res.statusCode = 200;

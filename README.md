@@ -184,3 +184,26 @@ Content-Length: 7678080
 Date: Wed, 25 Feb 2015 15:43:03 GMT
 Connection: keep-alive
 ````
+
+##COPY
+Creates a copy of a file at the server without requiring a client round-trip.
+
+###Example
+Request:
+
+     curl -v -X COPY -H "x-dst: /jjg/copy_01.flac" -H "x-access-key: db12f3c7a27a5ecd3599dba836e498ae1f0073b1" "http://localhost:7302/jjg/01.flac"
+
+Response:
+
+````
+HTTP/1.1 200 OK
+Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
+Access-Control-Allow-Headers: Accept,Accept-Version,Content-Type,Api-Version,Origin,X-Requested-With,Range,X_FILENAME,X-Access-Key,X-Replacement-Access-Key,X-Access-Token,X-Encrypted,X-Private,X-Append
+Access-Control-Allow-Origin: *
+Access-Control-Expose-Headers: X-Media-Type,X-Media-Size,X-Media-Channels,X-Media-Bitrate,X-Media-Resolution,X-Media-Duration
+Content-Type: application/octet-stream
+Content-Length: 55440311
+X-Media-Type: unknown
+Date: Wed, 25 Nov 2015 13:28:15 GMT
+Connection: keep-alive
+````
