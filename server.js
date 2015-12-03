@@ -45,7 +45,7 @@ function load_inode(url){
     
     // TODO: look for backup copies of the inode on other storage devices
   } catch(ex) {
-    log.message(log.WARN, "Unable to load inode for requested URL: " + ex);
+    log.message(log.INFO, "Unable to load inode for requested URL: " + ex);
   }
   return inode;
 }
