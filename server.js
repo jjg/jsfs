@@ -40,13 +40,24 @@ function load_inode(url){
   shasum = crypto.createHash("sha1");
   shasum.update(url);
   var inode_fingerprint =  shasum.digest("hex");
-  try{
-    inode = (JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + inode_fingerprint + ".json")));
-    
-    // TODO: look for backup copies of the inode on other storage devices
-  } catch(ex) {
-    log.message(log.INFO, "Unable to load inode for requested URL: " + ex);
+  
+  // load inode, try each storage location if something goes wrong
+  for(storage_location in config.STORAGE_LOCATIONS){
+    var selected_location = config.STORAGE_LOCATIONS[storage_location];
+    try{
+      log.message(log.DEBUG, "Loading inode from " + selected_location.path);
+      inode = (JSON.parse(fs.readFileSync(selected_location.path + inode_fingerprint + ".json")));
+      log.message(log.INFO, "Inode loaded from " + selected_location.path);
+      break;
+    } catch(ex) {
+      log.message(log.DEBUG, "Error loading inode from " + selected_location.path);
+    }
   }
+  
+  if(!inode){
+    log.message(log.WARN, "Unable to load inode for requested URL: " + url);
+  }
+
   return inode;
 }
 
