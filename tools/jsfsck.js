@@ -13,7 +13,7 @@
 // globals
 var fs = require("fs");
 var config_path = null
-var mode = null;
+var mode = "i";
 var unique_block_index = [];
 var pool_size_in_bytes = 0;
 var on_disk_size_in_bytes = 0;
@@ -41,7 +41,6 @@ try{
   console.log("Error reading configuration: " + exception);
 }
 
-
 for(location in config.STORAGE_LOCATIONS){
   var selected_location = config.STORAGE_LOCATIONS[location];
   
@@ -51,7 +50,17 @@ for(location in config.STORAGE_LOCATIONS){
     var selected_file = files[file];
     if(selected_file.indexOf(".json") > -1){
       files_stored++;
-      var inode = JSON.parse(fs.readFileSync(selected_file));
+      var inode = JSON.parse(fs.readFileSync(selected_location.path + selected_file));
+    }
+  }
+}
+
+console.log("config_path: " + config_path);
+console.log("mode: " + mode);
+console.log("unique_block_index.length: " + unique_block_index.length);
+console.log("pool_size_in_bytes:" + pool_size_in_bytes);
+console.log("on_disk_size_in_bytes: " + on_disk_size_in_bytes);
+console.log("files_stored: " + files_stored);
 
 // TODO: iterate over blocks and create uniquie block index
 
@@ -65,3 +74,6 @@ for(location in config.STORAGE_LOCATIONS){
 
 
 // TODO: update last_seen property for each block if found
+
+
+
