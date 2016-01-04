@@ -14,11 +14,10 @@
 var fs = require("fs");
 var config_path = null
 var mode = "i";
-var unique_block_index = [];
+var good_inodes = 0;
+var bad_inodes = [];
 var pool_size_in_bytes = 0;
 var on_disk_size_in_bytes = 0;
-var files_stored = 0;
-var errors = [];
 
 // parse command line parameters
 config_path = process.argv[2];
@@ -41,39 +40,86 @@ try{
   console.log("Error reading configuration: " + exception);
 }
 
-for(location in config.STORAGE_LOCATIONS){
-  var selected_location = config.STORAGE_LOCATIONS[location];
+
+// load inode index from primary storage location
+var files = fs.readdirSync(config.STORAGE_LOCATIONS[0].path);
+for(file in files){
+  var selected_file = files[file];
+  if(selected_file.indexOf(".json") > -1){
   
-  var files = fs.readdirSync(selected_location.path);
-  
-  for(file in files){
-    var selected_file = files[file];
-    if(selected_file.indexOf(".json") > -1){
-      files_stored++;
-      var inode = JSON.parse(fs.readFileSync(selected_location.path + selected_file));
+    // parse inode
+    try{
+      var inode = JSON.parse(fs.readFileSync(config.STORAGE_LOCATIONS[0].path + selected_file));
+      
+      // test each block
+      var missing_blocks = 0;
+      for(block in inode.blocks){
+        var selected_block = inode.blocks[block];
+        
+        var block_location = null;
+        for(location in config.STORAGE_LOCATIONS){
+          var selected_location = config.STORAGE_LOCATIONS[location];
+          try{
+            var block_stats = fs.statSync(selected_location.path + selected_block.block_hash);
+            pool_size_in_bytes += block_stats.size;
+            block_location = selected_location.path;
+          } catch(ex) {
+            // do nothing
+            //console.log(ex);
+          }
+        }
+        
+        // keep track of missing blocks
+        if(block_location){
+          //good_inodes.push(selected_file);
+        } else {
+          missing_blocks++;
+          //bad_inodes.push(selected_file);
+        }
+      }
+      
+      if(missing_blocks > 0){
+        bad_inodes.push(selected_file);
+      } else {
+        good_inodes++;
+      }
+    } catch(ex) {
+      bad_inodes.push(selected_file);
     }
+  } else {
+    // do nothing?
   }
 }
 
+
+// calculate total disk useage for pool (includes inode files)
+for(location in config.STORAGE_LOCATIONS){
+  var selected_location = config.STORAGE_LOCATIONS[location];
+  var files = fs.readdirSync(selected_location.path);
+  for(file in files){
+    var selected_file = files[file];
+    var file_stats = fs.statSync(selected_location.path + selected_file);
+    on_disk_size_in_bytes += file_stats.size;
+  }
+}
+
+
 console.log("config_path: " + config_path);
 console.log("mode: " + mode);
-console.log("unique_block_index.length: " + unique_block_index.length);
+console.log("good_inodes: " + good_inodes);
+console.log("bad_inodes: " + bad_inodes.length);
 console.log("pool_size_in_bytes:" + pool_size_in_bytes);
 console.log("on_disk_size_in_bytes: " + on_disk_size_in_bytes);
-console.log("files_stored: " + files_stored);
+console.log("deduplication rate: " + (on_disk_size_in_bytes / pool_size_in_bytes)*100 + "%");
 
-// TODO: iterate over blocks and create uniquie block index
+var total_files = good_inodes + bad_inodes.length;
+var pool_size_in_megabytes = (pool_size_in_bytes / 1024) / 1024;
+var on_disk_size_in_megabytes = (on_disk_size_in_bytes / 1024) /1024;
+var duplicate_percentage = 100 - ((on_disk_size_in_bytes / pool_size_in_bytes)*100);
 
-// TODO: count blocks in each storage location
-
-// TODO: count inodes in each storage location
-
-// TODO: examine each inode
-
-// TODO: stat each block referenced in the inode
+console.log(pool_size_in_megabytes + "MB in " + total_files + " files. " + bad_inodes.length + " errors, " + duplicate_percentage + "% duplicate data");
 
 
-// TODO: update last_seen property for each block if found
 
 
 
