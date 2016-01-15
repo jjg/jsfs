@@ -1,0 +1,25 @@
+block compression notes
+
+WAVE source directory size: 476128K (465M)
+Uncompressed JSFS blocks + inodes: 476224K (466M)
+Compressed JSFS blocks: 425460K (416M)
+
+
+GET uncompressed blocks 
+379MB
+
+jason@Argo:~/Development/jsfs$ curl -o ./output/test1.img http://localhost:7302/update.img
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  507M  100  507M    0     0  55.2M      0  0:00:09  0:00:09 --:--:-- 98.7M
+
+
+GET compressed blocks
+914MB
+
+jason@Argo:~/Development/jsfs$ curl -o ./output/test2.img http://localhost:7302/update.img
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  507M  100  507M    0     0  25.9M      0  0:00:19  0:00:19 --:--:-- 27.7M
+
+
