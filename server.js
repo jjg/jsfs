@@ -420,7 +420,7 @@ http.createServer(function(req, res){
         for(var i=0; i < requested_file.blocks.length; i++){
           var block_data = null;
           if(requested_file.blocks[i].last_seen){
-            // TODO: look for a compressd block first, then fall-back to uncompressed
+            // look for a compressd block first, then fall-back to uncompressed
             var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash + ".gz";
 
             try{
@@ -443,18 +443,17 @@ http.createServer(function(req, res){
           if(!block_data){
             for(var storage_location in config.STORAGE_LOCATIONS){
               var selected_location = config.STORAGE_LOCATIONS[storage_location];
-              // TODO: check for compressed block first, then uncompressed
-              if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
+              // check for compressed block first, then uncompressed
+              if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash + ".gz")){
+                log.message(log.INFO, "Found compressed block " + requested_file.blocks[i].block_hash + ".gz in " + selected_location.path);
+                requested_file.blocks[i].last_seen = selected_location.path;
+                save_inode(requested_file);
+                block_data = zlib.gunzipSync(fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash + ".gz"));
+              } else if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
                 log.message(log.INFO, "Found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
                 requested_file.blocks[i].last_seen = selected_location.path;
-
-                // update inode on disk to include discovered block location
-                // TODO: maybe do this once per file instead of once per block?
                 save_inode(requested_file);
-
                 block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
-              } else {
-                log.message(log.ERROR, "Unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
               }
             }
           }
@@ -467,7 +466,7 @@ http.createServer(function(req, res){
           if(block_data){
             res.write(block_data);
           } else {
-            log.message(log.ERROR, "Unable to locate missing block in any storage location");
+            log.message(log.ERROR, "Unable to locate block in any storage location");
             res.statusCode = 500;
             res.end("Unable to return file, missing blocks");
             break;
