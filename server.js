@@ -8,6 +8,7 @@ var http = require("http");
 var https = require("https");
 var crypto = require("crypto");
 var fs = require("fs");
+var zlib = require("zlib");
 var config = require("./config.js");
 var log = require("./jlog.js");
 var url = require("url");
@@ -419,12 +420,20 @@ http.createServer(function(req, res){
         for(var i=0; i < requested_file.blocks.length; i++){
           var block_data = null;
           if(requested_file.blocks[i].last_seen){
-            var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
+            // TODO: look for a compressd block first, then fall-back to uncompressed
+            var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash + ".gz";
 
             try{
-              block_data = fs.readFileSync(block_filename);
-            } catch(ex){
-              log.message(log.WARN, "Cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
+              block_data = zlib.gunzipSync(fs.readFileSync(block_filename));
+            } catch(ex) {
+              log.message(log.DEBUG, "Looking for compressed file " + block_filename);
+              log.message(log.WARN, "Cannot locate compressed block in last_seen location, trying uncompressed");
+              try{
+                log.message(log.DEBUG, "Looking for uncompressed file " + block_filename.split(".gz")[0]);
+                block_data = fs.readFileSync(block_filename.split(".gz")[0]);
+              } catch(ex) {
+                log.message(log.WARN, "Cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
+              }
             }
           } else {
             log.message(log.WARN, "No last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
@@ -434,6 +443,7 @@ http.createServer(function(req, res){
           if(!block_data){
             for(var storage_location in config.STORAGE_LOCATIONS){
               var selected_location = config.STORAGE_LOCATIONS[storage_location];
+              // TODO: check for compressed block first, then uncompressed
               if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
                 log.message(log.INFO, "Found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
                 requested_file.blocks[i].last_seen = selected_location.path;
