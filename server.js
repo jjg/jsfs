@@ -117,12 +117,20 @@ function commit_block_to_disk(block, block_object){
 
       // check if block exists
       try{
-        var block_file_stats = fs.statSync(selected_location.path + block_object.block_hash);
+        // look for compressed blocks first
+        var block_file_stats = fs.statSync(selected_location.path + block_object.block_hash + ".gz");
         found_block_count++;
         block_object.last_seen = selected_location.path;
-        log.message(log.INFO, "Duplicate block " + block_object.block_hash + " found in " + selected_location.path);
+        log.message(log.INFO, "Duplicate compressed block " + block_object.block_hash + " found in " + selected_location.path);
       } catch(ex) {
-        log.message(log.INFO, "Block " + block_object.block_hash + " not found in " + selected_location.path);
+        try{
+          var block_file_stats = fs.statSync(selected_location.path + block_object.block_hash);
+          found_block_count++;
+          block_object.last_seen = selected_location.path;
+          log.message(log.INFO, "Duplicate block " + block_object.block_hash + " found in " + selected_location.path);
+        } catch(ex) {
+          //log.message(log.INFO, "Block " + block_object.block_hash + " not found in " + selected_location.path);
+        }
       }
     }
 
@@ -130,6 +138,7 @@ function commit_block_to_disk(block, block_object){
     if(found_block_count < 1){
 
       // write new block to next storage location 
+      // TODO: consider implementing in-band compression here
       fs.writeFileSync(config.STORAGE_LOCATIONS[next_storage_location].path + block_object.block_hash, block, "binary");
       block_object.last_seen = config.STORAGE_LOCATIONS[next_storage_location].path;
       log.message(log.INFO, "New block " + block_object.block_hash + " written to " + config.STORAGE_LOCATIONS[next_storage_location].path);
