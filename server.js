@@ -8,6 +8,7 @@ var http = require("http");
 var https = require("https");
 var crypto = require("crypto");
 var fs = require("fs");
+var zlib = require("zlib");
 var config = require("./config.js");
 var log = require("./jlog.js");
 var url = require("url");
@@ -116,12 +117,20 @@ function commit_block_to_disk(block, block_object){
 
       // check if block exists
       try{
-        var block_file_stats = fs.statSync(selected_location.path + block_object.block_hash);
+        // look for compressed blocks first
+        var block_file_stats = fs.statSync(selected_location.path + block_object.block_hash + ".gz");
         found_block_count++;
         block_object.last_seen = selected_location.path;
-        log.message(log.INFO, "Duplicate block " + block_object.block_hash + " found in " + selected_location.path);
+        log.message(log.INFO, "Duplicate compressed block " + block_object.block_hash + " found in " + selected_location.path);
       } catch(ex) {
-        log.message(log.INFO, "Block " + block_object.block_hash + " not found in " + selected_location.path);
+        try{
+          var block_file_stats = fs.statSync(selected_location.path + block_object.block_hash);
+          found_block_count++;
+          block_object.last_seen = selected_location.path;
+          log.message(log.INFO, "Duplicate block " + block_object.block_hash + " found in " + selected_location.path);
+        } catch(ex) {
+          //log.message(log.INFO, "Block " + block_object.block_hash + " not found in " + selected_location.path);
+        }
       }
     }
 
@@ -129,6 +138,7 @@ function commit_block_to_disk(block, block_object){
     if(found_block_count < 1){
 
       // write new block to next storage location 
+      // TODO: consider implementing in-band compression here
       fs.writeFileSync(config.STORAGE_LOCATIONS[next_storage_location].path + block_object.block_hash, block, "binary");
       block_object.last_seen = config.STORAGE_LOCATIONS[next_storage_location].path;
       log.message(log.INFO, "New block " + block_object.block_hash + " written to " + config.STORAGE_LOCATIONS[next_storage_location].path);
@@ -419,12 +429,20 @@ http.createServer(function(req, res){
         for(var i=0; i < requested_file.blocks.length; i++){
           var block_data = null;
           if(requested_file.blocks[i].last_seen){
-            var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash;
+            // look for a compressd block first, then fall-back to uncompressed
+            var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash + ".gz";
 
             try{
-              block_data = fs.readFileSync(block_filename);
-            } catch(ex){
-              log.message(log.WARN, "Cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
+              block_data = zlib.gunzipSync(fs.readFileSync(block_filename));
+            } catch(ex) {
+              log.message(log.DEBUG, "Looking for compressed file " + block_filename);
+              log.message(log.WARN, "Cannot locate compressed block in last_seen location, trying uncompressed");
+              try{
+                log.message(log.DEBUG, "Looking for uncompressed file " + block_filename.split(".gz")[0]);
+                block_data = fs.readFileSync(block_filename.split(".gz")[0]);
+              } catch(ex) {
+                log.message(log.WARN, "Cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
+              }
             }
           } else {
             log.message(log.WARN, "No last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
@@ -434,17 +452,17 @@ http.createServer(function(req, res){
           if(!block_data){
             for(var storage_location in config.STORAGE_LOCATIONS){
               var selected_location = config.STORAGE_LOCATIONS[storage_location];
-              if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
+              // check for compressed block first, then uncompressed
+              if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash + ".gz")){
+                log.message(log.INFO, "Found compressed block " + requested_file.blocks[i].block_hash + ".gz in " + selected_location.path);
+                requested_file.blocks[i].last_seen = selected_location.path;
+                save_inode(requested_file);
+                block_data = zlib.gunzipSync(fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash + ".gz"));
+              } else if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
                 log.message(log.INFO, "Found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
                 requested_file.blocks[i].last_seen = selected_location.path;
-
-                // update inode on disk to include discovered block location
-                // TODO: maybe do this once per file instead of once per block?
                 save_inode(requested_file);
-
                 block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
-              } else {
-                log.message(log.ERROR, "Unable to locate block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
               }
             }
           }
@@ -457,7 +475,7 @@ http.createServer(function(req, res){
           if(block_data){
             res.write(block_data);
           } else {
-            log.message(log.ERROR, "Unable to locate missing block in any storage location");
+            log.message(log.ERROR, "Unable to locate block in any storage location");
             res.statusCode = 500;
             res.end("Unable to return file, missing blocks");
             break;
