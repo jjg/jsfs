@@ -3,6 +3,7 @@ block compression notes
 WAVE source directory size: 476128K (465M)
 Uncompressed JSFS blocks + inodes: 476224K (466M)
 Compressed JSFS blocks: 425460K (416M)
+~11% savings compressed
 
 
 GET uncompressed blocks 
