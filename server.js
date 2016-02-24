@@ -13,6 +13,11 @@ var config = require("./config.js");
 var log = require("./jlog.js");
 var url = require("url");
 
+var WAVE_FMTS = {
+	16 : 1,
+	24 : 65534
+};
+
 // global to keep track of storage location rotation
 var next_storage_location = 0;
 
@@ -86,7 +91,7 @@ function analyze_block(block){
     // test for WAVE
     if(block.toString("utf8", 0, 4) === "RIFF"
       & block.toString("utf8", 8, 12) === "WAVE"
-      & block.readUInt16LE(20) == 1){
+      & WAVE_FMTS[block.readUInt16LE(34)] == block.readUInt16LE(20)){
       result.type = "wave";
       result.size = block.readUInt32LE(4);
       result.channels = block.readUInt16LE(22);
