@@ -1,0 +1,30 @@
+{
+  "name": "jsfs",
+  "version": "4.2.0",
+  "description": "A general-purpose HTTP-accessible filesystem",
+  "main": "boot.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "mocha": "^2.4.5",
+    "should": "^8.2.2",
+    "supertest": "^1.2.0"
+  },
+  "scripts": {
+    "test": "mocha",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jjg/jsfs.git"
+  },
+  "keywords": [],
+  "author": "Jason J. Gullickson",
+  "license": "GPL",
+  "bugs": {
+    "url": "https://github.com/jjg/jsfs/issues"
+  },
+  "homepage": "https://github.com/jjg/jsfs#readme"
+}
