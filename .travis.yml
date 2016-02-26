@@ -1,5 +1,4 @@
 language: node_js
 node_js:
   - "stable"
-script: cp config.ex config.js
 script: npm start
