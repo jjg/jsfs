@@ -13,9 +13,32 @@ var config = require("./config.js");
 var log = require("./jlog.js");
 var url = require("url");
 
+/**
+
+  Lookup WAVE format by chunk size.
+  Chunk size of 16 === PCM (1)
+
+  Chunk size of 40 === WAVE_FORMAT_EXTENSIBLE (65534)
+    The WAVE_FORMAT_EXTENSIBLE format should be used whenever:
+      PCM data has more than 16 bits/sample.
+      The number of channels is more than 2.
+      The actual number of bits/sample is not equal to the container size.
+      The mapping from channels to speakers needs to be specified.
+    We should probably do more finer-grained analysis of this format for determining duration,
+    by examining any fact chunk between the fmt chunk and the data,but this should be enough for
+    current use cases.
+
+  Chunk size of 18 === non-PCM (3, 6, or 7)
+    This could be IEEE float (3), 8-bit ITU-T G.711 A-law (6), 8-bit ITU-T G.711 µ-law (7),
+    all of which probably require different calculations for duration and are not implemented
+
+  Further reading: http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
+
+ */
+
 var WAVE_FMTS = {
 	16 : 1,
-	24 : 65534
+	40 : 65534
 };
 
 // global to keep track of storage location rotation
@@ -88,10 +111,9 @@ function analyze_block(block){
   result.type = "unknown";
   try{
 
-    // test for WAVE
     if(block.toString("utf8", 0, 4) === "RIFF"
       & block.toString("utf8", 8, 12) === "WAVE"
-      & WAVE_FMTS[block.readUInt16LE(34)] == block.readUInt16LE(20)){
+      & WAVE_FMTS[block.readUInt32LE(16)] == block.readUInt16LE(20)){
       result.type = "wave";
       result.size = block.readUInt32LE(4);
       result.channels = block.readUInt16LE(22);
