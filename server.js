@@ -13,6 +13,34 @@ var config = require("./config.js");
 var log = require("./jlog.js");
 var url = require("url");
 
+/**
+
+  Lookup WAVE format by chunk size.
+  Chunk size of 16 === PCM (1)
+
+  Chunk size of 40 === WAVE_FORMAT_EXTENSIBLE (65534)
+    The WAVE_FORMAT_EXTENSIBLE format should be used whenever:
+      PCM data has more than 16 bits/sample.
+      The number of channels is more than 2.
+      The actual number of bits/sample is not equal to the container size.
+      The mapping from channels to speakers needs to be specified.
+    We should probably do more finer-grained analysis of this format for determining duration,
+    by examining any fact chunk between the fmt chunk and the data,but this should be enough for
+    current use cases.
+
+  Chunk size of 18 === non-PCM (3, 6, or 7)
+    This could be IEEE float (3), 8-bit ITU-T G.711 A-law (6), 8-bit ITU-T G.711 µ-law (7),
+    all of which probably require different calculations for duration and are not implemented
+
+  Further reading: http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html
+
+ */
+
+var WAVE_FMTS = {
+	16 : 1,
+	40 : 65534
+};
+
 // global to keep track of storage location rotation
 var next_storage_location = 0;
 
@@ -41,7 +69,7 @@ function load_inode(url){
   shasum = crypto.createHash("sha1");
   shasum.update(url);
   var inode_fingerprint =  shasum.digest("hex");
-  
+
   // load inode, try each storage location if something goes wrong
   for(storage_location in config.STORAGE_LOCATIONS){
     var selected_location = config.STORAGE_LOCATIONS[storage_location];
@@ -54,7 +82,7 @@ function load_inode(url){
       log.message(log.DEBUG, "Error loading inode from " + selected_location.path);
     }
   }
-  
+
   if(!inode){
     log.message(log.WARN, "Unable to load inode for requested URL: " + url);
   }
@@ -83,10 +111,9 @@ function analyze_block(block){
   result.type = "unknown";
   try{
 
-    // test for WAVE
     if(block.toString("utf8", 0, 4) === "RIFF"
       & block.toString("utf8", 8, 12) === "WAVE"
-      & block.readUInt16LE(20) == 1){
+      & WAVE_FMTS[block.readUInt32LE(16)] == block.readUInt16LE(20)){
       result.type = "wave";
       result.size = block.readUInt32LE(4);
       result.channels = block.readUInt16LE(22);
@@ -137,7 +164,7 @@ function commit_block_to_disk(block, block_object){
     // TODO: consider increasing found count to enable block redundancy
     if(found_block_count < 1){
 
-      // write new block to next storage location 
+      // write new block to next storage location
       // TODO: consider implementing in-band compression here
       fs.writeFileSync(config.STORAGE_LOCATIONS[next_storage_location].path + block_object.block_hash, block, "binary");
       block_object.last_seen = config.STORAGE_LOCATIONS[next_storage_location].path;
@@ -494,7 +521,7 @@ http.createServer(function(req, res){
 
   case "POST":
   case "PUT":
-    // check if a file exists at this url 
+    // check if a file exists at this url
     log.message(log.DEBUG, "Begin checking for existing file");
     var inode = load_inode(target_url);
     if(inode){
@@ -575,7 +602,7 @@ http.createServer(function(req, res){
         // delete inode file
         log.message(log.INFO, "Delete request authorized");
 
-        // remove inode from all configured storage locations 
+        // remove inode from all configured storage locations
         for(storage_location in config.STORAGE_LOCATIONS){
           var selected_location = config.STORAGE_LOCATIONS[storage_location];
           try{
