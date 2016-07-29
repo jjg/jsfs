@@ -360,6 +360,7 @@ var Inode = {
           var b_length = block.length/8/b_size;
           for (data_offset; data_offset < b_length; data_offset = data_offset + b_size) {
             if (block.readUInt32LE(data_offset) !== 0) {
+              log.message(log.INFO, "Storing the first " + data_offset + " bytes seperately");
               chunk_size = data_offset;
               break;
             }
