@@ -111,6 +111,20 @@ function analyze_block(block){
   result.type = "unknown";
   try{
 
+    // console.log("Chunk ID:", block.toString("utf8", 0, 4));
+    // console.log("Chunk Size:", block.readUInt32LE(4));
+    // console.log("Format:", block.toString("utf8", 8, 12));
+    // console.log("Subchunk1 ID:", block.toString("utf8", 12, 16));
+    // console.log("Subchunk1 Size:", block.readUInt32LE(16));
+    // console.log("Audio Format:", block.readUInt16LE(20));
+    // console.log("Num Channels:", block.readUInt16LE(22));
+    // console.log("Sample Rate:", block.readUInt32LE(24));
+    // console.log("Byte Rate:", block.readUInt32LE(28));
+    // console.log("Block Align:", block.readUInt16LE(32));
+    // console.log("Bits per sample:", block.readUInt16LE(34));
+    // console.log("Subchunk2 ID:", block.toString("utf8", 36, 40));
+    // console.log("Subchunk2 Size:", block.readUInt32LE(40));
+
     if(block.toString("utf8", 0, 4) === "RIFF"
       & block.toString("utf8", 8, 12) === "WAVE"
       & WAVE_FMTS[block.readUInt32LE(16)] == block.readUInt16LE(20)){
@@ -120,6 +134,8 @@ function analyze_block(block){
       result.bitrate = block.readUInt32LE(24);
       result.resolution = block.readUInt16LE(34);
       result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
+      result.subchunk_2_id = block.toString("utf8", 36, 40);
+      result.data_block_size = block.readUInt16LE(32);
     }
 
     // TODO: test for MP3
@@ -299,9 +315,6 @@ var Inode = {
       }
     } else {
       while(this.input_buffer.length > this.block_size){
-
-        // update original file size
-        this.file_metadata.file_size = this.file_metadata.file_size + this.block_size;
         result = this.store_block();
       }
     }
@@ -315,13 +328,15 @@ var Inode = {
   },
   store_block: function(){
     var result = true;
+    var chunk_size = this.block_size;
 
     // grab the next block
-    var block = this.input_buffer.slice(0, this.block_size);
+    var block = this.input_buffer.slice(0, chunk_size);
     if(this.file_metadata.blocks.length === 0){
 
       // grok known file types
       var analysis_result = analyze_block(block);
+
       log.message(log.INFO, "block analysis result: " + JSON.stringify(analysis_result));
 
       // if we found out anything useful, annotate the object's metadata
@@ -332,6 +347,24 @@ var Inode = {
         this.file_metadata.media_bitrate = analysis_result.bitrate;
         this.file_metadata.media_resolution = analysis_result.resolution;
         this.file_metadata.media_duration = analysis_result.duration;
+
+        // use analyze_block to identify offset until non-zero data, grab just that portion to store
+        // assuming analysis_result.subchunk_2_id === 'data', we'll start the scan at block.readUInt32LE(44)
+        // and if it's not 'data', we'll skip the entire operation
+
+        if (analysis_result.subchunk_2_id === 'data' && analysis_result.data_block_size === 4) {
+          var data_offset = 44;
+          var b_size = analysis_result.data_block_size;
+          // analysis_result.data_block_size * 8 will tell us what to use to read data blocks, eg readUInt32LE
+          // it will also tell us the interval multiplier when scanning the block
+          var b_length = block.length/8/b_size;
+          for (data_offset; data_offset < b_length; data_offset = data_offset + b_size) {
+            if (block.readUInt32LE(data_offset) !== 0) {
+              chunk_size = data_offset;
+              break;
+            }
+          }
+        }
       }
     }
 
@@ -359,8 +392,11 @@ var Inode = {
     // update inode
     this.file_metadata.blocks.push(block_object);
 
+    // update original file size
+    this.file_metadata.file_size = this.file_metadata.file_size + chunk_size;
+
     // advance buffer
-    this.input_buffer = this.input_buffer.slice(this.block_size);
+    this.input_buffer = this.input_buffer.slice(chunk_size);
     return result;
   }
 };
