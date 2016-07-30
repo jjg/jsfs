@@ -111,20 +111,6 @@ function analyze_block(block){
   result.type = "unknown";
   try{
 
-    // console.log("Chunk ID:", block.toString("utf8", 0, 4));
-    // console.log("Chunk Size:", block.readUInt32LE(4));
-    // console.log("Format:", block.toString("utf8", 8, 12));
-    // console.log("Subchunk1 ID:", block.toString("utf8", 12, 16));
-    // console.log("Subchunk1 Size:", block.readUInt32LE(16));
-    // console.log("Audio Format:", block.readUInt16LE(20));
-    // console.log("Num Channels:", block.readUInt16LE(22));
-    // console.log("Sample Rate:", block.readUInt32LE(24));
-    // console.log("Byte Rate:", block.readUInt32LE(28));
-    // console.log("Block Align:", block.readUInt16LE(32));
-    // console.log("Bits per sample:", block.readUInt16LE(34));
-    // console.log("Subchunk2 ID:", block.toString("utf8", 36, 40));
-    // console.log("Subchunk2 Size:", block.readUInt32LE(40));
-
     if(block.toString("utf8", 0, 4) === "RIFF"
       & block.toString("utf8", 8, 12) === "WAVE"
       & WAVE_FMTS[block.readUInt32LE(16)] == block.readUInt16LE(20)){
@@ -134,7 +120,20 @@ function analyze_block(block){
       result.bitrate = block.readUInt32LE(24);
       result.resolution = block.readUInt16LE(34);
       result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
-      result.subchunk_2_id = block.toString("utf8", 36, 40);
+
+      var subchunk_byte = 36;
+      var subchunk_id   = block.toString("utf8", subchunk_byte, subchunk_byte+4);
+      var block_length  = block.length;
+      var subchunk_size;
+
+      while (subchunk_id !== 'data' && subchunk_byte < block_length) {
+        subchunk_size = block.readUInt32LE(subchunk_byte+4);
+        subchunk_byte = subchunk_byte + subchunk_size + 8;
+        subchunk_id = block.toString("utf8", subchunk_byte, subchunk_byte+4);
+      }
+
+      result.subchunk_id     = subchunk_id;
+      result.subchunk_byte   = subchunk_byte
       result.data_block_size = block.readUInt16LE(32);
     }
 
@@ -311,11 +310,11 @@ var Inode = {
 
       // empty the remainder of the buffer
       while(this.input_buffer.length > 0){
-        result = this.store_block();
+        result = this.store_block(false);
       }
     } else {
       while(this.input_buffer.length > this.block_size){
-        result = this.store_block();
+        result = this.store_block(true);
       }
     }
     if(result){
@@ -326,7 +325,7 @@ var Inode = {
     }
     return result;
   },
-  store_block: function(){
+  store_block: function(update_file_size){
     var result = true;
     var chunk_size = this.block_size;
 
@@ -352,16 +351,19 @@ var Inode = {
         // assuming analysis_result.subchunk_2_id === 'data', we'll start the scan at block.readUInt32LE(44)
         // and if it's not 'data', we'll skip the entire operation
 
-        if (analysis_result.subchunk_2_id === 'data' && analysis_result.data_block_size === 4) {
-          var data_offset = 44;
+        if (analysis_result.subchunk_id === 'data' && analysis_result.data_block_size === 4) {
+
+          var data_offset = analysis_result.subchunk_byte + 8;
           var b_size = analysis_result.data_block_size;
           // analysis_result.data_block_size * 8 will tell us what to use to read data blocks, eg readUInt32LE
           // it will also tell us the interval multiplier when scanning the block
-          var b_length = block.length/8/b_size;
+          var b_length = block.length;
+
           for (data_offset; data_offset < b_length; data_offset = data_offset + b_size) {
             if (block.readUInt32LE(data_offset) !== 0) {
               log.message(log.INFO, "Storing the first " + data_offset + " bytes seperately");
               chunk_size = data_offset;
+              block = block.slice(0, chunk_size);
               break;
             }
           }
@@ -394,7 +396,11 @@ var Inode = {
     this.file_metadata.blocks.push(block_object);
 
     // update original file size
-    this.file_metadata.file_size = this.file_metadata.file_size + chunk_size;
+    // we need to update filesize here due to truncation at the front,
+    // but need the check to avoid double setting during flush
+    if (update_file_size) {
+      this.file_metadata.file_size = this.file_metadata.file_size + chunk_size;
+    }
 
     // advance buffer
     this.input_buffer = this.input_buffer.slice(chunk_size);
