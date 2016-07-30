@@ -346,24 +346,30 @@ var Inode = {
         this.file_metadata.media_bitrate = analysis_result.bitrate;
         this.file_metadata.media_resolution = analysis_result.resolution;
         this.file_metadata.media_duration = analysis_result.duration;
+      }
 
+      if (analysis_result.type === 'wave') {
         // use analyze_block to identify offset until non-zero data, grab just that portion to store
         // assuming analysis_result.subchunk_2_id === 'data', we'll start the scan at block.readUInt32LE(44)
         // and if it's not 'data', we'll skip the entire operation
 
-        if (analysis_result.subchunk_id === 'data' && analysis_result.data_block_size === 4) {
+        var b_size = analysis_result.data_block_size;
 
+        if (analysis_result.subchunk_id === 'data' && b_size === 4) {
+          // unlikely not to be 4, but it'd be nice to handle alternate cases
+          // essentially, (b_size * 8) will be the readUInt_x_LE function we use, eg readUInt32LE
+
+          // start of the data, beginning of the subchunk + 8 bytes (4 for label, 4 for size)
           var data_offset = analysis_result.subchunk_byte + 8;
-          var b_size = analysis_result.data_block_size;
-          // analysis_result.data_block_size * 8 will tell us what to use to read data blocks, eg readUInt32LE
-          // it will also tell us the interval multiplier when scanning the block
           var b_length = block.length;
 
+          // we'll incrememt our offset by the byte size, since we're analyzing on the basis of it
           for (data_offset; data_offset < b_length; data_offset = data_offset + b_size) {
             if (block.readUInt32LE(data_offset) !== 0) {
               log.message(log.INFO, "Storing the first " + data_offset + " bytes seperately");
+              // reduce block to the offset
+              block = block.slice(0, data_offset);
               chunk_size = data_offset;
-              block = block.slice(0, chunk_size);
               break;
             }
           }
@@ -398,6 +404,7 @@ var Inode = {
     // update original file size
     // we need to update filesize here due to truncation at the front,
     // but need the check to avoid double setting during flush
+    // is there a better way?
     if (update_file_size) {
       this.file_metadata.file_size = this.file_metadata.file_size + chunk_size;
     }
