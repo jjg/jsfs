@@ -120,6 +120,21 @@ function analyze_block(block){
       result.bitrate = block.readUInt32LE(24);
       result.resolution = block.readUInt16LE(34);
       result.duration = ((((result.size * 8) / result.channels) / result.resolution) / result.bitrate);
+
+      var subchunk_byte = 36;
+      var subchunk_id   = block.toString("utf8", subchunk_byte, subchunk_byte+4);
+      var block_length  = block.length;
+      var subchunk_size;
+
+      while (subchunk_id !== 'data' && subchunk_byte < block_length) {
+        subchunk_size = block.readUInt32LE(subchunk_byte+4);
+        subchunk_byte = subchunk_byte + subchunk_size + 8;
+        subchunk_id = block.toString("utf8", subchunk_byte, subchunk_byte+4);
+      }
+
+      result.subchunk_id     = subchunk_id;
+      result.subchunk_byte   = subchunk_byte
+      result.data_block_size = block.readUInt16LE(32);
     }
 
     // TODO: test for MP3
@@ -295,14 +310,11 @@ var Inode = {
 
       // empty the remainder of the buffer
       while(this.input_buffer.length > 0){
-        result = this.store_block();
+        result = this.store_block(false);
       }
     } else {
       while(this.input_buffer.length > this.block_size){
-
-        // update original file size
-        this.file_metadata.file_size = this.file_metadata.file_size + this.block_size;
-        result = this.store_block();
+        result = this.store_block(true);
       }
     }
     if(result){
@@ -313,15 +325,17 @@ var Inode = {
     }
     return result;
   },
-  store_block: function(){
+  store_block: function(update_file_size){
     var result = true;
+    var chunk_size = this.block_size;
 
     // grab the next block
-    var block = this.input_buffer.slice(0, this.block_size);
+    var block = this.input_buffer.slice(0, chunk_size);
     if(this.file_metadata.blocks.length === 0){
 
       // grok known file types
       var analysis_result = analyze_block(block);
+
       log.message(log.INFO, "block analysis result: " + JSON.stringify(analysis_result));
 
       // if we found out anything useful, annotate the object's metadata
@@ -332,6 +346,34 @@ var Inode = {
         this.file_metadata.media_bitrate = analysis_result.bitrate;
         this.file_metadata.media_resolution = analysis_result.resolution;
         this.file_metadata.media_duration = analysis_result.duration;
+      }
+
+      if (analysis_result.type === 'wave') {
+        // use analyze_block to identify offset until non-zero data, grab just that portion to store
+        // assuming analysis_result.subchunk_2_id === 'data', we'll start the scan at block.readUInt32LE(44)
+        // and if it's not 'data', we'll skip the entire operation
+
+        var b_size = analysis_result.data_block_size;
+
+        if (analysis_result.subchunk_id === 'data' && b_size === 4) {
+          // unlikely not to be 4, but it'd be nice to handle alternate cases
+          // essentially, (b_size * 8) will be the readUInt_x_LE function we use, eg readUInt32LE
+
+          // start of the data, beginning of the subchunk + 8 bytes (4 for label, 4 for size)
+          var data_offset = analysis_result.subchunk_byte + 8;
+          var b_length = block.length;
+
+          // we'll incrememt our offset by the byte size, since we're analyzing on the basis of it
+          for (data_offset; data_offset < b_length; data_offset = data_offset + b_size) {
+            if (block.readUInt32LE(data_offset) !== 0) {
+              log.message(log.INFO, "Storing the first " + data_offset + " bytes seperately");
+              // reduce block to the offset
+              block = block.slice(0, data_offset);
+              chunk_size = data_offset;
+              break;
+            }
+          }
+        }
       }
     }
 
@@ -359,8 +401,16 @@ var Inode = {
     // update inode
     this.file_metadata.blocks.push(block_object);
 
+    // update original file size
+    // we need to update filesize here due to truncation at the front,
+    // but need the check to avoid double setting during flush
+    // is there a better way?
+    if (update_file_size) {
+      this.file_metadata.file_size = this.file_metadata.file_size + chunk_size;
+    }
+
     // advance buffer
-    this.input_buffer = this.input_buffer.slice(this.block_size);
+    this.input_buffer = this.input_buffer.slice(chunk_size);
     return result;
   }
 };
