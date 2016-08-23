@@ -150,7 +150,7 @@ function moveNextFile(){
 //     return false;
 //   }
 
-  var BASE_SQL = 'SELECT * FROM track_uploads WHERE url LIKE \'%' + SOURCE_HOST + '%\' OFFSET ' + OFFSET + ' LIMIT 10000';
+  var BASE_SQL = 'SELECT * FROM track_uploads WHERE url LIKE \'%' + SOURCE_HOST + '%\' ORDER BY created_at ASC OFFSET ' + OFFSET + ' LIMIT 10000';
 
   query(BASE_SQL, function(err, results){
     if (err) {
@@ -158,7 +158,6 @@ function moveNextFile(){
       return;
     }
 
-    clock.start();
     console.log(results.length + ' tracks will be migrated from ' + SOURCE_HOST + ' starting at ' + OFFSET);
     tracks = results;
     moveNextFile();
