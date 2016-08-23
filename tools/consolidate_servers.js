@@ -43,6 +43,25 @@ var JSFS_PORT = '7302';
 
 query.connectionParameters = 'postgres://marc:@localhost:5432/murfie_dev';
 
+var timer = function timer(name) {
+  var start = new Date().getTime();
+  return {
+    stop: function() {
+      var end  = new Date();
+      var time = end.getTime() - start;
+      console.log('Timer:', name, 'finished in', time, 'ms');
+    },
+
+    mark: function(title) {
+      var now = new Date();
+      var time = now.getTime() - start;
+      console.log('Mark:', name, title, 'at', time, 'ms');
+    }
+  };
+};
+
+var clock = timer('JSFS migration');
+
 function namespacedPath(url_parts){
   var path = url_parts.path;
   if (path.indexOf('/.') === 0) {
@@ -79,27 +98,29 @@ function moveFile(file){
   console.log('Moving ' + fetch_url + ' to ' + JSFS_HOST + store_options.path);
 
   var storage_request = http.request(store_options).on('finish', function(){
-                              console.log('File stored to', JSFS_HOST + store_options.path);
-                            }).on('close', function(){
-                              console.log('pipe closed, move next file');
-                              return moveNextFile();
+                              clock.mark('File stored to ' + JSFS_HOST + store_options.path);
                             });
 
   http.get(fetch_options, function(fetch_response){
     fetch_response.pipe(storage_request).on('close', function(){
-                    console.log('fetch response closed');
-                  }).on('end', function(){
-                    console.log('fetch response ended');
+                    return moveNextFile();
                   }).on('error', function(e){
                     console.log('fetch response error:', e.toString());
                   });
-  }).on('finish', function(){
-    console.log('fetch request finished');
   }).on('error', function(e){
     console.log('fetch request errored:', e.toString());
-  }).on('close', function(){
-    console.log('fetch request closed');
   });
+
+  /***
+
+    Order of events messages:
+    fetch_request.on('finish')
+    store_request.on('finish')
+    fetch_request.on('close');
+    store_request.on('close');
+    fetch_response.on('close');
+
+   **/
 }
 
 function moveNextFile(){
@@ -108,6 +129,7 @@ function moveNextFile(){
     moveFile(next_track);
   } else {
     console.log('******** MIGRATION COMPLETED *********');
+    clock.stop();
   }
 }
 
@@ -130,6 +152,7 @@ function moveNextFile(){
       return;
     }
 
+    clock.start();
     console.log(results.length + ' tracks will be migrated from ' + SOURCE_HOST + ' starting at ' + OFFSET);
     tracks = results;
     moveNextFile();
