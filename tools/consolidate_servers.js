@@ -2,6 +2,7 @@
 /* globals require, console */
 
 /*  CONFIGURATION  */
+var DB_CONNECT  = 'postgres://marc:@localhost:5432/murfie_dev';
 var SOURCE_HOST = 'jsfs4.murfie.com';
 var SOURCE_PORT = '7302';
 var OFFSET      = 0;
@@ -11,6 +12,7 @@ var http       = require('http');
 var url        = require('url');
 var query      = require('pg-query');
 var tracks     = [];
+var errors     = [];
 var JSFS_HOST  = '127.0.0.1';
 var JSFS_PORT  = '7302';
 var SOURCE_IPS = {
@@ -37,7 +39,7 @@ var SOURCE_IPS = {
   'jsfs22.murfie.com' :   '10.240.0.25'
 };
 
-query.connectionParameters = 'postgres://marc:@localhost:5432/murfie_dev';
+query.connectionParameters = DB_CONNECT;
 
 var timer = function timer(name) {
   var start = new Date().getTime();
@@ -105,6 +107,10 @@ function moveFile(file){
 
   var storage_request = http.request(store_options).on('finish', function(){
                               clock.mark('File stored to ' + JSFS_HOST + store_options.path);
+                              console.log(tracks.length, 'tracks remaining');
+                            }).on('error', function(e){
+                              console.log('storage_request error', e.toString());
+                              errors.push(file);
                             });
 
   http.get(fetch_options, function(fetch_response){
@@ -112,9 +118,11 @@ function moveFile(file){
                     return moveNextFile();
                   }).on('error', function(e){
                     console.log('fetch response error:', e.toString());
+                    errors.push(file);
                   });
   }).on('error', function(e){
     console.log('fetch request errored:', e.toString());
+    errors.push(file);
   });
 
   /***
@@ -136,6 +144,7 @@ function moveNextFile(){
   } else {
     console.log('******** MIGRATION COMPLETED *********');
     clock.stop();
+    console.log('The following files experienced errors:' errors);
   }
 }
 
@@ -150,7 +159,7 @@ function moveNextFile(){
 //     return false;
 //   }
 
-  var BASE_SQL = 'SELECT * FROM track_uploads WHERE url LIKE \'%' + SOURCE_HOST + '%\' ORDER BY created_at ASC OFFSET ' + OFFSET + ' LIMIT 10000';
+  var BASE_SQL = 'SELECT * FROM track_uploads WHERE url LIKE \'%' + SOURCE_HOST + '%\' ORDER BY id ASC OFFSET ' + OFFSET + ' LIMIT 10000';
 
   query(BASE_SQL, function(err, results){
     if (err) {
