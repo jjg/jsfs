@@ -144,7 +144,7 @@ function moveNextFile(){
   } else {
     console.log('******** MIGRATION COMPLETED *********');
     clock.stop();
-    console.log('The following files experienced errors:' errors);
+    console.log('The following files experienced errors:', errors);
   }
 }
 
