@@ -42,7 +42,7 @@ var SOURCE_IPS = {
 };
 
 log.path = '/var/log/jsfs/migration';
-log.message(log.info, '******* MIGRATING FILES FROM ' + SOURCE_HOST + ' OFFSET ' + OFFSET + ' ********');
+log.message(log.info, '******* MIGRATING ' + LIMIT + ' FILES FROM ' + SOURCE_HOST + ' OFFSET ' + OFFSET + ' ********');
 
 query.connectionParameters = DB_CONNECT;
 
