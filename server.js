@@ -444,13 +444,19 @@ http.createServer(function(req, res){
   if(target_url.substring(0,2) != "/."){
     var host_string = req.headers["host"];
     if(host_string){
-      var host_string_parts = host_string.split(":");
-      var forward_host = host_string_parts[0].split(".");
-      var reversed_host = "";
-      for(var i=(forward_host.length - 1);i>=0;i--){
-        reversed_host = reversed_host + "." + forward_host[i];
+      try {
+        var host_string_parts = host_string.split(":");
+        var forward_host = host_string_parts[0].split(".");
+        var reversed_host = "";
+        for(var i=(forward_host.length - 1);i>=0;i--){
+          reversed_host = reversed_host + "." + forward_host[i];
+        }
+        target_url = "/" + reversed_host.substring(1) + target_url;
+      } catch(e) {
+        console.log(e.toString());
+        console.log('error doing hoststring stuff for', hoststring)
       }
-      target_url = "/" + reversed_host.substring(1) + target_url;
+
     }
   } else {
     target_url = "/" + target_url.substring(2);
