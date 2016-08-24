@@ -6,6 +6,7 @@ var DB_CONNECT  = process.env.DB || 'postgres://marc:@localhost:5432/murfie_dev'
 var SOURCE_HOST = process.env.SOURCE_HOST || 'jsfs4.murfie.com';
 var SOURCE_PORT = process.env.SOURCE_PORT || '7302';
 var OFFSET      = process.env.OFFSET || 0;
+var LIMIT       = process.env.LIMIT || 10000;
 
 /*  SETUP  */
 var http       = require('http');
@@ -116,7 +117,7 @@ function moveFile(file){
   log.message(log.INFO, 'Moving ' + fetch_url + ' to ' + JSFS_HOST + store_options.path);
 
   var storage_request = http.request(store_options).on('finish', function(){
-                              log.message(log.INFO, clock.mark('File stored to ' + JSFS_HOST + store_options.path));
+                              log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
                               log.message(log.DEBUG, tracks.length +' tracks remaining');
                             });
 
@@ -166,7 +167,7 @@ function moveNextFile(){
 //     return false;
 //   }
 
-  var BASE_SQL = 'SELECT * FROM track_uploads WHERE url LIKE \'%' + SOURCE_HOST + '%\' ORDER BY id ASC OFFSET ' + OFFSET + ' LIMIT 10000';
+  var BASE_SQL = 'SELECT * FROM track_uploads WHERE url LIKE \'%' + SOURCE_HOST + '%\' ORDER BY id ASC OFFSET ' + OFFSET + ' LIMIT ' + LIMIT;
 
   query(BASE_SQL, function(err, results){
     if (err) {
