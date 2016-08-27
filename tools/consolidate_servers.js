@@ -116,16 +116,24 @@ function moveFile(file){
 
   log.message(log.INFO, 'Moving ' + fetch_url + ' to ' + JSFS_HOST + store_options.path);
 
-  var storage_request = http.request(store_options).on('finish', function(){
-                              log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
-                              log.message(log.DEBUG, tracks.length +' tracks remaining');
-                            }).on('error', function(e){
-                              logError(e, 'ERROR: storage request for track ' + fetch_url + ':  ');
-                            });
+  /*******
+
+    If no 'response' handler is added, then the response will be entirely discarded.
+    However, if you add a 'response' event handler, then you must consume the data
+    from the response object, either by calling response.read() whenever there is a
+    'readable' event, or by adding a 'data' handler, or by calling the .resume() method.
+     Until the data is consumed, the 'end' event will not fire. Also, until the data is
+     read it will consume memory that can eventually lead to a 'process out of memory' error.
+
+  */
+
+  // var storage_request = http.request(store_options);
 
   http.get(fetch_options, function(fetch_response){
-    fetch_response.pipe(storage_request).on('close', function(){
-                    storage_request.end();
+    fetch_response.pipe(http.request(store_options)).on('close', function(){
+                    // storage_request.end();
+                    log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
+                    log.message(log.DEBUG, tracks.length +' tracks remaining');
                     return moveNextFile();
                   }).on('error', function(e){
                     logError(e, 'ERROR: fetch response error for track ' + fetch_url + ': ');
