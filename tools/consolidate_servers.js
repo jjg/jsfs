@@ -98,6 +98,7 @@ function moveFile(file){
     hostname : source_ip,
     port     : SOURCE_PORT,
     path     : path,
+    agent    : false,
     headers  : {
       'X-Access-Key' : file.access_key
     }
@@ -108,6 +109,7 @@ function moveFile(file){
     port     : JSFS_PORT,
     method   : 'POST',
     path     : path,
+    agent    : false,
     headers  : {
       'X-Access-Key' : file.access_key,
       'Content-Type': 'application/octet-stream'
