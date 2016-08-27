@@ -123,6 +123,7 @@ function moveFile(file){
 
   http.get(fetch_options, function(fetch_response){
     fetch_response.pipe(storage_request).on('close', function(){
+                    storage_request.end();
                     return moveNextFile();
                   }).on('error', function(e){
                     logError(e, 'fetch response error for track ' + fetch_url + ': ');
