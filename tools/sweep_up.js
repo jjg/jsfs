@@ -115,12 +115,18 @@ function moveFile(file_url){
 
     s_res.on('data', function(chunk){
       data += chunk.toString();
-    }).on('error', function(e){
+    });
+
+    s_res.on('error', function(e){
       logError(e, 'ERROR: storage response error for track ' + file_url + ': ');
       errors.push(file_url);
-    }).on('aborted', function(){
+    });
+
+    s_res.on('aborted', function(){
       log.message(log.INFO, 'ABORTED event triggered on storage response');
-    }).on('close', function(){
+    });
+
+    s_res.on('close', function(){
       log.message(log.INFO, 'CLOSE event triggered on storage response');
       log.message(log.INFO, data);
     });
@@ -137,11 +143,15 @@ function moveFile(file_url){
 
     f_res.on('data', function(chunk){
       storage_request.write(chunk);
-    }).on('close', function(){
+    });
+
+    f_res.on('close', function(){
       log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
       log.message(log.DEBUG, tracks.length +' tracks remaining');
       storage_request.end(/*moveNextFile*/);
-    }).on('error', function(e){
+    });
+
+    f_res.on('error', function(e){
       logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
       errors.push(file_url);
     });
