@@ -1,4 +1,5 @@
 "use strict";
+/* globals require, console, process */
 
 var SOURCE_PORT = process.env.SOURCE_PORT || '7302';
 var ENV         = process.env.ENV || 'development';
@@ -110,7 +111,7 @@ function moveFile(file_url){
    **/
 
   var storage_request = http.request(store_options, function(s_res){
-    log.message(log.DEBUG, 'starting storage request');
+    log.message(log.DEBUG, 'got response from storage request');
     var data = '';
 
     s_res.on('data', function(chunk){
@@ -136,6 +137,8 @@ function moveFile(file_url){
   }).on('error', function(e){
     logError(e, 'ERROR: storage request error for track ' + file_url + ': ');
     errors.push(file_url);
+  }).on('connect', function(){
+    console.log('connected to storage server');
   });
 
   http.get(fetch_options, function(f_res){
@@ -154,6 +157,10 @@ function moveFile(file_url){
     f_res.on('error', function(e){
       logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
       errors.push(file_url);
+    });
+
+    f_res.on('end', function(){
+      console.log('No more data in response.');
     });
 
   }).on('error', function(e){
