@@ -66,7 +66,7 @@ function moveFile(file){
 
   if (!source_ip) {
     log.message(log.ERROR, 'NO CONFIGURED IP FOR SOURCE: ' + SOURCE_HOST + '. ABORTING.');
-    return;
+    process.abort();
   }
 
   var fetch_options = {
@@ -103,44 +103,6 @@ function moveFile(file){
      Until the data is consumed, the 'end' event will not fire. Also, until the data is
      read it will consume memory that can eventually lead to a 'process out of memory' error.
 
-  */
-
-  var storage_request = http.request(store_options, function(s_res){
-    log.message(log.DEBUG, 'starting storage request');
-    var data = '';
-    s_res.on('data', function(d){
-      data += d;
-    }).on('error', function(e){
-      logError(e, 'ERROR: storage response error for track ' + fetch_url + ': ');
-      errors.push(file);
-    });
-  }).on('error', function(e){
-    logError(e, 'ERROR: storage request error for track ' + fetch_url + ': ');
-    errors.push(file);
-  });
-
-  http.get(fetch_options, function(f_res){
-    log.message(log.DEBUG, 'made fetch request');
-
-    f_res.on('data', function(){
-      storage_request.write(data);
-    }).on('close', function(){
-      storage_request.end();
-      log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
-      log.message(log.DEBUG, tracks.length +' tracks remaining');
-      return moveNextFile();
-    }).on('error', function(e){
-      logError(e, 'ERROR: fetch response error for track ' + fetch_url + ': ');
-      errors.push(file);
-    });
-
-  }).on('error', function(e){
-    logError(e, 'ERROR: fetch request error for track ' + fetch_url + ': ');
-    errors.push(file);
-  });
-
-  /***
-
     Order of events messages:
     fetch_request.on('finish')
     store_request.on('finish')
@@ -148,7 +110,29 @@ function moveFile(file){
     store_request.on('close');
     fetch_response.on('close');
 
-   **/
+  */
+
+  var store_request = http.request(store_options).on('error', function(e){
+    logError(e, 'ERROR: store request error for track ' + fetch_url + ': ');
+    errors.push(file);
+  });
+
+  http.get(fetch_options, function(fetch_response){
+
+    fetch_response.pipe(store_request, {end: true})
+                  .on('close', function(){
+                    log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
+                    log.message(log.DEBUG, tracks.length +' tracks remaining');
+                    store_request.end();
+                    moveNextFile();
+                  }).on('error', function(e){
+                    logError(e, 'ERROR: fetch response error for track ' + fetch_url + ': ');
+                    errors.push(file);
+                  });
+  }).on('error', function(e){
+    logError(e, 'ERROR: fetch request error for track ' + fetch_url + ': ');
+    errors.push(file);
+  });
 }
 
 function moveNextFile(){
@@ -162,27 +146,16 @@ function moveNextFile(){
   }
 }
 
-// function migrateFiles(options){
-//   if (!options.source){
-//     console.error('Please specify a "source" jsfs, eg. "jsfs3.murfie.com" as part of an options object, ie. {options: "jsfs3.murfie.com", offset: 10000}');
-//     return false;
-//   }
 
-//   if (!options.offset){
-//     console.error('Please specify a "source" jsfs, eg. "jsfs3.murfie.com" as part of an options object, ie. {options: "jsfs3.murfie.com", offset: 10000}');
-//     return false;
-//   }
+var BASE_SQL = 'SELECT * FROM track_uploads WHERE url LIKE \'%' + SOURCE_HOST + '%\' ORDER BY id ASC OFFSET ' + OFFSET + ' LIMIT ' + LIMIT;
 
-  var BASE_SQL = 'SELECT * FROM track_uploads WHERE url LIKE \'%' + SOURCE_HOST + '%\' ORDER BY id ASC OFFSET ' + OFFSET + ' LIMIT ' + LIMIT;
+query(BASE_SQL, function(err, results){
+  if (err) {
+    log.message(log.ERROR, 'SQL error: ' + err.toString());
+    process.abort();
+  }
 
-  query(BASE_SQL, function(err, results){
-    if (err) {
-      log.message(log.ERROR, 'SQL error: ' + err.toString());
-      return;
-    }
-
-    log.message(log.INFO, results.length + ' tracks will be migrated from ' + SOURCE_HOST + ' starting at ' + OFFSET);
-    tracks = results;
-    moveNextFile();
-  });
-// }
+  log.message(log.INFO, results.length + ' tracks will be migrated from ' + SOURCE_HOST + ' starting at ' + OFFSET);
+  tracks = results;
+  moveNextFile();
+});
