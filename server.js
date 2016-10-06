@@ -364,7 +364,7 @@ var Inode = {
           var b_length = block.length;
 
           // we'll incrememt our offset by the byte size, since we're analyzing on the basis of it
-          for (data_offset; data_offset < b_length; data_offset = data_offset + b_size) {
+          for (data_offset; (data_offset + b_size) < b_length; data_offset = data_offset + b_size) {
             if (block.readUInt32LE(data_offset) !== 0) {
               log.message(log.INFO, "Storing the first " + data_offset + " bytes seperately");
               // reduce block to the offset
