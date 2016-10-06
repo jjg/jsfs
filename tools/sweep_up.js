@@ -30,6 +30,8 @@ process.on('exit', function(code){
 
 process.on('uncaughtException', function(err){
   console.log("Caught exception: ", err);
+  console.trace(err);
+  console.log(err.stack);
 });
 
 process.on('unhandledRejection', function(reason, p){
@@ -79,7 +81,6 @@ function moveFile(file_url){
     port     : JSFS_PORT,
     method   : 'POST',
     path     : path,
-    agent    : false,
     headers  : {
       'Content-Type' : 'application/octet-stream',
       'X-Private'    : true
@@ -110,21 +111,29 @@ function moveFile(file_url){
 
    **/
 
-  var store_request = http.request(store_options);
+  // console.log(fetch_options);
+  // console.log(store_options);
+
+  var store_request = http.request(store_options).on('error', function(e){
+    console.log('store request error', e);
+  });
 
   http.get(fetch_options, function(fetch_response){
+
     fetch_response.pipe(store_request, {end: true})
                   .on('close', function(){
                     log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
                     log.message(log.DEBUG, tracks.length +' tracks remaining');
                     store_request.end();
-                    return moveNextFile();
+                    moveNextFile();
                   }).on('error', function(e){
+                    console.error(e);
+                    console.error(e.stack);
                     logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
                     errors.push(file_url);
                   });
   }).on('error', function(e){
-    logError(e, 'ERROR: fetch request response error for track ' + file_url + ': ');
+    logError(e, 'ERROR: fetch request error for track ' + file_url + ': ');
     errors.push(file_url);
   });
 
