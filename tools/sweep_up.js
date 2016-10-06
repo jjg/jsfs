@@ -8,6 +8,7 @@ var url        = require('url');
 var fs         = require('fs');
 var log        = require('../jlog.js');
 var SOURCE_IPS = require('./source_ips.js');
+var timer      = require('./timer.js');
 var tracks     = [];
 var errors     = [];
 var JSFS_HOST  = ENV === 'development' ? 'localhost' : '10.240.0.18';
@@ -116,38 +117,38 @@ function moveFile(file_url){
       data += chunk.toString();
     }).on('error', function(e){
       logError(e, 'ERROR: storage response error for track ' + file_url + ': ');
-      errors.push(file);
+      errors.push(file_url);
     }).on('aborted', function(){
       log.message(log.INFO, 'ABORTED event triggered on storage response');
-    }).on('close', funciton(){
+    }).on('close', function(){
       log.message(log.INFO, 'CLOSE event triggered on storage response');
       log.message(log.INFO, data);
     });
 
-    s_res.resume();
+    // s_res.resume();
 
   }).on('error', function(e){
     logError(e, 'ERROR: storage request error for track ' + file_url + ': ');
-    errors.push(file);
+    errors.push(file_url);
   });
 
   http.get(fetch_options, function(f_res){
     log.message(log.DEBUG, 'made fetch request');
 
-    f_res.on('data', function(){
-      storage_request.write(data);
+    f_res.on('data', function(chunk){
+      storage_request.write(chunk);
     }).on('close', function(){
       log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
       log.message(log.DEBUG, tracks.length +' tracks remaining');
-      storage_request.end(moveNextFile);
+      storage_request.end(/*moveNextFile*/);
     }).on('error', function(e){
       logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
-      errors.push(file);
+      errors.push(file_url);
     });
 
   }).on('error', function(e){
     logError(e, 'ERROR: fetch request error for track ' + file_url + ': ');
-    errors.push(file);
+    errors.push(file_url);
   });
 }
 
@@ -174,6 +175,6 @@ fs.readFile(ERROR_FILE, 'utf8', function(err, data){
     process.abort();
   }
 
-  var tracks = tracks.concat(data.split('\n'));
+  tracks = tracks.concat(data.split('\n'));
   moveNextFile();
 });
