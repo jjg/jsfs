@@ -115,11 +115,10 @@ function moveFile(file_url){
   http.get(fetch_options, function(fetch_response){
     fetch_response.pipe(store_request, {end: true})
                   .on('close', function(){
-                    // storage_request.end();
                     log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
                     log.message(log.DEBUG, tracks.length +' tracks remaining');
                     store_request.end();
-                    // return moveNextFile();
+                    return moveNextFile();
                   }).on('error', function(e){
                     logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
                     errors.push(file_url);
