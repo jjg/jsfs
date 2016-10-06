@@ -1,25 +1,22 @@
 "use strict";
-/* globals require, console, process */
 
-/*  CONFIGURATION  */
-var DB_CONNECT  = process.env.DB || 'postgres://marc:@localhost:5432/murfie_dev';
-var SOURCE_HOST = process.env.SOURCE_HOST || 'jsfs4.murfie.com';
 var SOURCE_PORT = process.env.SOURCE_PORT || '7302';
-var OFFSET      = process.env.OFFSET || 0;
-var LIMIT       = process.env.LIMIT || 10000;
 var ENV         = process.env.ENV || 'development';
 
-/*  SETUP  */
 var http       = require('http');
 var url        = require('url');
-var query      = require('pg-query');
+var fs         = require('fs');
 var log        = require('../jlog.js');
-var timer      = require('./timer.js');
 var SOURCE_IPS = require('./source_ips.js');
 var tracks     = [];
 var errors     = [];
 var JSFS_HOST  = ENV === 'development' ? 'localhost' : '10.240.0.18';
 var JSFS_PORT  = '7302';
+var ERROR_FILE = process.env.ERROR_FILE;
+
+if (!ERROR_FILE) {
+  process.exit(9);
+}
 
 process.on('beforeExit', function(){
   console.log('process.beforeExit:', arguments, tracks.length, 'tracks remaining');
@@ -30,19 +27,18 @@ process.on('exit', function(code){
 });
 
 process.on('uncaughtException', function(err){
-  console.log(`Caught exception: ${err}`);
+  console.log("Caught exception: ", err);
 });
 
 process.on('unhandledRejection', function(reason, p){
   console.log("Unhandled Rejection at: Promise ", p, " reason: ", reason);
+  process.exit(1);
   // application specific logging, throwing an error, or other logic here
 });
 
-log.message(log.INFO, '******* MIGRATING ' + LIMIT + ' FILES FROM ' + SOURCE_HOST + ' OFFSET ' + OFFSET + ' ********');
+log.message(log.INFO, '******* MIGRATING ERRORED FILES FROM ' + ERROR_FILE + ' ********');
 
-query.connectionParameters = DB_CONNECT;
-
-var clock = timer('JSFS migration');
+var clock = timer('JSFS error sweep');
 
 function namespacedPath(url_parts){
   var path = url_parts.path;
@@ -59,24 +55,21 @@ function logError(e, s){
   log.message(log.ERROR, s + message);
 }
 
-function moveFile(file){
-  var path      = namespacedPath(url.parse(file.url));
-  var fetch_url = file.url + '?access_key=' + file.access_key;
-  var source_ip = ENV === 'development' ? SOURCE_HOST : SOURCE_IPS[SOURCE_HOST];
+function moveFile(file_url){
+  var path_parts = url.parse(file_url);
+  var path      = namespacedPath(path_parts);
+  var source_ip = ENV === 'development' ? path_parts.hostname : SOURCE_IPS[path_parts.hostname];
 
   if (!source_ip) {
-    log.message(log.ERROR, 'NO CONFIGURED IP FOR SOURCE: ' + SOURCE_HOST + '. ABORTING.');
-    return;
+    log.message(log.ERROR, 'NO CONFIGURED IP FOR SOURCE: ' + path_parts.hostname + '. ABORTING.');
+    process.exit();
   }
 
   var fetch_options = {
     hostname : source_ip,
     port     : SOURCE_PORT,
     path     : path,
-    agent    : false,
-    headers  : {
-      'X-Access-Key' : file.access_key
-    }
+    agent    : false
   };
 
   var store_options = {
@@ -86,13 +79,12 @@ function moveFile(file){
     path     : path,
     agent    : false,
     headers  : {
-      'X-Access-Key' : file.access_key,
       'Content-Type' : 'application/octet-stream',
       'X-Private'    : true
     }
   };
 
-  log.message(log.INFO, 'Moving ' + fetch_url + ' to ' + JSFS_HOST + store_options.path);
+  log.message(log.INFO, 'Moving ' + file_url + ' to ' + JSFS_HOST + store_options.path);
 
   /*******
 
@@ -105,41 +97,7 @@ function moveFile(file){
 
   */
 
-  var storage_request = http.request(store_options, function(s_res){
-    log.message(log.DEBUG, 'starting storage request');
-    var data = '';
-    s_res.on('data', function(d){
-      data += d;
-    }).on('error', function(e){
-      logError(e, 'ERROR: storage response error for track ' + fetch_url + ': ');
-      errors.push(file);
-    });
-  }).on('error', function(e){
-    logError(e, 'ERROR: storage request error for track ' + fetch_url + ': ');
-    errors.push(file);
-  });
-
-  http.get(fetch_options, function(f_res){
-    log.message(log.DEBUG, 'made fetch request');
-
-    f_res.on('data', function(){
-      storage_request.write(data);
-    }).on('close', function(){
-      storage_request.end();
-      log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
-      log.message(log.DEBUG, tracks.length +' tracks remaining');
-      return moveNextFile();
-    }).on('error', function(e){
-      logError(e, 'ERROR: fetch response error for track ' + fetch_url + ': ');
-      errors.push(file);
-    });
-
-  }).on('error', function(e){
-    logError(e, 'ERROR: fetch request error for track ' + fetch_url + ': ');
-    errors.push(file);
-  });
-
-  /***
+    /***
 
     Order of events messages:
     fetch_request.on('finish')
@@ -149,40 +107,73 @@ function moveFile(file){
     fetch_response.on('close');
 
    **/
+
+  var storage_request = http.request(store_options, function(s_res){
+    log.message(log.DEBUG, 'starting storage request');
+    var data = '';
+
+    s_res.on('data', function(chunk){
+      data += chunk.toString();
+    }).on('error', function(e){
+      logError(e, 'ERROR: storage response error for track ' + file_url + ': ');
+      errors.push(file);
+    }).on('aborted', function(){
+      log.message(log.INFO, 'ABORTED event triggered on storage response');
+    }).on('close', funciton(){
+      log.message(log.INFO, 'CLOSE event triggered on storage response');
+      log.message(log.INFO, data);
+    });
+
+    s_res.resume();
+
+  }).on('error', function(e){
+    logError(e, 'ERROR: storage request error for track ' + file_url + ': ');
+    errors.push(file);
+  });
+
+  http.get(fetch_options, function(f_res){
+    log.message(log.DEBUG, 'made fetch request');
+
+    f_res.on('data', function(){
+      storage_request.write(data);
+    }).on('close', function(){
+      log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
+      log.message(log.DEBUG, tracks.length +' tracks remaining');
+      storage_request.end(moveNextFile);
+    }).on('error', function(e){
+      logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
+      errors.push(file);
+    });
+
+  }).on('error', function(e){
+    logError(e, 'ERROR: fetch request error for track ' + file_url + ': ');
+    errors.push(file);
+  });
 }
 
 function moveNextFile(){
   if (tracks.length > 0) {
-    var next_track = tracks.shift();
-    moveFile(next_track);
+    var line = tracks.shift();
+    var url = line.match(/(?:http:\/\/|https:\/\/).+?(?=:\s)/);
+    if (url && url[0]) {
+      moveFile(url[0]);
+    } else {
+      log.message(log.INFO, 'no url found in "' + line + '"');
+      moveNextFile();
+    }
   } else {
-    log.message(log.INFO, '******** ' + SOURCE_HOST + ' MIGRATION OFFSET ' + OFFSET + ' COMPLETED *********');
+    log.message(log.INFO, '******** ' + ERROR_FILE + ' SWEEP COMPLETED *********');
     clock.stop();
     log.message(log.ERROR, 'The following files experienced errors: ' + JSON.stringify(errors));
   }
 }
 
-// function migrateFiles(options){
-//   if (!options.source){
-//     console.error('Please specify a "source" jsfs, eg. "jsfs3.murfie.com" as part of an options object, ie. {options: "jsfs3.murfie.com", offset: 10000}');
-//     return false;
-//   }
+fs.readFile(ERROR_FILE, 'utf8', function(err, data){
+  if(err){
+    log.message(log.ERROR, err.toString());
+    process.abort();
+  }
 
-//   if (!options.offset){
-//     console.error('Please specify a "source" jsfs, eg. "jsfs3.murfie.com" as part of an options object, ie. {options: "jsfs3.murfie.com", offset: 10000}');
-//     return false;
-//   }
-
-  var BASE_SQL = 'SELECT * FROM track_uploads WHERE url LIKE \'%' + SOURCE_HOST + '%\' ORDER BY id ASC OFFSET ' + OFFSET + ' LIMIT ' + LIMIT;
-
-  query(BASE_SQL, function(err, results){
-    if (err) {
-      log.message(log.ERROR, 'SQL error: ' + err.toString());
-      return;
-    }
-
-    log.message(log.INFO, results.length + ' tracks will be migrated from ' + SOURCE_HOST + ' starting at ' + OFFSET);
-    tracks = results;
-    moveNextFile();
-  });
-// }
+  var tracks = tracks.concat(data.split('\n'));
+  moveNextFile();
+});
