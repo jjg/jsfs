@@ -35,7 +35,6 @@ process.on('uncaughtException', function(err){
 process.on('unhandledRejection', function(reason, p){
   console.log("Unhandled Rejection at: Promise ", p, " reason: ", reason);
   process.exit(1);
-  // application specific logging, throwing an error, or other logic here
 });
 
 log.message(log.INFO, '******* MIGRATING ERRORED FILES FROM ' + ERROR_FILE + ' ********');
@@ -110,23 +109,62 @@ function moveFile(file_url){
 
    **/
 
-  var store_request = http.request(store_options);
+  var fetch = https.request(file_url, function(fetch_response){
+    var data = new Buffer('');
 
-  http.get(fetch_options, function(fetch_response){
-    fetch_response.pipe(store_request, {end: true})
-                  .on('close', function(){
-                    log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
-                    log.message(log.DEBUG, tracks.length +' tracks remaining');
-                    store_request.end();
-                    return moveNextFile();
-                  }).on('error', function(e){
-                    logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
-                    errors.push(file_url);
-                  });
-  }).on('error', function(e){
-    logError(e, 'ERROR: fetch request response error for track ' + file_url + ': ');
-    errors.push(file_url);
+    fetch_response.on('data', function(chunk){
+      data = new Buffer.concat([data, chunk]);
+    });
+
+    fetch_response.on('end', function(){
+      options.headers['Content-type'] = fetch_response.headers['content-type'] || fetch_response.headers['Content-Type'];
+
+      var post = http.request(store_options, function(postRes){
+
+        postRes.on('data', function(chunk){
+          console.log('BODY: ' + chunk);
+        });
+
+        postRes.on('end', function(){
+          moveNextFile();
+        });
+
+      });
+
+      post.on('error', function(e){
+        console.error('Error saving file:', e.message);
+      });
+
+      post.write(data);
+      post.end();
+
+    });
   });
+
+  fetch.on('error', function(e){
+    console.error('Error fetching file:', e.message);
+  });
+
+  fetch.end();
+
+  // var store_request = http.request(store_options);
+
+  // http.get(fetch_options, function(fetch_response){
+  //   fetch_response.pipe(store_request, {end: true})
+  //                 .on('close', function(){
+  //                   log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
+  //                   log.message(log.DEBUG, tracks.length +' tracks remaining');
+  //                   store_request.end();
+  //                   return moveNextFile();
+  //                 }).on('error', function(e){
+  //                   logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
+  //                   console.log(e);
+  //                   errors.push(file_url);
+  //                 });
+  // }).on('error', function(e){
+  //   logError(e, 'ERROR: fetch request response error for track ' + file_url + ': ');
+  //   errors.push(file_url);
+  // });
 
   // var storage_request = http.request(store_options, function(s_res){
   //   log.message(log.DEBUG, 'got response from storage request');
