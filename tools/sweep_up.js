@@ -110,61 +110,80 @@ function moveFile(file_url){
 
    **/
 
-  http.get(fetch_options, function(f_res){
-    log.message(log.DEBUG, 'made fetch request');
+  var store_request = http.request(store_options);
 
-    var storage_request = http.request(store_options, function(s_res){
-      log.message(log.DEBUG, 'got response from storage request');
-      var data = '';
-
-      s_res.on('data', function(chunk){
-        data += chunk.toString();
-      });
-
-      s_res.on('error', function(e){
-        logError(e, 'ERROR: storage response error for track ' + file_url + ': ');
-        errors.push(file_url);
-      });
-
-      s_res.on('aborted', function(){
-        log.message(log.INFO, 'ABORTED event triggered on storage response');
-      });
-
-      s_res.on('close', function(){
-        log.message(log.INFO, 'CLOSE event triggered on storage response');
-        log.message(log.INFO, data);
-      });
-
-    }).on('error', function(e){
-      logError(e, 'ERROR: storage request error for track ' + file_url + ': ');
-      errors.push(file_url);
-    }).on('connect', function(){
-      console.log('connected to storage server');
-    });
-
-    f_res.on('data', function(chunk){
-      storage_request.write(chunk);
-    });
-
-    f_res.on('close', function(){
-      log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
-      log.message(log.DEBUG, tracks.length +' tracks remaining');
-      storage_request.end(/*moveNextFile*/);
-    });
-
-    f_res.on('error', function(e){
-      logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
-      errors.push(file_url);
-    });
-
-    f_res.on('end', function(){
-      console.log('No more data in response.');
-    });
-
+  http.get(fetch_options, function(fetch_response){
+    fetch_response.pipe(store_request, {end: true})
+                  .on('close', function(){
+                    // storage_request.end();
+                    log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
+                    log.message(log.DEBUG, tracks.length +' tracks remaining');
+                    store_request.end();
+                    // return moveNextFile();
+                  }).on('error', function(e){
+                    logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
+                    errors.push(file_url);
+                  });
   }).on('error', function(e){
-    logError(e, 'ERROR: fetch request error for track ' + file_url + ': ');
+    logError(e, 'ERROR: fetch request response error for track ' + file_url + ': ');
     errors.push(file_url);
   });
+
+  // var storage_request = http.request(store_options, function(s_res){
+  //   log.message(log.DEBUG, 'got response from storage request');
+  //   var data = '';
+
+  //   s_res.on('data', function(chunk){
+  //     data += chunk.toString();
+  //   });
+
+  //   s_res.on('error', function(e){
+  //     logError(e, 'ERROR: storage response error for track ' + file_url + ': ');
+  //     errors.push(file_url);
+  //   });
+
+  //   s_res.on('aborted', function(){
+  //     log.message(log.INFO, 'ABORTED event triggered on storage response');
+  //   });
+
+  //   s_res.on('close', function(){
+  //     log.message(log.INFO, 'CLOSE event triggered on storage response');
+  //     log.message(log.INFO, data);
+  //   });
+
+  // }).on('error', function(e){
+  //   logError(e, 'ERROR: storage request error for track ' + file_url + ': ');
+  //   errors.push(file_url);
+  // }).on('connect', function(){
+  //   console.log('connected to storage server');
+  // });
+
+  // http.get(fetch_options, function(f_res){
+  //   log.message(log.DEBUG, 'made fetch request');
+
+  //   f_res.on('data', function(chunk){
+  //     storage_request.write(chunk);
+  //   });
+
+  //   f_res.on('close', function(){
+  //     log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
+  //     log.message(log.DEBUG, tracks.length +' tracks remaining');
+  //     storage_request.end(/*moveNextFile*/);
+  //   });
+
+  //   f_res.on('error', function(e){
+  //     logError(e, 'ERROR: fetch response error for track ' + file_url + ': ');
+  //     errors.push(file_url);
+  //   });
+
+  //   f_res.on('end', function(){
+  //     console.log('No more data in response.');
+  //   });
+
+  // }).on('error', function(e){
+  //   logError(e, 'ERROR: fetch request error for track ' + file_url + ': ');
+  //   errors.push(file_url);
+  // });
 }
 
 function moveNextFile(){
