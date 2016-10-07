@@ -112,8 +112,8 @@ function analyze_block(block){
   try{
 
     if(block.toString("utf8", 0, 4) === "RIFF"
-      & block.toString("utf8", 8, 12) === "WAVE"
-      & WAVE_FMTS[block.readUInt32LE(16)] == block.readUInt16LE(20)){
+      && block.toString("utf8", 8, 12) === "WAVE"
+      && WAVE_FMTS[block.readUInt32LE(16)] == block.readUInt16LE(20)){
       result.type = "wave";
       result.size = block.readUInt32LE(4);
       result.channels = block.readUInt16LE(22);
@@ -124,17 +124,22 @@ function analyze_block(block){
       var subchunk_byte = 36;
       var subchunk_id   = block.toString("utf8", subchunk_byte, subchunk_byte+4);
       var block_length  = block.length;
-      var subchunk_size;
 
       while (subchunk_id !== 'data' && subchunk_byte < block_length) {
-        subchunk_size = block.readUInt32LE(subchunk_byte+4);
-        subchunk_byte = subchunk_byte + subchunk_size + 8;
+        // update start byte for subchunk by adding
+        // the size of the subchunk + 8 for the id and size bytes (4 each)
+        subchunk_byte = subchunk_byte + block.readUInt32LE(subchunk_byte+4) + 8;
         subchunk_id = block.toString("utf8", subchunk_byte, subchunk_byte+4);
       }
+
+      var subchunk_size = block.readUInt32LE(subchunk_byte+4);
 
       result.subchunk_id     = subchunk_id;
       result.subchunk_byte   = subchunk_byte
       result.data_block_size = block.readUInt16LE(32);
+
+      var audio_data_size = subchunk_id === 'data' ? subchunk_size : result.size;
+      result.duration = (audio_data_size * 8) / (result.channels * result.resolution * result.bitrate);
     }
 
     // TODO: test for MP3
@@ -364,7 +369,7 @@ var Inode = {
           var b_length = block.length;
 
           // we'll incrememt our offset by the byte size, since we're analyzing on the basis of it
-          for (data_offset; data_offset < b_length; data_offset = data_offset + b_size) {
+          for (data_offset; (data_offset + b_size) < b_length; data_offset = data_offset + b_size) {
             if (block.readUInt32LE(data_offset) !== 0) {
               log.message(log.INFO, "Storing the first " + data_offset + " bytes seperately");
               // reduce block to the offset
