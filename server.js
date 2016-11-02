@@ -1,17 +1,20 @@
+"use strict";
+/* globals require, Buffer */
+
 /// jsfs - Javascript filesystem with a REST interface
 
 // *** CONVENTIONS ***
 // strings are double-quoted, variables use underscores, constants are ALL CAPS
 
 // *** UTILITIES  & MODULES ***
-var http = require("http");
-var https = require("https");
+var http   = require("http");
 var crypto = require("crypto");
-var fs = require("fs");
-var zlib = require("zlib");
+var fs     = require("fs");
+var zlib   = require("zlib");
 var config = require("./config.js");
-var log = require("./jlog.js");
-var url = require("url");
+var log    = require("./jlog.js");
+var url    = require("url");
+var stream = require("stream");
 
 /**
 
@@ -44,11 +47,16 @@ var WAVE_FMTS = {
 // global to keep track of storage location rotation
 var next_storage_location = 0;
 
+function create_decryptor(options){
+  var dStream = options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : new stream.PassThrough();
+  return dStream;
+}
+
 // save inode to disk
 function save_inode(inode){
 
   // store a copy of each inode in each storage location for redundancy
-  for(storage_location in config.STORAGE_LOCATIONS){
+  for(var storage_location in config.STORAGE_LOCATIONS){
     var selected_location = config.STORAGE_LOCATIONS[storage_location];
     fs.writeFile(selected_location.path + inode.fingerprint + ".json", JSON.stringify(inode), function(error){
       if(error){
@@ -66,12 +74,12 @@ function load_inode(url){
   log.message(log.DEBUG, "url: " + url);
 
   // calculate fingerprint
-  shasum = crypto.createHash("sha1");
+  var shasum = crypto.createHash("sha1");
   shasum.update(url);
   var inode_fingerprint =  shasum.digest("hex");
 
   // load inode, try each storage location if something goes wrong
-  for(storage_location in config.STORAGE_LOCATIONS){
+  for(var storage_location in config.STORAGE_LOCATIONS){
     var selected_location = config.STORAGE_LOCATIONS[storage_location];
     try{
       log.message(log.DEBUG, "Loading inode from " + selected_location.path);
@@ -98,22 +106,15 @@ function encrypt(block, key){
   return cipher.read();
 }
 
-function decrypt(block, key){
-  var decipher = crypto.createDecipher("aes-256-cbc", key);
-  decipher.write(block);
-  decipher.end();
-  return decipher.read();
-}
-
 // examine the contents of a block to generate metadata
 function analyze_block(block){
   var result = {};
   result.type = "unknown";
   try{
 
-    if(block.toString("utf8", 0, 4) === "RIFF"
-      && block.toString("utf8", 8, 12) === "WAVE"
-      && WAVE_FMTS[block.readUInt32LE(16)] == block.readUInt16LE(20)){
+    if(block.toString("utf8", 0, 4) === "RIFF" &&
+      block.toString("utf8", 8, 12) === "WAVE" &&
+      WAVE_FMTS[block.readUInt32LE(16)] == block.readUInt16LE(20)){
       result.type = "wave";
       result.size = block.readUInt32LE(4);
       result.channels = block.readUInt16LE(22);
@@ -135,7 +136,7 @@ function analyze_block(block){
       var subchunk_size = block.readUInt32LE(subchunk_byte+4);
 
       result.subchunk_id     = subchunk_id;
-      result.subchunk_byte   = subchunk_byte
+      result.subchunk_byte   = subchunk_byte;
       result.data_block_size = block.readUInt16LE(32);
 
       var audio_data_size = subchunk_id === 'data' ? subchunk_size : result.size;
@@ -159,19 +160,20 @@ function commit_block_to_disk(block, block_object){
 
     // check all storage locations to see if we already have this block
     var found_block_count = 0;
-    for(storage_location in config.STORAGE_LOCATIONS){
+    for(var storage_location in config.STORAGE_LOCATIONS){
       var selected_location = config.STORAGE_LOCATIONS[storage_location];
 
       // check if block exists
+      var block_file_stats;
       try{
         // look for compressed blocks first
-        var block_file_stats = fs.statSync(selected_location.path + block_object.block_hash + ".gz");
+        block_file_stats = fs.statSync(selected_location.path + block_object.block_hash + ".gz");
         found_block_count++;
         block_object.last_seen = selected_location.path;
         log.message(log.INFO, "Duplicate compressed block " + block_object.block_hash + " found in " + selected_location.path);
       } catch(ex) {
         try{
-          var block_file_stats = fs.statSync(selected_location.path + block_object.block_hash);
+          block_file_stats = fs.statSync(selected_location.path + block_object.block_hash);
           found_block_count++;
           block_object.last_seen = selected_location.path;
           log.message(log.INFO, "Duplicate block " + block_object.block_hash + " found in " + selected_location.path);
@@ -282,7 +284,7 @@ var Inode = {
     this.file_metadata.blocks = [];
 
     // create fingerprint to uniquely identify this file
-    shasum = crypto.createHash("sha1");
+    var shasum = crypto.createHash("sha1");
     shasum.update(this.file_metadata.url);
     this.file_metadata.fingerprint =  shasum.digest("hex");
 
@@ -394,7 +396,7 @@ var Inode = {
 
     // generate a hash of the block to use as a handle/filename
     var block_hash = null;
-    shasum = crypto.createHash("sha1");
+    var shasum = crypto.createHash("sha1");
     shasum.update(block);
     block_hash = shasum.digest("hex");
 
@@ -447,7 +449,7 @@ http.createServer(function(req, res){
 
   // host-based url shortcut expansion
   if(target_url.substring(0,2) != "/."){
-    var host_string = req.headers["host"];
+    var host_string = req.headers.host;
     if(host_string){
       var host_string_parts = host_string.split(":");
       var forward_host = host_string_parts[0].split(".");
@@ -475,13 +477,12 @@ http.createServer(function(req, res){
 
   log.message(log.INFO, "Received " + req.method + " request for URL " + target_url);
 
+  // load requested inode
+  var inode = load_inode(target_url);
+
   switch(req.method){
 
     case "GET":
-
-      // load requested inode
-      var inode = load_inode(target_url);
-
       // return the first file located at the requested URL
       if(inode){
         requested_file = inode;
@@ -507,65 +508,80 @@ http.createServer(function(req, res){
         res.setHeader("Content-Type", requested_file.content_type);
         res.setHeader("Content-Length", requested_file.file_size);
 
-        // return file blocks
-        for(var i=0; i < requested_file.blocks.length; i++){
-          var block_data = null;
-          if(requested_file.blocks[i].last_seen){
-            // look for a compressd block first, then fall-back to uncompressed
-            var block_filename = requested_file.blocks[i].last_seen + requested_file.blocks[i].block_hash + ".gz";
+        var total_blocks = requested_file.blocks.length;
+        var idx = 0;
+        var decryptor = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
 
-            try{
-              block_data = zlib.gunzipSync(fs.readFileSync(block_filename));
-            } catch(ex) {
-              log.message(log.DEBUG, "Looking for compressed file " + block_filename);
+        var search_for_block = function search_for_block(){
+          for(var storage_location in config.STORAGE_LOCATIONS){
+            var selected_location = config.STORAGE_LOCATIONS[storage_location];
+            // check for compressed block first, then uncompressed
+            if(fs.existsSync(selected_location.path + requested_file.blocks[idx].block_hash + ".gz")){
+              log.message(log.INFO, "Found compressed block " + requested_file.blocks[idx].block_hash + ".gz in " + selected_location.path);
+              requested_file.blocks[idx].last_seen = selected_location.path;
+              save_inode(requested_file);
+              return read_file(selected_location.path + requested_file.blocks[idx].block_hash + ".gz", true);
+            } else if(fs.existsSync(selected_location.path + requested_file.blocks[idx].block_hash)){
+              log.message(log.INFO, "Found block " + requested_file.blocks[idx].block_hash + " in " + selected_location.path);
+              requested_file.blocks[idx].last_seen = selected_location.path;
+              save_inode(requested_file);
+              return read_file(selected_location.path + requested_file.blocks[idx].block_hash, false);
+            }
+          }
+
+          // we get here if we didn't find the block
+          log.message(log.ERROR, "Unable to locate block in any storage location");
+          res.statusCode = 500;
+          res.end("Unable to return file, missing blocks");
+        };
+
+        var read_file = function read_file(path, try_compressed){
+
+          var read_stream = fs.createReadStrem(path);
+
+          read_stream.on("end", function(){
+            idx++;
+            send_blocks(try_compressed);
+          }).on("error", function(){
+            if (try_compressed) {
               log.message(log.WARN, "Cannot locate compressed block in last_seen location, trying uncompressed");
-              try{
-                log.message(log.DEBUG, "Looking for uncompressed file " + block_filename.split(".gz")[0]);
-                block_data = fs.readFileSync(block_filename.split(".gz")[0]);
-              } catch(ex) {
-                log.message(log.WARN, "Cannot locate block " + requested_file.blocks[i].block_hash + " in last_seen location, hunting...");
-              }
+              send_blocks(false);
+            } else {
+              search_for_block();
+              // search for file?
             }
+          });
+
+          if (try_compressed) {
+            read_stream.pipe(zlib.createGunzip()).pipe(decryptor).pipe(res);
           } else {
-            log.message(log.WARN, "No last_seen value for block " + requested_file.blocks[i].block_hash + ", hunting...");
+            read_stream.pipe(decryptor).pipe(res);
           }
 
-          // if we don't find the block where we expect it, search all storage locations
-          if(!block_data){
-            for(var storage_location in config.STORAGE_LOCATIONS){
-              var selected_location = config.STORAGE_LOCATIONS[storage_location];
-              // check for compressed block first, then uncompressed
-              if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash + ".gz")){
-                log.message(log.INFO, "Found compressed block " + requested_file.blocks[i].block_hash + ".gz in " + selected_location.path);
-                requested_file.blocks[i].last_seen = selected_location.path;
-                save_inode(requested_file);
-                block_data = zlib.gunzipSync(fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash + ".gz"));
-              } else if(fs.existsSync(selected_location.path + requested_file.blocks[i].block_hash)){
-                log.message(log.INFO, "Found block " + requested_file.blocks[i].block_hash + " in " + selected_location.path);
-                requested_file.blocks[i].last_seen = selected_location.path;
-                save_inode(requested_file);
-                block_data = fs.readFileSync(selected_location.path + requested_file.blocks[i].block_hash);
-              }
-            }
-          }
-          if(requested_file.encrypted){
-            log.message(log.INFO, "decrypting block");
-            block_data = decrypt(block_data, requested_file.access_key);
+        };
+
+        var load_from_last_seen = function load_from_last_seen(try_compressed){
+          var sfx = try_compressed ? ".gz" : "";
+          var block_filename = requested_file.blocks[idx].last_seen + requested_file.blocks[idx].block_hash + sfx;
+          read_file(block_filename, try_compressed);
+        };
+
+        var send_blocks = function send_blocks(try_compressed){
+
+          if (idx === total_blocks) {
+            // we're done
+            res.end();
           }
 
-          // send block to caller
-          if(block_data){
-            res.write(block_data);
+          if (requested_file.blocks[idx].last_seen) {
+            load_from_last_seen(try_compressed);
           } else {
-            log.message(log.ERROR, "Unable to locate block in any storage location");
-            res.statusCode = 500;
-            res.end("Unable to return file, missing blocks");
-            break;
+            search_for_block();
           }
-        }
+        };
 
-        // finish request
-        res.end();
+        send_blocks(true);
+
       } else {
         log.message(log.WARN, "Result: 404");
         res.statusCode = 404;
@@ -578,7 +594,6 @@ http.createServer(function(req, res){
   case "PUT":
     // check if a file exists at this url
     log.message(log.DEBUG, "Begin checking for existing file");
-    var inode = load_inode(target_url);
     if(inode){
 
       // check authorization
@@ -648,7 +663,6 @@ http.createServer(function(req, res){
   case "DELETE":
 
     // remove the data stored at the specified URL
-    var inode = load_inode(target_url);
     if(inode){
 
       // authorize (only keyholder can delete)
@@ -658,7 +672,7 @@ http.createServer(function(req, res){
         log.message(log.INFO, "Delete request authorized");
 
         // remove inode from all configured storage locations
-        for(storage_location in config.STORAGE_LOCATIONS){
+        for(var storage_location in config.STORAGE_LOCATIONS){
           var selected_location = config.STORAGE_LOCATIONS[storage_location];
           try{
             fs.unlinkSync(selected_location.path + inode.fingerprint + ".json");
