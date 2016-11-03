@@ -89,6 +89,10 @@ http.createServer(function(req, res){
           return compressed ? zlib.createGunzip() : through();
         };
 
+        var create_unzipper = function create_decryptor(compressed){
+          return compressed ? zlib.createGunzip() : new stream.PassThrough();
+        };
+
         // return status
         res.statusCode = 200;
 
