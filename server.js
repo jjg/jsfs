@@ -47,12 +47,6 @@ var WAVE_FMTS = {
 // global to keep track of storage location rotation
 var next_storage_location = 0;
 
-function create_decryptor(options){
-  console.log('create_decryptor', options);
-  var dStream = options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : new stream.PassThrough();
-  return dStream;
-}
-
 // save inode to disk
 function save_inode(inode){
 
@@ -502,6 +496,10 @@ http.createServer(function(req, res){
           }
         }
 
+        var create_decryptor = function create_decryptor(options){
+          return options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : new stream.PassThrough();
+        };
+
         // return status
         res.statusCode = 200;
 
@@ -511,7 +509,6 @@ http.createServer(function(req, res){
 
         var total_blocks = requested_file.blocks.length;
         var idx = 0;
-        var decryptor = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
 
         var search_for_block = function search_for_block(){
           for(var storage_location in config.STORAGE_LOCATIONS){
@@ -537,16 +534,13 @@ http.createServer(function(req, res){
         };
 
         var read_file = function read_file(path, try_compressed){
-
-          console.log('read_file', path, try_compressed);
-
           var read_stream = fs.createReadStream(path);
+          var decryptor = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
 
           read_stream.on("end", function(){
-            console.log('read_stream end');
             idx++;
             send_blocks(try_compressed);
-          })
+          });
 
           read_stream.on("error", function(){
             if (try_compressed) {
@@ -555,16 +549,13 @@ http.createServer(function(req, res){
             } else {
               log.message(log.WARN, "search for block");
               return search_for_block();
-              // search for file?
             }
           });
 
           if (try_compressed) {
-            console.log('pipe compressed');
-            read_stream.pipe(zlib.createGunzip()).pipe(res);
+            read_stream.pipe(zlib.createGunzip()).pipe(decryptor).pipe(res, {end: false});
           } else {
-            console.log('pipe uncompressed');
-            read_stream.pipe(res);
+            read_stream.pipe(decryptor).pipe(res, {end: false});
           }
 
         };
@@ -577,19 +568,14 @@ http.createServer(function(req, res){
 
         var send_blocks = function send_blocks(try_compressed){
 
-          console.log('send_blocks', idx, 'of', total_blocks, 'try_compressed?', try_compressed);
-
           if (idx === total_blocks) {
             // we're done
-            console.log('we are done');
-            res.end();
+            return res.end();
           }
 
           if (requested_file.blocks[idx].last_seen) {
-            console.log('load_from_last_seen');
             load_from_last_seen(try_compressed);
           } else {
-            console.log('search_for_block');
             search_for_block();
           }
         };
