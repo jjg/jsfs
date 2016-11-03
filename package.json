@@ -1,6 +1,6 @@
 {
   "name" : "jsfs",
-  "version" : "0.4.0",
+  "version" : "4.1.0",
   "description" : "deduplicating filesystem with a REST interface",
   "main" : "server.js",
   "files" : [
