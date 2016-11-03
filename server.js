@@ -90,7 +90,8 @@ http.createServer(function(req, res){
         };
 
         var create_unzipper = function create_decryptor(compressed){
-          return compressed ? zlib.createGunzip() : new stream.PassThrough();
+          // return compressed ? zlib.createGunzip() : new stream.PassThrough();
+          return compressed ? zlib.createGunzip() : through();
         };
 
         // return status
