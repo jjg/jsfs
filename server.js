@@ -500,6 +500,10 @@ http.createServer(function(req, res){
           return options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : new stream.PassThrough();
         };
 
+        var create_unzipper = function create_decryptor(compressed){
+          return compressed ? zlib.createGunzip() : new stream.PassThrough();
+        };
+
         // return status
         res.statusCode = 200;
 
@@ -514,16 +518,17 @@ http.createServer(function(req, res){
           for(var storage_location in config.STORAGE_LOCATIONS){
             var selected_location = config.STORAGE_LOCATIONS[storage_location];
             // check for compressed block first, then uncompressed
-            if(fs.existsSync(selected_location.path + requested_file.blocks[idx].block_hash + ".gz")){
+            var search_path = selected_location.path + requested_file.blocks[idx].block_hash;
+            if(fs.existsSync(search_path + ".gz")){
               log.message(log.INFO, "Found compressed block " + requested_file.blocks[idx].block_hash + ".gz in " + selected_location.path);
               requested_file.blocks[idx].last_seen = selected_location.path;
               save_inode(requested_file);
-              return read_file(selected_location.path + requested_file.blocks[idx].block_hash + ".gz", true);
-            } else if(fs.existsSync(selected_location.path + requested_file.blocks[idx].block_hash)){
+              return read_file(search_path + ".gz", true);
+            } else if(fs.existsSync(search_path)){
               log.message(log.INFO, "Found block " + requested_file.blocks[idx].block_hash + " in " + selected_location.path);
               requested_file.blocks[idx].last_seen = selected_location.path;
               save_inode(requested_file);
-              return read_file(selected_location.path + requested_file.blocks[idx].block_hash, false);
+              return read_file(search_path, false);
             }
           }
 
@@ -535,28 +540,24 @@ http.createServer(function(req, res){
 
         var read_file = function read_file(path, try_compressed){
           var read_stream = fs.createReadStream(path);
-          var decryptor = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
+          var decryptor   = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
 
           read_stream.on("end", function(){
             idx++;
-            send_blocks(try_compressed);
+            send_blocks();
           });
 
           read_stream.on("error", function(){
             if (try_compressed) {
               log.message(log.WARN, "Cannot locate compressed block in last_seen location, trying uncompressed");
-              return send_blocks(false);
+              return load_from_last_seen(false);
             } else {
-              log.message(log.WARN, "search for block");
+              log.message(log.WARN, "Did not find block in expected location. Searching...");
               return search_for_block();
             }
           });
 
-          if (try_compressed) {
-            read_stream.pipe(zlib.createGunzip()).pipe(decryptor).pipe(res, {end: false});
-          } else {
-            read_stream.pipe(decryptor).pipe(res, {end: false});
-          }
+          read_stream.pipe(create_unzipper(try_compressed)).pipe(decryptor).pipe(res, {end: false});
 
         };
 
@@ -566,7 +567,7 @@ http.createServer(function(req, res){
           read_file(block_filename, try_compressed);
         };
 
-        var send_blocks = function send_blocks(try_compressed){
+        var send_blocks = function send_blocks(){
 
           if (idx === total_blocks) {
             // we're done
@@ -574,13 +575,13 @@ http.createServer(function(req, res){
           }
 
           if (requested_file.blocks[idx].last_seen) {
-            load_from_last_seen(try_compressed);
+            load_from_last_seen(true);
           } else {
             search_for_block();
           }
         };
 
-        send_blocks(false);
+        send_blocks();
 
       } else {
         log.message(log.WARN, "Result: 404");
