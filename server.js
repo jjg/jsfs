@@ -1,4 +1,4 @@
-"use strict";
+// "use strict";
 /* globals require, Buffer */
 
 /// jsfs - Javascript filesystem with a REST interface
@@ -48,6 +48,7 @@ var WAVE_FMTS = {
 var next_storage_location = 0;
 
 function create_decryptor(options){
+  console.log('create_decryptor', options);
   var dStream = options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : new stream.PassThrough();
   return dStream;
 }
@@ -537,25 +538,33 @@ http.createServer(function(req, res){
 
         var read_file = function read_file(path, try_compressed){
 
-          var read_stream = fs.createReadStrem(path);
+          console.log('read_file', path, try_compressed);
+
+          var read_stream = fs.createReadStream(path);
 
           read_stream.on("end", function(){
+            console.log('read_stream end');
             idx++;
             send_blocks(try_compressed);
-          }).on("error", function(){
+          })
+
+          read_stream.on("error", function(){
             if (try_compressed) {
               log.message(log.WARN, "Cannot locate compressed block in last_seen location, trying uncompressed");
-              send_blocks(false);
+              return send_blocks(false);
             } else {
-              search_for_block();
+              log.message(log.WARN, "search for block");
+              return search_for_block();
               // search for file?
             }
           });
 
           if (try_compressed) {
-            read_stream.pipe(zlib.createGunzip()).pipe(decryptor).pipe(res);
+            console.log('pipe compressed');
+            read_stream.pipe(zlib.createGunzip()).pipe(res);
           } else {
-            read_stream.pipe(decryptor).pipe(res);
+            console.log('pipe uncompressed');
+            read_stream.pipe(res);
           }
 
         };
@@ -568,19 +577,24 @@ http.createServer(function(req, res){
 
         var send_blocks = function send_blocks(try_compressed){
 
+          console.log('send_blocks', idx, 'of', total_blocks, 'try_compressed?', try_compressed);
+
           if (idx === total_blocks) {
             // we're done
+            console.log('we are done');
             res.end();
           }
 
           if (requested_file.blocks[idx].last_seen) {
+            console.log('load_from_last_seen');
             load_from_last_seen(try_compressed);
           } else {
+            console.log('search_for_block');
             search_for_block();
           }
         };
 
-        send_blocks(true);
+        send_blocks(false);
 
       } else {
         log.message(log.WARN, "Result: 404");
