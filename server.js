@@ -7,14 +7,16 @@
 // strings are double-quoted, variables use underscores, constants are ALL CAPS
 
 // *** UTILITIES  & MODULES ***
-var http   = require("http");
-var crypto = require("crypto");
-var fs     = require("fs");
-var zlib   = require("zlib");
-var config = require("./config.js");
-var log    = require("./jlog.js");
-var url    = require("url");
-var stream = require("stream");
+var http    = require("http");
+var crypto  = require("crypto");
+var fs      = require("fs");
+var zlib    = require("zlib");
+var config  = require("./config.js");
+var log     = require("./jlog.js");
+var url     = require("url");
+var through = require("through");
+var through2 = require("through2");
+var stream  = require("stream");
 
 /**
 
@@ -497,11 +499,13 @@ http.createServer(function(req, res){
         }
 
         var create_decryptor = function create_decryptor(options){
-          return options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : new stream.PassThrough();
+          // return options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : new stream.PassThrough();
+          return options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : through();
         };
 
         var create_unzipper = function create_decryptor(compressed){
-          return compressed ? zlib.createGunzip() : new stream.PassThrough();
+          // return compressed ? zlib.createGunzip() : new stream.PassThrough();
+          return compressed ? zlib.createGunzip() : through();
         };
 
         // return status
@@ -541,13 +545,21 @@ http.createServer(function(req, res){
         var read_file = function read_file(path, try_compressed){
           var read_stream = fs.createReadStream(path);
           var decryptor   = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
+          var unzipper    = create_unzipper(try_compressed);
 
-          read_stream.on("end", function(){
-            idx++;
-            send_blocks();
-          });
+          // unzipper.on("end", uz_on_end);
+          // function uz_on_end(){
+          //   unzipper.removeListener("end", uz_on_end);
+          //   // unzipper.unpipe(decryptor);
+          // }
 
-          read_stream.on("error", function(){
+          // decryptor.on("end", dc_on_end);
+          // function dc_on_end(){
+          //   decryptor.removeListener("end", dc_on_end);
+          //   // decryptor.unpipe(res);
+          // }
+
+          function on_error(){
             if (try_compressed) {
               log.message(log.WARN, "Cannot locate compressed block in last_seen location, trying uncompressed");
               return load_from_last_seen(false);
@@ -555,10 +567,19 @@ http.createServer(function(req, res){
               log.message(log.WARN, "Did not find block in expected location. Searching...");
               return search_for_block();
             }
-          });
+          }
 
-          read_stream.pipe(create_unzipper(try_compressed)).pipe(decryptor).pipe(res, {end: false});
+          function on_end(){
+            idx++;
+            read_stream.removeListener("end", on_end);
+            read_stream.removeListener("error", on_error);
+            read_stream.unpipe(unzipper);
+            send_blocks();
+          }
 
+          read_stream.on("end", on_end);
+          read_stream.on("error", on_error);
+          read_stream.pipe(unzipper).pipe(decryptor).pipe(res, {end: false});
         };
 
         var load_from_last_seen = function load_from_last_seen(try_compressed){

@@ -26,6 +26,9 @@
       "name" : "Marc Brakken"
     }
   ],
-  "license" : "GPL-3.0"
-
+  "license" : "GPL-3.0",
+  "dependencies" : {
+    "through" : "2.3.8",
+    "through2" : "2.0.1"
+  }
 }
