@@ -542,6 +542,7 @@ http.createServer(function(req, res){
           var read_stream = fs.createReadStream(path);
           var decryptor   = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
           var unzipper    = create_unzipper(try_compressed);
+          var should_end  = (idx + 1) === total_blocks;
 
           function on_error(){
             if (try_compressed) {
@@ -557,18 +558,20 @@ http.createServer(function(req, res){
             idx++;
             read_stream.removeListener("end", on_end);
             read_stream.removeListener("error", on_error);
-            read_stream.unpipe(unzipper);
+            res.setMaxListeners(res.getMaxListeners() - 1);
             send_blocks();
           }
 
+          res.setMaxListeners(res.getMaxListeners() + 1);
           read_stream.on("end", on_end);
           read_stream.on("error", on_error);
-          read_stream.pipe(unzipper).pipe(decryptor).pipe(res, {end: false});
+          read_stream.pipe(unzipper).pipe(decryptor).pipe(res, {end: should_end});
         };
 
         var load_from_last_seen = function load_from_last_seen(try_compressed){
           var sfx = try_compressed ? ".gz" : "";
-          var block_filename = requested_file.blocks[idx].last_seen + requested_file.blocks[idx].block_hash + sfx;
+          var block = requested_file.blocks[idx];
+          var block_filename = block.last_seen + block.block_hash + sfx;
           read_file(block_filename, try_compressed);
         };
 
@@ -576,13 +579,13 @@ http.createServer(function(req, res){
 
           if (idx === total_blocks) {
             // we're done
-            return res.end();
-          }
-
-          if (requested_file.blocks[idx].last_seen) {
-            load_from_last_seen(true);
+            return;
           } else {
-            search_for_block();
+            if (requested_file.blocks[idx].last_seen) {
+              load_from_last_seen(true);
+            } else {
+              search_for_block();
+            }
           }
         };
 
