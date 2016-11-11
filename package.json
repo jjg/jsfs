@@ -1,0 +1,34 @@
+{
+  "name" : "jsfs",
+  "version" : "4.1.0",
+  "description" : "deduplicating filesystem with a REST interface",
+  "main" : "server.js",
+  "files" : [
+    "server.js",
+    "config.ex",
+    "jlog.js"
+  ],
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/jjg/jsfs.git"
+  },
+  "homepage" : "https://github.com/jjg/jsfs",
+  "keywords" : [
+    "filesystem",
+    "deduplicate",
+    "http",
+    "rest"
+  ],
+  "author" : {
+    "name" : "Jason Gullickson"
+  },
+  "contributors" : [
+    {
+      "name" : "Marc Brakken"
+    }
+  ],
+  "license" : "GPL-3.0",
+  "dependencies" : {
+    "through" : "2.3.8"
+  }
+}
