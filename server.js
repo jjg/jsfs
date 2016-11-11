@@ -152,7 +152,7 @@ function analyze_block(block){
   return result;
 }
 
-function commit_block_to_disk(block, block_object){
+function commit_block_to_disk(block, block_object, callback){
 
   // if storage locations exist, save the block to disk
   if(config.STORAGE_LOCATIONS.length > 0){
@@ -186,22 +186,33 @@ function commit_block_to_disk(block, block_object){
 
       // write new block to next storage location
       // TODO: consider implementing in-band compression here
-      fs.writeFileSync(config.STORAGE_LOCATIONS[next_storage_location].path + block_object.block_hash, block, "binary");
-      block_object.last_seen = config.STORAGE_LOCATIONS[next_storage_location].path;
-      log.message(log.INFO, "New block " + block_object.block_hash + " written to " + config.STORAGE_LOCATIONS[next_storage_location].path);
+      var dir = config.STORAGE_LOCATIONS[next_storage_location].path;
+      fs.writeFile(dir + block_object.block_hash, block, "binary", function(err){
+        if (err) {
+          return callback(err);
+        }
 
-      // increment (or reset) storage location (striping)
-      next_storage_location++;
-      if(next_storage_location === config.STORAGE_LOCATIONS.length){
-        next_storage_location = 0;
-      }
+        block_object.last_seen = dir;
+        log.message(log.INFO, "New block " + block_object.block_hash + " written to " + dir);
+
+        // increment (or reset) storage location (striping)
+        next_storage_location++;
+        if(next_storage_location === config.STORAGE_LOCATIONS.length){
+          next_storage_location = 0;
+        }
+
+        return callback(null, block_object);
+
+      });
+
     } else {
       log.message(log.INFO, "Duplicate block " + block_object.block_hash + " not written to disk");
+      return callback(null, block_object);
     }
   } else {
     log.message(log.WARN, "No storage locations configured, block not written to disk");
+    return callback(null, block_object);
   }
-  return block_object;
 }
 
 function token_valid(access_token, inode, method){
@@ -289,49 +300,51 @@ var Inode = {
     // use fingerprint as default key
     this.file_metadata.access_key = this.file_metadata.fingerprint;
   },
-  write: function(chunk){
+  write: function(chunk, req, callback){
     this.input_buffer = new Buffer.concat([this.input_buffer, chunk]);
-    return this.process_buffer();
+    if (this.input_buffer.length > this.block_size) {
+      req.pause();
+      this.process_buffer(false, function(result){
+        req.resume();
+        callback(result);
+      });
+    } else {
+      callback(true);
+    }
   },
   close: function(callback){
-    var result  = this.process_buffer(true);
-    if(result){
+    var self = this;
+    log.message(0, "flushing remaining buffer");
+    // update original file size
+    self.file_metadata.file_size = self.file_metadata.file_size + self.input_buffer.length;
 
-      // if result wasn't null, return the inode details
-      result = this.file_metadata;
-
-      // write inode to disk
-      save_inode(this.file_metadata);
-      callback(result);
-    }
-  },
-  process_buffer: function(flush){
-    var result = true;
-    if(flush){
-      log.message(0, "flushing remaining buffer");
-
-      // update original file size
-      this.file_metadata.file_size = this.file_metadata.file_size + this.input_buffer.length;
-
-      // empty the remainder of the buffer
-      while(this.input_buffer.length > 0){
-        result = this.store_block(false);
+    self.process_buffer(true, function(result){
+      if(result){
+        // write  inode to disk
+        save_inode(self.file_metadata);
+        callback(self.file_metadata);
       }
-    } else {
-      while(this.input_buffer.length > this.block_size){
-        result = this.store_block(true);
-      }
-    }
-    if(result){
-
-      // do nothing
-    } else {
-      log.message(log.DEBUG, "process_buffer result: " + result);
-    }
-    return result;
+    });
   },
-  store_block: function(update_file_size){
-    var result = true;
+  process_buffer: function(flush, callback){
+    var self = this;
+    var total = flush ? 0 : self.block_size;
+    this.store_block(!flush, function(err, result){
+      if (err) {
+        log.message(log.DEBUG, "process_buffer result: " + err);
+        return callback(false);
+      }
+
+      if (self.input_buffer.length > total) {
+        self.process_buffer(flush, callback);
+      } else {
+        callback(true);
+      }
+
+    });
+  },
+  store_block: function(update_file_size, callback){
+    var self = this;
     var chunk_size = this.block_size;
 
     // grab the next block
@@ -401,22 +414,26 @@ var Inode = {
     // store the block
     var block_object = {};
     block_object.block_hash = block_hash;
-    block_object = commit_block_to_disk(block, block_object);
+    commit_block_to_disk(block, block_object, function(err, result){
+      if (err) {
+        return callback(err);
+      }
 
-    // update inode
-    this.file_metadata.blocks.push(block_object);
+      // update inode
+      self.file_metadata.blocks.push(result);
 
-    // update original file size
-    // we need to update filesize here due to truncation at the front,
-    // but need the check to avoid double setting during flush
-    // is there a better way?
-    if (update_file_size) {
-      this.file_metadata.file_size = this.file_metadata.file_size + chunk_size;
-    }
+      // update original file size
+      // we need to update filesize here due to truncation at the front,
+      // but need the check to avoid double setting during flush
+      // is there a better way?
+      if (update_file_size) {
+        self.file_metadata.file_size = self.file_metadata.file_size + chunk_size;
+      }
 
-    // advance buffer
-    this.input_buffer = this.input_buffer.slice(chunk_size);
-    return result;
+      // advance buffer
+      self.input_buffer = self.input_buffer.slice(chunk_size);
+      return callback(null, result);
+    });
   }
 };
 
@@ -620,11 +637,13 @@ http.createServer(function(req, res){
     log.message(log.INFO, "File properties set");
 
     req.on("data", function(chunk){
-      if(!new_file.write(chunk)){
-        log.message(log.ERROR, "Error writing data to storage object");
-        res.statusCode = 500;
-        res.end();
-      }
+      new_file.write(chunk, req, function(result){
+        if (!result) {
+          log.message(log.ERROR, "Error writing data to storage object");
+          res.statusCode = 500;
+          res.end();
+        }
+      });
     });
 
     req.on("end", function(){
