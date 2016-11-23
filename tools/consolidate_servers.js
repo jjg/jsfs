@@ -42,7 +42,7 @@ log.message(log.INFO, '******* MIGRATING ' + LIMIT + ' FILES FROM ' + SOURCE_HOS
 
 query.connectionParameters = DB_CONNECT;
 
-var clock = timer('JSFS migration');
+var clock;
 
 function namespacedPath(url_parts){
   var path = url_parts.path;
@@ -157,5 +157,6 @@ query(BASE_SQL, function(err, results){
 
   log.message(log.INFO, results.length + ' tracks will be migrated from ' + SOURCE_HOST + ' starting at ' + OFFSET);
   tracks = results;
+  clock = timer(results.length + ' tracks from ' + SOURCE_HOST + ' starting at ' + OFFSET);
   moveNextFile();
 });
