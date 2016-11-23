@@ -22,7 +22,7 @@ var timer        = require('./timer.js');
 var SOURCE_IPS   = require('./source_ips.js');
 var tracks       = [];
 var errors       = [];
-var JSFS_HOST    = ENV === 'development' ? 'localhost' : 'an.ip.address'; // update this to new 64 instance
+var JSFS_HOST    = ENV === 'development' ? 'localhost' : '10.240.0.2'; // update this to new 64 instance
 var JSFS_PORT   = '7302';
 
 var JSFS_SOURCES = {
@@ -65,19 +65,18 @@ log.message(log.INFO, '******* MIGRATING ' + LIMIT + ' FILES FROM ' + SOURCE_HOS
 
 query.connectionParameters = DB_CONNECT;
 
-var clock = timer('JSFS migration wave 2');
+var clock;
 
 function loadFromRedis(disc_id, callback){
-  // try{
-  //   redis.get(disc_id, function(err, value){
-  //     if (err){ log.message(log.ERROR, 'redis.get error: ' + err.toString()); }
-  //     return callback(err, value);
-  //   }
-  // } catch(ex){
-  //   log.message(log.ERROR, 'redis.get exception: ' + ex.toString());
-  //   return callback(ex);
-  // }
-  return callback();
+  try{
+    redis.get(disc_id, function(err, value){
+      if (err){ log.message(log.ERROR, 'redis.get error: ' + err.toString()); }
+      return callback(err, value);
+    });
+  } catch(ex){
+    log.message(log.ERROR, 'redis.get exception: ' + ex.toString());
+    return callback(ex);
+  }
 }
 
 function loadFromPostgres(disc_id, source, callback){
@@ -93,40 +92,40 @@ function loadFromPostgres(disc_id, source, callback){
 function checkForMatchingAlbum(disc_id, callback) {
 
   loadFromRedis(disc_id, function(err1, value){
-    if (value) { return callback(value); }
-  });
+    if (value) { return callback(value); } 
 
-  var servers = Object.keys(JSFS_SOURCES);
-  var i = 0;
+    var servers = Object.keys(JSFS_SOURCES);
+    var i = 0;
 
-  var checkDBResult = function checkDBResult(err2, result){
-    if (result && result.length > 0) {
-      var r = servers[i];
+    var checkDBResult = function checkDBResult(err2, result){
+      if (result && result.length > 0) {
+        var r = servers[i];
 
-      redis.set(disc_id, r, function(err3){
-        if (err3) {
-          log.message(log.ERROR, err3.toString());
-          return process.abort();
-        }
-
-        redis.expire(disc_id, 900, function(err4){
-          if (err4) {
-            log.message(log.ERROR, err4.toString());
+        redis.set(disc_id, r, function(err3){
+          if (err3) {
+            log.message(log.ERROR, err3.toString());
             return process.abort();
           }
-          dups++;
-          callback(r);
-        });
-      });
-    } else if (i+1 === servers.length) {
-      callback(false);
-    } else {
-      i++;
-      loadFromPostgres(disc_id, servers[i], checkDBResult);
-    }
-  }
 
-  loadFromPostgres(disc_id, servers[i], checkDBResult);
+          redis.expire(disc_id, 900, function(err4){
+            if (err4) {
+              log.message(log.ERROR, err4.toString());
+              return process.abort();
+            }
+            callback(r);
+          });
+        });
+      } else if (i+1 === servers.length) {
+        callback(false);
+      } else {
+        i++;
+        loadFromPostgres(disc_id, servers[i], checkDBResult);
+      }
+    }
+
+    loadFromPostgres(disc_id, servers[i], checkDBResult);
+  
+  });
 }
 
 function namespacedPath(url_parts){
@@ -225,7 +224,7 @@ function moveFile(file){
                       log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
                       store_request.end();
                       if (update_file) {
-                        updateUpload(file, updated_url, moveNextFile);
+                        updateUpload(file, updated_url);
                       } else {
                         moveNextFile();
                       };
@@ -241,7 +240,8 @@ function moveFile(file){
   });
 }
 
-function updateUpload(file, path, callback){
+function updateUpload(file, path){
+  dups++;
   log.message(log.INFO, 'Updating track_upload ' + file.id + ' with ' + path);
 
   var data = {
@@ -264,7 +264,7 @@ function updateUpload(file, path, callback){
                       logError(err, 'ERROR: problem updating track upload record ' + path + ': ');
                       errors.push(file);
                     })
-                    .on('end', callback);
+                    .on('close', function(){ return moveNextFile(); });
 
   update.write(JSON.stringify(data));
   update.end();
@@ -275,7 +275,7 @@ function moveNextFile(){
   if (tracks.length > 0) {
     var next_track = tracks.shift();
     if (SOURCE_TESTER.test(next_track.url)) {
-      log.messate(log.INFO, 'Track url already updated. Skipping.')
+      log.message(log.INFO, 'Track url already updated. Skipping.')
       moveNextFile();
     } else {
       moveFile(next_track);
@@ -312,6 +312,7 @@ try{
         process.abort();
       }
 
+      clock = timer(results.length + ' tracks from ' + SOURCE_HOST + ' starting at ' + OFFSET);
       log.message(log.INFO, results.length + ' tracks will be migrated from ' + SOURCE_HOST + ' starting at ' + OFFSET);
       tracks = results;
       moveNextFile();
