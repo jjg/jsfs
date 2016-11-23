@@ -18,6 +18,7 @@ module.exports = {
   'jsfs17.murfie.com' : '10.240.0.20',
   'jsfs18.murfie.com' : '10.240.0.21',
   'jsfs19.murfie.com' : '10.240.0.23',
+  'jsfs20.murfie.com' : '10.240.0.18',
   'jsfs21.murfie.com' : '10.240.0.24',
   'jsfs22.murfie.com' : '10.240.0.25'
 };
