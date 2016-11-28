@@ -22,7 +22,7 @@ var timer        = require('./timer.js');
 var SOURCE_IPS   = require('./source_ips.js');
 var tracks       = [];
 var errors       = [];
-var JSFS_HOST    = ENV === 'development' ? 'localhost' : '10.240.0.2'; // update this to new 64 instance
+var JSFS_HOST    = ENV === 'development' ? 'localhost' : '10.240.0.2';
 var JSFS_PORT   = '7302';
 
 var JSFS_SOURCES = {
@@ -84,6 +84,7 @@ function loadFromPostgres(disc_id, source, callback){
           + ' WHERE discs.id = ' + disc_id
           + ') SELECT url FROM track_uploads JOIN discs ON discs.id = track_uploads.disc_id '
           + ' WHERE discs.album_id IN (SELECT * FROM current_album) '
+          + ' AND discs.storage_service = \'JSFS\' '
           + ' AND track_uploads.url SIMILAR TO \'%(' + JSFS_SOURCES[source].join('|') + ')%\' LIMIT 1';
 
   return query(sql, callback);
@@ -92,7 +93,7 @@ function loadFromPostgres(disc_id, source, callback){
 function checkForMatchingAlbum(disc_id, callback) {
 
   loadFromRedis(disc_id, function(err1, value){
-    if (value) { return callback(value); } 
+    if (value) { return callback(value); }
 
     var servers = Object.keys(JSFS_SOURCES);
     var i = 0;
@@ -124,7 +125,6 @@ function checkForMatchingAlbum(disc_id, callback) {
     }
 
     loadFromPostgres(disc_id, servers[i], checkDBResult);
-  
   });
 }
 
@@ -285,6 +285,7 @@ function moveNextFile(){
     clock.stop();
     log.message(log.ERROR, 'The following files experienced errors: ' + JSON.stringify(errors));
     log.message(log.INFO, 'Total tracks stored on jsfs20: ' + dups);
+    redis.quit(); // redis connection keeps process from exiting.
   }
 }
 
