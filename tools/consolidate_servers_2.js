@@ -221,7 +221,7 @@ function moveFile(file){
 
       fetch_response.pipe(store_request, {end: true})
                     .on('close', function(){
-                      log.message(log.INFO, 'File stored to ' + JSFS_HOST + store_options.path);
+                      log.message(log.INFO, 'File stored to ' + hostname + store_options.path);
                       store_request.end();
                       if (update_file) {
                         updateUpload(file, updated_url);
