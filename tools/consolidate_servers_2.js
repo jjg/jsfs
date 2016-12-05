@@ -82,6 +82,7 @@ function loadFromRedis(disc_id, callback){
 function loadFromPostgres(disc_id, source, callback){
   var sql = 'WITH current_album AS (SELECT discs.album_id FROM discs'
           + ' WHERE discs.id = ' + disc_id
+          + ' AND discs.media_type <> \'Vinyl\' '
           + ') SELECT url FROM track_uploads JOIN discs ON discs.id = track_uploads.disc_id '
           + ' WHERE discs.album_id IN (SELECT * FROM current_album) '
           + ' AND discs.storage_service = \'JSFS\' '
