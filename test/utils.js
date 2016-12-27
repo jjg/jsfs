@@ -11,6 +11,8 @@ var DEFAULT_STORAGE = config.STORAGE_LOCATIONS;
 var BLOCK_SIZE = config.BLOCK_SIZE;
 var TEST_PATH = "/com.jsfs.test/path/to/file.json";
 var ACCEPTED_PARAMS = static.ACCEPTED_PARAMS;
+var TEST_INODE_1 = { fingerprint : "test1" };
+var TEST_INODE_2 = { fingerprint : "test2" };
 
 function load_test_block(file, callback) {
   fs.readFile(file, function(err, data){
@@ -88,9 +90,9 @@ describe("utils.js", function() {
 
       var hash_1 = utils.sha1_to_hex("test_inode_1");
       var hash_2 = utils.sha1_to_hex("test_inode_2");
-      fake_data.fake.blocks1[hash_1 + ".json"] = "{}";
-      fake_data.fake.blocks2[hash_1 + ".json"] = "{}";
-      fake_data.fake.blocks2[hash_2 + ".json"] = "{}";
+      fake_data.fake.blocks1[hash_1 + ".json"] = JSON.stringify(TEST_INODE_1);
+      fake_data.fake.blocks2[hash_1 + ".json"] = JSON.stringify(TEST_INODE_1);
+      fake_data.fake.blocks2[hash_2 + ".json"] = JSON.stringify(TEST_INODE_2);
 
       mock(fake_data);
     });
@@ -108,6 +110,8 @@ describe("utils.js", function() {
           if (err) {
             done(err);
           } else {
+            expect(inode).to.be.an("object");
+            expect(inode).to.deep.equal(TEST_INODE_1);
             done();
           }
         });
@@ -118,6 +122,8 @@ describe("utils.js", function() {
           if (err) {
             done(err);
           } else {
+            expect(inode).to.be.an("object");
+            expect(inode).to.deep.equal(TEST_INODE_2);
             done();
           }
         });
