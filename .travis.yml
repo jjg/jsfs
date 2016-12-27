@@ -7,3 +7,6 @@ node_js:
 install:
   - cp config.ex config.js
   - npm install
+addons:
+  code_climate:
+    repo_token: 34a1b2683e0e08a3ebd9bdd188a0c03d6b03925cb162e5537a9d9b9795f0b8ab
