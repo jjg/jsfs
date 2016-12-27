@@ -13,7 +13,7 @@ var zlib       = require("zlib");
 var through    = require("through");
 var config     = require("./config.js");
 var log        = require("./jlog.js");
-var static     = require("./lib/static.js");
+var CONSTANTS  = require("./lib/constants.js");
 var utils      = require("./lib/utils.js");
 var validate   = require("./lib/validate.js");
 var operations = require("./lib/" + (config.CONFIGURED_STORAGE || "fs") + "/disk-operations.js");
@@ -25,10 +25,10 @@ var Inode = require("./lib/inode.js");
 var TOTAL_LOCATIONS = config.STORAGE_LOCATIONS.length;
 
 // all responses include these headers to support cross-domain requests
-var ALLOWED_METHODS = static.ALLOWED_METHODS.join(",");
-var ALLOWED_HEADERS = static.ALLOWED_HEADERS.join(",");
-var EXPOSED_HEADERS = static.EXPOSED_HEADERS.join(",");
-var ACCEPTED_PARAMS = static.ACCEPTED_PARAMS;
+var ALLOWED_METHODS = CONSTANTS.ALLOWED_METHODS.join(",");
+var ALLOWED_HEADERS = CONSTANTS.ALLOWED_HEADERS.join(",");
+var EXPOSED_HEADERS = CONSTANTS.EXPOSED_HEADERS.join(",");
+var ACCEPTED_PARAMS = CONSTANTS.ACCEPTED_PARAMS;
 
 // *** CONFIGURATION ***
 log.level = config.LOG_LEVEL; // the minimum level of log messages to record: 0 = info, 1 = warn, 2 = error
@@ -42,10 +42,10 @@ http.createServer(function(req, res){
 
   log.message(log.DEBUG, "Initial request received");
 
-  res.setHeader("Access-Control-Allow-Methods", ALLOWED_METHODS;
-  res.setHeader("Access-Control-Allow-Headers", ALLOWED_HEADERS;
+  res.setHeader("Access-Control-Allow-Methods", ALLOWED_METHODS);
+  res.setHeader("Access-Control-Allow-Headers", ALLOWED_HEADERS);
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Expose-Headers", EXPOSED_HEADERS;
+  res.setHeader("Access-Control-Expose-Headers", EXPOSED_HEADERS);
 
   // all requests are interrorgated for these values
   var target_url = utils.target_from_url(req.url);

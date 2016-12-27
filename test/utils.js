@@ -3,14 +3,14 @@ var mock       = require('mock-fs');
 var expect     = require('chai').expect
 var utils      = require("../lib/utils.js");
 var file_types = require("../lib/file-types.js");
-var static     = require("../lib/static.js");
+var CONSTANTS  = require("../lib/constants.js");
 var config     = require("../config.js");
 var log        = require("../jlog.js");
 
 var DEFAULT_STORAGE = config.STORAGE_LOCATIONS;
 var BLOCK_SIZE = config.BLOCK_SIZE;
 var TEST_PATH = "/com.jsfs.test/path/to/file.json";
-var ACCEPTED_PARAMS = static.ACCEPTED_PARAMS;
+var ACCEPTED_PARAMS = CONSTANTS.ACCEPTED_PARAMS;
 var TEST_INODE_1 = { fingerprint : "test1" };
 var TEST_INODE_2 = { fingerprint : "test2" };
 
