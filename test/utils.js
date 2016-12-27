@@ -208,7 +208,16 @@ describe("utils.js", function() {
 
       expect(result).to.be.an("object");
       expect(Object.keys(result)).to.have.lengthOf(ACCEPTED_PARAMS.length);
-      expect(result).to.have.all.keys(ACCEPTED_PARAMS);
+      expect(result).to.have.all.keys(ACCEPTED_PARAMS.map(function(p){ return Object.keys(p)[0]; }));
+    });
+
+    it("should set content-type from header", function() {
+      var test_uri = "http://test.jsfs.com/path/to/file.json";
+      var headers = { "content-type": "application/json" };
+      var result = utils.request_parameters(ACCEPTED_PARAMS, test_uri, headers);
+
+      expect(result).to.be.an("object");
+      expect(result.content_type).to.equal("application/json");
     });
 
     it("should set parameters from query", function() {
