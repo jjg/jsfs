@@ -1,0 +1,9 @@
+language: node_js
+node_js:
+  - "6"
+  - "6.1"
+  - "5.11"
+  - "4"
+install:
+  - cp config.ex config.js
+  - npm install

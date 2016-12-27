@@ -1,8 +1,7 @@
 module.exports = {
 	STORAGE_LOCATIONS:[
-		{"path":"./blocks/"}
-		//{"path":"./blocks1/"},
-		//{"path":"./blocks2/"}
+		{"path":"./blocks1/"},
+		{"path":"./blocks2/"}
 	],
 	BLOCK_SIZE: 1048576,
 	LOG_LEVEL: 0,
