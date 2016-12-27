@@ -166,32 +166,27 @@ describe("utils.js", function() {
   describe("#target_from_url(uri)", function() {
 
     it("should set target from url", function() {
-      var test_uri = "http://test.jsfs.com/path/to/file.json";
-      var result   = utils.target_from_url(test_uri);
+      var host   = "test.jsfs.com";
+      var uri    = "/path/to/file.json";
+      var result = utils.target_from_url(host, uri);
 
       expect(result).to.be.a("string");
       expect(result).to.equal(TEST_PATH);
     });
 
     it("should return fully specificed target path", function() {
-      var test_uri = "http://test2.jsfs.com/.com.jsfs.test/path/to/file.json";
-      var result   = utils.target_from_url(test_uri);
-
-      expect(result).to.be.a("string");
-      expect(result).to.equal(TEST_PATH);
-    });
-
-    it("should ignore the port", function() {
-      var test_uri = "http://test.jsfs.com:1234/path/to/file.json";
-      var result   = utils.target_from_url(test_uri);
+      var host   = "test2.jsfs.com";
+      var uri    = "/.com.jsfs.test/path/to/file.json";
+      var result = utils.target_from_url(host, uri);
 
       expect(result).to.be.a("string");
       expect(result).to.equal(TEST_PATH);
     });
 
     it("should ignore query params", function() {
-      var test_uri = "http://test.jsfs.com/path/to/file.json?test=query&more=fun";
-      var result   = utils.target_from_url(test_uri);
+      var host   = "test.jsfs.com";
+      var uri    = "/path/to/file.json?test=query&more=fun";
+      var result = utils.target_from_url(host, uri);
 
       expect(result).to.be.a("string");
       expect(result).to.equal(TEST_PATH);

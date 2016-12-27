@@ -48,7 +48,7 @@ http.createServer(function(req, res){
   res.setHeader("Access-Control-Expose-Headers", EXPOSED_HEADERS);
 
   // all requests are interrorgated for these values
-  var target_url = utils.target_from_url(req.url);
+  var target_url = utils.target_from_url(req.headers["host"], req.url);
 
   // check for request parameters, first in the header and then in the querystring
   // Moved these to an object to avoid possible issues from "private" being a reserved word
