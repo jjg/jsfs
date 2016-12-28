@@ -192,6 +192,15 @@ describe("utils.js", function() {
       expect(result).to.equal(TEST_PATH);
     });
 
+    it("should ignore port", function() {
+      var host   = "test.jsfs.com:1234";
+      var uri    = "/path/to/file.json";
+      var result = utils.target_from_url(host, uri);
+
+      expect(result).to.be.a("string");
+      expect(result).to.equal(TEST_PATH);
+    });
+
   });
 
   describe("#request_parameters", function() {
