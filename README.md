@@ -27,6 +27,17 @@ It's important to note that configuring multiple storage devices does not provid
 
 Future versions of JSFS may include an option to use multiple storage locations for the purpose of redundancy.
 
+##REMOTE STORAGE CONFIGURATION
+By default, JSFS assumes you are working with a local file system using node's `fs` module. However, JSFS currently supports remote file storage such as blob or object storage services.
+
+To use a remote storage service:
+* Copy /lib/fs/disk-operations.js to /lib/your-storage-serice/disk-operations.js
+* Update /lib/your-storage-serice/disk-operations.js as necessary (see /lib/google-cloud-storage/disk-operations.js for examples)
+* Update `config.CONFIGURED_STORAGE` to `your-storage-service`
+* Add any additional configuration as appropriate.
+
+When JSFS boots, it will load `./lib/${config.CONFIGURED_STORAGE || "fs"}/disk-operations.js` for all disk-type operations.
+
 #API
 
 ##Keys and Tokens

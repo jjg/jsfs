@@ -7,4 +7,5 @@ module.exports = {
 	LOG_LEVEL: 0,
 	SERVER_PORT: 7302,
 	REQUEST_TIMEOUT: 30 // minutes,
+	CONFIGURED_STORAGE: "fs"
 };
