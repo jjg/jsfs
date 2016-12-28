@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/mbrakken/jsfs.svg?branch=master)](https://travis-ci.org/mbrakken/jsfs) [![Code Climate](https://codeclimate.com/github/mbrakken/jsfs/badges/gpa.svg)](https://codeclimate.com/github/mbrakken/jsfs)
+[![Build Status](https://travis-ci.org/mbrakken/jsfs.svg?branch=master)](https://travis-ci.org/mbrakken/jsfs) [![Code Climate](https://codeclimate.com/github/mbrakken/jsfs/badges/gpa.svg)](https://codeclimate.com/github/mbrakken/jsfs) [![Dependency Status](https://dependencyci.com/github/mbrakken/jsfs/badge)](https://dependencyci.com/github/mbrakken/jsfs)
 
 jsfs
 ====
