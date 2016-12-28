@@ -1,3 +1,5 @@
+var fs = require("fs");
+
 module.exports = {
 	DEBUG: 0,
 	INFO: 1,
@@ -6,7 +8,6 @@ module.exports = {
 	level: 0, // default log level
 	path: null, // default is, don't log to a file
 	message: function(severity, log_message){
-		var fs = require("fs");
 		if(severity >= this.level){
 			console.log(Date() + "\t" + Math.round((process.memoryUsage().rss/1024)/1024) + "MB\t" + severity + "\t" + log_message);
 			if(this.path){

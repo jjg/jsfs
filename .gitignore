@@ -3,3 +3,4 @@ config.js
 blocks
 *swp
 .DS_Store
+*.sublime-*
