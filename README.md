@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mbrakken/jsfs.svg?branch=master)](https://travis-ci.org/mbrakken/jsfs) [![Code Climate](https://codeclimate.com/github/mbrakken/jsfs/badges/gpa.svg)](https://codeclimate.com/github/mbrakken/jsfs) [![Dependency Status](https://dependencyci.com/github/mbrakken/jsfs/badge)](https://dependencyci.com/github/mbrakken/jsfs)
+
 jsfs
 ====
 
@@ -25,6 +27,17 @@ It's important to note that configuring multiple storage devices does not provid
 
 Future versions of JSFS may include an option to use multiple storage locations for the purpose of redundancy.
 
+##REMOTE STORAGE CONFIGURATION
+By default, JSFS assumes you are working with a local file system using node's `fs` module. However, JSFS currently supports remote file storage such as blob or object storage services.
+
+To use a remote storage service:
+* Copy /lib/fs/disk-operations.js to /lib/your-storage-serice/disk-operations.js
+* Update /lib/your-storage-serice/disk-operations.js as necessary (see /lib/google-cloud-storage/disk-operations.js for examples)
+* Update `config.CONFIGURED_STORAGE` to `your-storage-service`
+* Add any additional configuration as appropriate.
+
+When JSFS boots, it will load `./lib/${config.CONFIGURED_STORAGE || "fs"}/disk-operations.js` for all disk-type operations.
+
 #API
 
 ##Keys and Tokens
@@ -33,7 +46,7 @@ Keys are used to unlock all operations that can be performed on an object stored
 Tokens are more ephemeral, and any number of them can be generated to grant varying degrees of access to an object.  Token generation is described later.
 
 ##Parameters and Headers
-jsfs uses several parameters to control access to objects and how they are stored.  These values can also be supplied as request headers by adding a leading "x-" and changing "_" to "-" (`access_token` becomes `x-access-token`). Headers are preferred to querystring parameters because they are less likely to collide but both function the same. 
+jsfs uses several parameters to control access to objects and how they are stored.  These values can also be supplied as request headers by adding a leading "x-" and changing "_" to "-" (`access_token` becomes `x-access-token`). Headers are preferred to querystring parameters because they are less likely to collide but both function the same.
 
 ###private
 By default all objects stored in jsfs are public and will be accessible via any `GET` request.  If the `private` parameter is set to `true` a valid `access_key` or `access_token` must be supplied to access the object.

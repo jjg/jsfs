@@ -46,9 +46,9 @@ describe("utils.js", function() {
           var offset = utils.wave_audio_offset(block, file_types.analyze(block), BLOCK_SIZE);
 
           expect(offset).to.be.a("number");
-          expect(offset).to.equal(44);
-          expect(offset).to.be.at.most(BLOCK_SIZE);
-          expect(offset).to.be.below(BLOCK_SIZE);
+          expect(offset).to.be.at.least(44); // minimum header size is 44 bytes
+          expect(offset).to.equal(44); // actual offset for the test file
+          expect(offset).to.be.at.most(BLOCK_SIZE); // if all audio data is silent (we should test seperately)
           done();
         }
       });
@@ -75,8 +75,8 @@ describe("utils.js", function() {
 
     before(function(){
       config.STORAGE_LOCATIONS = [
-        {"path":"fake/blocks1/","capacity":4294967296},
-        {"path":"fake/blocks2/","capacity":4294967296}
+        {"path":"fake/blocks1/"},
+        {"path":"fake/blocks2/"}
       ];
 
       var fake_data = {
@@ -117,7 +117,7 @@ describe("utils.js", function() {
         });
       });
 
-      it("should searche multiple directories and return found inode", function(done) {
+      it("should search multiple directories and return found inode", function(done) {
         utils.load_inode("test_inode_2", function(err, inode){
           if (err) {
             done(err);
@@ -186,6 +186,15 @@ describe("utils.js", function() {
     it("should ignore query params", function() {
       var host   = "test.jsfs.com";
       var uri    = "/path/to/file.json?test=query&more=fun";
+      var result = utils.target_from_url(host, uri);
+
+      expect(result).to.be.a("string");
+      expect(result).to.equal(TEST_PATH);
+    });
+
+    it("should ignore port", function() {
+      var host   = "test.jsfs.com:1234";
+      var uri    = "/path/to/file.json";
       var result = utils.target_from_url(host, uri);
 
       expect(result).to.be.a("string");
