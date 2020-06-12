@@ -1,7 +1,4 @@
-# THIS PROJECT HAS BEEN MIGRATED TO GITLAB -> https://gitlab.com/jgullickson/jsfs
-
-jsfs
-====
+# jsfs
 
 A general-purpose, deduplicating filesystem with a REST interface, jsfs is intended to provide low-level filesystem functions for Javascript applications.  Additional functionality (private file indexes, token lockers, centralized authentication, etc.) are deliberately avoided here and will be implemented in a modular fashion on top of jsfs.
 
