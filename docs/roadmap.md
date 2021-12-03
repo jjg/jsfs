@@ -2,13 +2,26 @@
 
 Future work.
 
+## Update-to-date
 
-## JSFS+X
+Bring the current implementation up-to-date in terms of code, structure, modularity, packaging and testing.  
+
+Surface existing but undocumented (or unexplained) features such as the namespace, maintenance, advanced configuration.
+
+Make default configuration secure and private without increasing complexity.
+
+
+## JSFS+S
+
+Complete websocket experiments and make the websocket interface part of the standard API.
+
+
+## JSFS+SX
 
 Extend file storage to file execution.  Supported file types stored with a new "execute" parameter set are executed by JSFS when requested by a client (akin to AWS Lambda or Google Cloud Functions).  This allows applications to be built on JSFS that include both client and server code.
 
 
-## Federation
+## Federated JSFS+SX
 
 Replace JSFS's inodes with a distributed hash table allowing a group of JSFS nodes to service requests for data and processing distributed across all nodes.  
 
@@ -35,7 +48,7 @@ This protocol is used to start, stop, migrate or otherwise interact with process
 Full JSFS+X servers implement all three protocols as well as the HTTP API interface ised by clients.  Utility or special-purpose servers can also participate in federation by implementing one or more of these protocols, and may be implemented in any technology capable of meeting the protocol specification.
 
 
-## Local Server
+## Local JSFS+SX
 
 To minimize network-induced latency, a local instance of JSFS is run in federation mode.  As a result, applications run from the local instance and incur zero network latency after initial load.  
 
