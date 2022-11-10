@@ -2,11 +2,6 @@
 
 A general-purpose, deduplicating filesystem with a REST interface, jsfs is intended to provide low-level filesystem functions for Javascript applications.  Additional functionality (private file indexes, token lockers, centralized authentication, etc.) are deliberately avoided here and will be implemented in a modular fashion on top of jsfs.
 
-## STATUS
-Based on field testing with large storage pools (>1TB) JSFS 4.x features a complete overhaul of the storage pool architecture.  As a result of these changes there are significant performance improvements and storage pool size is no longer constrained by avaliable memory.  Unfortunately some features have been depreciated out of necessity, at least temporarilly (if these features are needed they are still avaliable in the 3.0 release).
-
-The 4.x series server is not compatible with 3.x pools, so a migration utility (`migrate_superblock.js`) has been included in the `tools` directory.
-
 ## REQUIREMENTS
 * Node.js
 
