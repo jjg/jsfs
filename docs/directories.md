@@ -59,11 +59,12 @@ Contents of `/foo/`:
 ```
 
 Then let's say we try to `POST` a new file to `/foo/baz`:
+
 `curl --header "x-access-key: jjg"  --header "Content-Type: application/json" --request POST --data 'l33t haxor haxored you!' http://localhost:7302/foo/baz`:
 
 What does the server do?
 
-1. Parse JSON stored at `/foo/` (the last `/` before the new file path)
+1. Parse JSON stored at `/foo/` (the last `/` before the new filename)
 2. Check the `access_key` property of the JSON against the key/token provided by the request
 3. If the key check fails (which it would with the example request above), deny the request
 
@@ -71,7 +72,7 @@ Reusing `access_key` here gives us the same amount of access flexibility (public
 
 > Security note: the `access_key` will need to be filtered out of any request for the directory itself even if we want to return the rest (to allow the client to enumerate files, etc.).
 
-Of course there is the question of the possible directory files `/` leading-up to the directory we want to add a file to.  My intuition is to check all of them starting at the root, but I'm not sure thats the right answer.  First off, that's going to take time and I don't like wasting time.  Second, it might make for a more flexible system if we don't "inherit" permissions from the "enclosing" directory.
+Of course there is the question of directory files `/` leading-up to the directory we want to add a file to.  My intuition is to check all of them starting at the root, but I'm not sure thats the right answer.  First off, that's going to take time (and I don't like wasting time) and second it might make for a more flexible system if we don't "inherit" permissions from the "enclosing" directory.
 
 For example, if we only look at the directory we're writing in, it would be possible to next a directory with more open access inside a directory with more restricted access.  To put this in Unix terms, you want to allow a user to write unrestrictly to their home directory under `/home/jason` but you don't want them to write to `/home`.  Unix allows this through a complex set of permission modes but we could do something similar by simply ignoring inherited permissions and saying "if it's OK for someone to create a directory here, it's OK for them to decide the permissions down further".
 
