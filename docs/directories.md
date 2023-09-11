@@ -1,4 +1,4 @@
-# add directory support
+# Add directory support
 
 The idea is simple: treat a trailing `/` as a file that contains directory information.  Let's walk through this...
 
@@ -6,17 +6,17 @@ This stores a new file containing a little bit of JSON at the path `/foo/bar`:
 
 `curl --header "x-access-key: jjg"  --header "Content-Type: application/json" --request POST --data '{"foo":"bar"}' http://localhost:7302/foo/bar`
 
-`curl http://localhost:7302/foo/bar` returns `{"foo":"bar"}`
+After that `curl http://localhost:7302/foo/bar` returns `{"foo":"bar"}`
 
+So what does *this* store?
 
-So what does this store?
-`curl --header "x-access-key: jjg"  --header "Content-Type: application/json" --request POST --data '{"files":["bar"]}' http://localhost:7302/foo/bar/`
+`curl --header "x-access-key: jjg"  --header "Content-Type: application/json" --request POST --data '{"files":["bar"]}' http://localhost:7302/foo/`
 
-`curl http://localhost:7302/foo/bar` returns `{"files":["bar"]}`
+In this case `curl http://localhost:7302/foo/` returns `{"files":["bar"]}`
 
 But what happened to `/foo/bar`?
 
-`curl http://localhost:7302/foo/bar` still returns `{"foo":"bar"}`
+Nothing!  `curl http://localhost:7302/foo/bar` still returns `{"foo":"bar"}`
 
 So JSFS already treats a trailing `/` as a distinct file.  With an intelligent client I think we can use this alone to add directory support.
 
