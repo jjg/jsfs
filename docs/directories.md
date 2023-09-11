@@ -8,7 +8,7 @@ This stores a new file containing a little bit of JSON at the path `/foo/bar`:
 
 After that `curl http://localhost:7302/foo/bar` returns `{"foo":"bar"}`
 
-So what does *this* store?
+So what does *this* store:
 
 `curl --header "x-access-key: jjg"  --header "Content-Type: application/json" --request POST --data '{"files":["bar"]}' http://localhost:7302/foo/`
 
