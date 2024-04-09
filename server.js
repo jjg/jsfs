@@ -178,20 +178,48 @@ http.createServer(function(req, res){
           read_file(block_filename, try_compressed);
         };
 
-        var send_blocks = function send_blocks(){
+        // If the file is marked executable, run it and return the result
+        // instead of sending the file itself back to the caller
+        if(requested_file.executable){
+          // TODO: execute!
+          log.message(log.WARN, "File is executable, we should execute it, but we dont know how!");
 
-          if (idx === total_blocks) { // we're done
-            return;
-          } else {
-            if (requested_file.blocks[idx].last_seen) {
-              load_from_last_seen(true);
+          // DEBUG
+          console.log(requested_file);
+
+          var read_blocks = function read_blocks(){
+
+            if (idx === total_blocks) { // we're done
+              return;
             } else {
-              search_for_block(0);
+              if (requested_file.blocks[idx].last_seen) {
+                load_from_last_seen(true);
+              } else {
+                search_for_block(0);
+              }
             }
-          }
-        };
+          };
 
-        send_blocks();
+          read_blocks();
+
+        } else {
+          log.message(log.WARN, "File is not executable, just return the data.");
+
+          var send_blocks = function send_blocks(){
+
+            if (idx === total_blocks) { // we're done
+              return;
+            } else {
+              if (requested_file.blocks[idx].last_seen) {
+                load_from_last_seen(true);
+              } else {
+                search_for_block(0);
+              }
+            }
+          };
+
+          send_blocks();
+        }
 
       });
 
@@ -233,6 +261,10 @@ http.createServer(function(req, res){
         }
         if(params.encrypted){
           new_file.file_metadata.encrypted = true;
+        }
+
+        if(params.executable){
+          new_file.file_metadata.executable = true;
         }
 
         // if access_key is supplied with update, replace the default one
