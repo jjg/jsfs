@@ -60,7 +60,7 @@ Contents of `/foo/`:
 
 Then let's say we try to `POST` a new file to `/foo/baz`:
 
-`curl --header "x-access-key: jjg"  --header "Content-Type: application/json" --request POST --data 'l33t haxor haxored you!' http://localhost:7302/foo/baz`:
+`curl --request POST --data 'l33t haxor haxored you!' http://localhost:7302/foo/baz`:
 
 What does the server do?
 
@@ -81,3 +81,8 @@ For example, if we only look at the directory we're writing in, it would be poss
 * If we store directories (`/`) like any other file, what's the best way for JSFS to read/write/parse these files (it currently doesn't manipulate any data stored within blocks this way)?
 * Since the server is parsing and filtering values stored in directory entries (i.e., not returning `access_key`), should it parse and render other elements (for example: producing an HTML directory listing if requested)?
 * Is there any reason to use different default permission for directories, and/or what happens if someone makes a directory `private`?
+* If `/foo/bar` exists, do we allow creating `/foo/bar/`?
+  + I think the answer here is yes.  These directories are not actual containers and as such have no physical need to exist before they are populated.  Allowing this preserves flexibility
+* And, if foo/bar/ exists and /foo/bar doesn't, does a get on /foo/bar return 404 or the directory?
+  + I think a `404` is the correct response here
+
