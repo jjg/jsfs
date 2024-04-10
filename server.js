@@ -21,6 +21,7 @@ var operations = require("./lib/" + (config.CONFIGURED_STORAGE || "fs") + "/disk
 
 // needed for exec support 
 const vm = require('node:vm');
+const Stream = require('stream');
 
 // base storage object
 var Inode = require("./lib/inode.js");
@@ -84,25 +85,31 @@ http.createServer(function(req, res){
             return res.end();
           }
         }
-
+        
+        /*
         // check executable
         if(requested_file.executable){
 
-          // TODO: Actually execute the file
-          // TODO: Load the file's blocks into a variable
-          // TODO: eval() the variable
-          // TODO: return the output of the eval()
-          //log.message(log.WARN, "File is executable, but we don't know how to execute yet (Result: 501)!");
-          //res.statusCode = 501;
-          //return res.end();
+          log.message(log.INFO, "Executing " + requested_file.url);
 
-          const context = {x_out:""};
+          // TODO: Read the code out of the file instead of hardcoding it.
+          const code = "x_out = 'Hack the planet!';";
+
+          // TODO: Ideally this would handle things like `console.log()` automatically,
+          // but for now we'll just define some sort of unix-like standard.
+          const context = {
+            x_in:"",
+            x_out:"",
+            x_err:""
+          };
+
           vm.createContext(context);
-          const code = "x_out = 'Hack the Planet!';";
           vm.runInContext(code, context)
+          log.message(log.INFO, "Execution complete!");
 
           return res.end(context.x_out);
         }
+        */
 
         var create_decryptor = function create_decryptor(options){
           return options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : through();
@@ -111,6 +118,27 @@ http.createServer(function(req, res){
         var create_unzipper = function create_unzipper(compressed){
           return compressed ? zlib.createGunzip() : through();
         };
+
+        // Try using streams to construct executor...
+        class exec_stream extends Stream.Writable {
+          _write(chunk, enc, next){
+            console.log(chunk.toString());
+            next();
+          }
+        };
+
+        var xstream = new exec_stream();
+
+        //const exec_stream = new Stream.Writeable()
+        /*
+        exec_stream.exec_code = "";
+        exec_stream._write = (chunk, encoding, next) => {
+          log.message(log.INFO, "Got exec chunk!");
+
+          this.exec_code = this.exec_code + chunk;
+          next();
+        }
+        */
 
         // return status
         res.statusCode = 200;
@@ -185,14 +213,31 @@ http.createServer(function(req, res){
             send_blocks();
           }
 
+          function on_exec_end(){
+            console.log("got exec end");
+          }
+
           if (res.getMaxListeners !== undefined) {
             res.setMaxListeners(res.getMaxListeners() + 1);
           } else {
             res.setMaxListeners(0);
           }
+
           read_stream.on("end", on_end);
           read_stream.on("error", on_error);
-          read_stream.pipe(unzipper).pipe(decryptor).pipe(res, {end: should_end});
+
+          // TODO: cross fingers
+          if(requested_file.executable){
+            log.message(log.INFO, "Got executable");
+
+            // try wiring-up an end handler
+            xstream.on("end", on_exec_end);
+
+            // pump it to the exec stream
+            read_stream.pipe(unzipper).pipe(decryptor).pipe(xstream, {end: should_end});
+          } else {
+            read_stream.pipe(unzipper).pipe(decryptor).pipe(res, {end: should_end});
+          }
         };
 
         var load_from_last_seen = function load_from_last_seen(try_compressed){
