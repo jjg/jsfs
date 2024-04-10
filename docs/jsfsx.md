@@ -1,5 +1,12 @@
 # jsfsx
 
+"The simplest thing that could possibly work."
+
+## TODO
+[x] Add executable flag
+[] Execute executable files on GET
+[] Execute executable files on POST
+
 ## curl to store an executable file
 ```bash
 curl -X POST -H "content-type: text/javascript" -H "x-access-key: jjg" -H "x-executable: true" --data-binary @hello.js "http://localhost:7302/bin/hello.js"
@@ -30,3 +37,23 @@ curl -X POST -H "content-type: text/javascript" -H "x-access-key: jjg" -H "x-exe
   "media_type": "unknown"
 }
 ```
+
+## flow
+```
+case "GET"
+send_blocks()
+load_from_last_seen(true)
+read_file()
+read_stream = operations.stream_read(path)
+read_stream.pipe(unzipper).pipe(decryptor).pipe(res)
+on_end()
+read_stream shutdown
+send_blocks() (until all blocks are sent)
+- or -
+search_for_block(0)
+read_file()
+```
+
+
+## References
+* https://nodejs.org/api/vm.html

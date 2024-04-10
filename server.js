@@ -1,4 +1,5 @@
 "use strict";
+
 /* globals require */
 
 /// jsfs - Javascript filesystem with a REST interface
@@ -17,6 +18,9 @@ var CONSTANTS  = require("./lib/constants.js");
 var utils      = require("./lib/utils.js");
 var validate   = require("./lib/validate.js");
 var operations = require("./lib/" + (config.CONFIGURED_STORAGE || "fs") + "/disk-operations.js");
+
+// needed for exec support 
+const vm = require('node:vm');
 
 // base storage object
 var Inode = require("./lib/inode.js");
@@ -79,6 +83,25 @@ http.createServer(function(req, res){
             res.statusCode = 401;
             return res.end();
           }
+        }
+
+        // check executable
+        if(requested_file.executable){
+
+          // TODO: Actually execute the file
+          // TODO: Load the file's blocks into a variable
+          // TODO: eval() the variable
+          // TODO: return the output of the eval()
+          //log.message(log.WARN, "File is executable, but we don't know how to execute yet (Result: 501)!");
+          //res.statusCode = 501;
+          //return res.end();
+
+          const context = {x_out:""};
+          vm.createContext(context);
+          const code = "x_out = 'Hack the Planet!';";
+          vm.runInContext(code, context)
+
+          return res.end(context.x_out);
         }
 
         var create_decryptor = function create_decryptor(options){
@@ -158,6 +181,7 @@ http.createServer(function(req, res){
             if (res.getMaxListeners !== undefined) {
               res.setMaxListeners(res.getMaxListeners() - 1);
             }
+
             send_blocks();
           }
 
@@ -178,48 +202,20 @@ http.createServer(function(req, res){
           read_file(block_filename, try_compressed);
         };
 
-        // If the file is marked executable, run it and return the result
-        // instead of sending the file itself back to the caller
-        if(requested_file.executable){
-          // TODO: execute!
-          log.message(log.WARN, "File is executable, we should execute it, but we dont know how!");
+        var send_blocks = function send_blocks(){
 
-          // DEBUG
-          console.log(requested_file);
-
-          var read_blocks = function read_blocks(){
-
-            if (idx === total_blocks) { // we're done
-              return;
+          if (idx === total_blocks) { // we're done
+            return;
+          } else {
+            if (requested_file.blocks[idx].last_seen) {
+              load_from_last_seen(true);
             } else {
-              if (requested_file.blocks[idx].last_seen) {
-                load_from_last_seen(true);
-              } else {
-                search_for_block(0);
-              }
+              search_for_block(0);
             }
-          };
+          }
+        };
 
-          read_blocks();
-
-        } else {
-          log.message(log.WARN, "File is not executable, just return the data.");
-
-          var send_blocks = function send_blocks(){
-
-            if (idx === total_blocks) { // we're done
-              return;
-            } else {
-              if (requested_file.blocks[idx].last_seen) {
-                load_from_last_seen(true);
-              } else {
-                search_for_block(0);
-              }
-            }
-          };
-
-          send_blocks();
-        }
+        send_blocks();
 
       });
 
