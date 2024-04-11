@@ -86,31 +86,6 @@ http.createServer(function(req, res){
           }
         }
         
-        /*
-        // check executable
-        if(requested_file.executable){
-
-          log.message(log.INFO, "Executing " + requested_file.url);
-
-          // TODO: Read the code out of the file instead of hardcoding it.
-          const code = "x_out = 'Hack the planet!';";
-
-          // TODO: Ideally this would handle things like `console.log()` automatically,
-          // but for now we'll just define some sort of unix-like standard.
-          const context = {
-            x_in:"",
-            x_out:"",
-            x_err:""
-          };
-
-          vm.createContext(context);
-          vm.runInContext(code, context)
-          log.message(log.INFO, "Execution complete!");
-
-          return res.end(context.x_out);
-        }
-        */
-
         var create_decryptor = function create_decryptor(options){
           return options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : through();
         };
@@ -157,54 +132,6 @@ http.createServer(function(req, res){
         }
 
         var xstream = new ExecutableStream();
-
-        /*
-        var xstream = new Stream.Writable();
-        xstream.on("write", () => {
-          console.log("got write");
-        });
-        xstream.on("error", () => {
-          console.log("got error");
-        });
-        xstream.on("pipe", () => {
-          console.log("got pipe");
-        });
-        xstream.on("finish", () => {
-          console.log("got finish");
-        });
-        */
-        /*
-        var xstream = new Stream.Writable({
-          write: function(chunk, encoding, next){
-            console.log(chunk.toString());
-            next();
-          },
-          end: function(){
-            console.log("got end");
-          }
-        });
-        */
-        /*
-        class exec_stream extends Stream.Writable {
-          _write(chunk, enc, next){
-            console.log(chunk.toString());
-            next();
-          }
-        };
-       
-        var xstream = new exec_stream();
-        */
-
-        //const exec_stream = new Stream.Writeable()
-        /*
-        exec_stream.exec_code = "";
-        exec_stream._write = (chunk, encoding, next) => {
-          log.message(log.INFO, "Got exec chunk!");
-
-          this.exec_code = this.exec_code + chunk;
-          next();
-        }
-        */
 
         // return status
         res.statusCode = 200;
@@ -304,17 +231,8 @@ http.createServer(function(req, res){
           read_stream.on("end", on_end);
           read_stream.on("error", on_error);
 
-          //xstream.on("end", x_on_end);
-          //xstream.on("error", on_error);
-
-          // TODO: cross fingers
+          // if file is executable, run it before returning the data 
           if(requested_file.executable){
-            log.message(log.INFO, "Got executable");
-
-            // try wiring-up an end handler
-            //xstream.on("end", on_exec_end);
-
-            // pump it to the exec stream
             read_stream.pipe(unzipper).pipe(decryptor).pipe(xstream).pipe(res, {end: should_end});
           } else {
             read_stream.pipe(unzipper).pipe(decryptor).pipe(res, {end: should_end});

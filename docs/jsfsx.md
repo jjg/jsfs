@@ -2,10 +2,15 @@
 
 "The simplest thing that could possibly work."
 
-## TODO
+## TODO (in no strict order)
 - [x] Add executable flag
 - [x] Execute executable files on GET
-- [] Execute executable files on POST
+- [ ] Fix duplicated output error
+- [ ] Standardize i/o interface (`x_in`, `x_out`, etc.)
+  - [ ] Expose some/all request input to the executing code
+- [ ] Refactor (code structure, logging, error handling, etc.)
+- [ ] Experiment with `vm` settings to maximize stability, performance, security
+- [ ] Execute executable files on POST
 
 ## curl to store an executable file
 ```bash
