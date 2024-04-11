@@ -98,7 +98,6 @@ http.createServer(function(req, res){
         // and get rid of the need for the conditional pipeline below?
 
         // TODO: This class almost certainly should be declared elsewhere...
-        // Try using streams to construct executor...
         class ExecutableStream extends Transform {
           constructor() {
             super();
@@ -218,7 +217,16 @@ http.createServer(function(req, res){
           read_stream.on("error", on_error);
 
           // if file is executable, run it before returning the data 
+          // TODO: Try to consolidate this exec-specific stuff instead
+          // of having to have all these conditional checks everywhere.
           if(requested_file.executable){
+
+            // TODO: Maybe this can be set by the code to something more specific? 
+            res.removeHeader("Content-Type");
+
+            // TODO: Can we get the Content-Length from the x_out value of the xstream? 
+            res.removeHeader("Content-Length");
+
             read_stream.pipe(unzipper).pipe(decryptor).pipe(xstream).pipe(res, {end: should_end});
           } else {
             read_stream.pipe(unzipper).pipe(decryptor).pipe(res, {end: should_end});
