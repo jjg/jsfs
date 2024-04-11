@@ -208,19 +208,6 @@ http.createServer(function(req, res){
             send_blocks();
           }
 
-          function x_on_end(){
-            console.log("Got x_on_end");
-
-            idx++;
-            xstream.removeListener("end", on_end);
-            xstream.removeListener("error", on_error);
-            if (res.getMaxListeners !== undefined) {
-              res.setMaxListeners(res.getMaxListeners() - 1);
-            }
-
-            send_blocks();
-          }
-
           if (res.getMaxListeners !== undefined) {
             res.setMaxListeners(res.getMaxListeners() + 1);
           } else {
