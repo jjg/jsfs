@@ -3,9 +3,9 @@
 "The simplest thing that could possibly work."
 
 ## TODO
- [x] Add executable flag
- [x] Execute executable files on GET
- [] Execute executable files on POST
+- [x] Add executable flag
+- [x] Execute executable files on GET
+- [] Execute executable files on POST
 
 ## curl to store an executable file
 ```bash
