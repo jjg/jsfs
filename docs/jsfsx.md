@@ -11,6 +11,7 @@
 - [ ] Refactor (code structure, logging, error handling, etc.)
 - [ ] Experiment with `vm` settings to maximize stability, performance, security
 - [ ] Execute executable files on POST
+- [ ] Preserve `executable` bit through `PUT`s
 
 ## curl to store an executable file
 ```bash
