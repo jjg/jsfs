@@ -1,1 +1,1 @@
-console.log("Hack the Planet!");
+x_out = "Hack the Planet!";

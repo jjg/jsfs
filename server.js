@@ -21,7 +21,7 @@ var operations = require("./lib/" + (config.CONFIGURED_STORAGE || "fs") + "/disk
 
 // needed for exec support 
 const vm = require('node:vm');
-const { Writable } = require('node:stream');
+const { Transform } = require('node:stream');
 
 // base storage object
 var Inode = require("./lib/inode.js");
@@ -120,7 +120,7 @@ http.createServer(function(req, res){
         };
 
         // Try using streams to construct executor...
-        class ExecutableStream extends Writable {
+        class ExecutableStream extends Transform {
           constructor() {
             super();
             this.code = null;
@@ -130,17 +130,17 @@ http.createServer(function(req, res){
             this.code = "";
             callback();
           }
-          _write(chunk, encoding, callback){
-            console.log("Got _write");
+          _flush(callback) {
+            console.log("Got _flush");
+            // TODO: is this where we execute the code and emit the result,
+            // maybe using this.push()?
+            this.push(this.code);
+            callback();
+          }
+          _transform(chunk, encoding, callback){
+            console.log("Got _transform");
+            console.log("chunk: " + chunk.toString());
             this.code = this.code + chunk.toString();
-            callback();
-          }
-          _final(callback){
-            console.log("Got _final");
-            callback();
-          }
-          _destroy(err, callback){
-            console.log("Got _destroy");
             callback(null);
           }
         }
@@ -293,8 +293,8 @@ http.createServer(function(req, res){
           read_stream.on("end", on_end);
           read_stream.on("error", on_error);
 
-          xstream.on("end", x_on_end);
-          xstream.on("error", on_error);
+          //xstream.on("end", x_on_end);
+          //xstream.on("error", on_error);
 
           // TODO: cross fingers
           if(requested_file.executable){
