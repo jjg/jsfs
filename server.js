@@ -21,7 +21,7 @@ var operations = require("./lib/" + (config.CONFIGURED_STORAGE || "fs") + "/disk
 
 // needed for exec support 
 const vm = require('node:vm');
-const Stream = require('stream');
+const { Writable } = require('node:stream');
 
 // base storage object
 var Inode = require("./lib/inode.js");
@@ -120,14 +120,69 @@ http.createServer(function(req, res){
         };
 
         // Try using streams to construct executor...
+        class ExecutableStream extends Writable {
+          constructor() {
+            super();
+            this.code = null;
+          }
+          _construct(callback) {
+            console.log("Got _construct");
+            this.code = "";
+            callback();
+          }
+          _write(chunk, encoding, callback){
+            console.log("Got _write");
+            this.code = this.code + chunk.toString();
+            callback();
+          }
+          _final(callback){
+            console.log("Got _final");
+            callback();
+          }
+          _destroy(err, callback){
+            console.log("Got _destroy");
+            callback(null);
+          }
+        }
+
+        var xstream = new ExecutableStream();
+
+        /*
+        var xstream = new Stream.Writable();
+        xstream.on("write", () => {
+          console.log("got write");
+        });
+        xstream.on("error", () => {
+          console.log("got error");
+        });
+        xstream.on("pipe", () => {
+          console.log("got pipe");
+        });
+        xstream.on("finish", () => {
+          console.log("got finish");
+        });
+        */
+        /*
+        var xstream = new Stream.Writable({
+          write: function(chunk, encoding, next){
+            console.log(chunk.toString());
+            next();
+          },
+          end: function(){
+            console.log("got end");
+          }
+        });
+        */
+        /*
         class exec_stream extends Stream.Writable {
           _write(chunk, enc, next){
             console.log(chunk.toString());
             next();
           }
         };
-
+       
         var xstream = new exec_stream();
+        */
 
         //const exec_stream = new Stream.Writeable()
         /*
@@ -193,6 +248,9 @@ http.createServer(function(req, res){
           var should_end  = (idx + 1) === total_blocks;
 
           function on_error(){
+
+            console.log("Got on_error");
+
             if (try_compressed) {
               log.message(log.WARN, "Cannot locate compressed block in last_seen location, trying uncompressed");
               return load_from_last_seen(false);
@@ -213,8 +271,17 @@ http.createServer(function(req, res){
             send_blocks();
           }
 
-          function on_exec_end(){
-            console.log("got exec end");
+          function x_on_end(){
+            console.log("Got x_on_end");
+
+            idx++;
+            xstream.removeListener("end", on_end);
+            xstream.removeListener("error", on_error);
+            if (res.getMaxListeners !== undefined) {
+              res.setMaxListeners(res.getMaxListeners() - 1);
+            }
+
+            send_blocks();
           }
 
           if (res.getMaxListeners !== undefined) {
@@ -226,15 +293,18 @@ http.createServer(function(req, res){
           read_stream.on("end", on_end);
           read_stream.on("error", on_error);
 
+          xstream.on("end", x_on_end);
+          xstream.on("error", on_error);
+
           // TODO: cross fingers
           if(requested_file.executable){
             log.message(log.INFO, "Got executable");
 
             // try wiring-up an end handler
-            xstream.on("end", on_exec_end);
+            //xstream.on("end", on_exec_end);
 
             // pump it to the exec stream
-            read_stream.pipe(unzipper).pipe(decryptor).pipe(xstream, {end: should_end});
+            read_stream.pipe(unzipper).pipe(decryptor).pipe(xstream).pipe(res, {end: should_end});
           } else {
             read_stream.pipe(unzipper).pipe(decryptor).pipe(res, {end: should_end});
           }
