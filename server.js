@@ -94,6 +94,10 @@ http.createServer(function(req, res){
           return compressed ? zlib.createGunzip() : through();
         };
 
+        // TODO: Maybe we can follow the pattern above for the x stream
+        // and get rid of the need for the conditional pipeline below?
+
+        // TODO: This class almost certainly should be declared elsewhere...
         // Try using streams to construct executor...
         class ExecutableStream extends Transform {
           constructor() {
@@ -101,12 +105,13 @@ http.createServer(function(req, res){
             this.code = null;
           }
           _construct(callback) {
-            console.log("Got _construct");
             this.code = "";
             callback();
           }
           _flush(callback) {
-            console.log("Got _flush");
+
+            // TODO: Find the right way to include the filename in the log below
+            log.message(log.INFO, "Beginning execution of ...");
 
             // TODO: Ideally this would handle things like `console.log()` automatically,
             // but for now we'll just define some sort of unix-like standard.
@@ -124,13 +129,10 @@ http.createServer(function(req, res){
             callback();
           }
           _transform(chunk, encoding, callback){
-            console.log("Got _transform");
-            console.log("chunk: " + chunk.toString());
             this.code = this.code + chunk.toString();
             callback(null);
           }
         }
-
         var xstream = new ExecutableStream();
 
         // return status

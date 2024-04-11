@@ -11,6 +11,7 @@
 - [ ] Refactor (code structure, logging, error handling, etc.)
 - [ ] Experiment with `vm` settings to maximize stability, performance, security
 - [ ] Execute executable files on POST
+- [ ] Come up with a way to fetch the source of an executable w/o running it
 
 ## curl to store an executable file
 ```bash
