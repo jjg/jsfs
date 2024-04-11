@@ -188,9 +188,6 @@ http.createServer(function(req, res){
           var should_end  = (idx + 1) === total_blocks;
 
           function on_error(){
-
-            console.log("Got on_error");
-
             if (try_compressed) {
               log.message(log.WARN, "Cannot locate compressed block in last_seen location, trying uncompressed");
               return load_from_last_seen(false);
