@@ -12,6 +12,7 @@
 - [ ] Experiment with `vm` settings to maximize stability, performance, security
 - [ ] Execute executable files on POST
 - [ ] Come up with a way to fetch the source of an executable w/o running it
+- [ ] Preserve `executable` bit through `PUT`s
 
 ## curl to store an executable file
 ```bash
