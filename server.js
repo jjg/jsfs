@@ -132,9 +132,20 @@ http.createServer(function(req, res){
           }
           _flush(callback) {
             console.log("Got _flush");
-            // TODO: is this where we execute the code and emit the result,
-            // maybe using this.push()?
-            this.push(this.code);
+
+            // TODO: Ideally this would handle things like `console.log()` automatically,
+            // but for now we'll just define some sort of unix-like standard.
+            const context = {
+              x_in:"",
+              x_out:"",
+              x_err:""
+            };
+
+            vm.createContext(context);
+            vm.runInContext(this.code, context)
+            log.message(log.INFO, "Execution complete!");
+
+            this.push(context.x_out);
             callback();
           }
           _transform(chunk, encoding, callback){
