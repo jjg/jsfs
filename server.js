@@ -181,6 +181,7 @@ http.createServer(function(req, res){
         };
 
         var read_file = function read_file(path, try_compressed){
+
           var read_stream = operations.stream_read(path);
           var decryptor   = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
           var unzipper    = create_unzipper(try_compressed);
@@ -220,6 +221,8 @@ http.createServer(function(req, res){
           // TODO: Try to consolidate this exec-specific stuff instead
           // of having to have all these conditional checks everywhere.
           if(requested_file.executable){
+
+            console.log("Running pipeline");
 
             // TODO: Maybe this can be set by the code to something more specific? 
             res.removeHeader("Content-Type");
