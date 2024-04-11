@@ -54,6 +54,58 @@ search_for_block(0)
 read_file()
 ```
 
+## it works!
+
+### source file
+`hello.js`
+```javascript
+x_out = "Hack the Planet!";
+```
+
+### upload
+```bash
+curl -X POST -H "content-type: text/javascript" -H "x-access-key: jjg" -H "x-executable: true" --data-binary @hello.js "http://localhost:7302/bin/hello.js"
+```
+
+### execute
+```bash
+curl "http://localhost:7302/bin/hello.js"
+```
+
+### output
+```bash
+Hack the Planet!Hack the Pla
+```
+
+There's clearly bugs, but I think it proves the concept.
+
+```bash
+curl -v "http://localhost:7302/bin/hello.js"
+*   Trying 127.0.0.1:7302...
+* Connected to localhost (127.0.0.1) port 7302 (#0)
+> GET /bin/hello.js HTTP/1.1
+> Host: localhost:7302
+> User-Agent: curl/7.81.0
+> Accept: */*
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 200 OK
+< Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS
+< Access-Control-Allow-Headers: Accept,Accept-Version,Api-Version,Content-Type,Origin,Range,X_FILENAME,X-Access-Key,X-Access-Token,X-Append,X-Encrypted,X-Private,X-Replacement-Access-Key,X-Requested-With,X-Executable
+< Access-Control-Allow-Origin: *
+< Access-Control-Expose-Headers: X-Media-Bitrate,X-Media-Channels,X-Media-Duration,X-Media-Resolution,X-Media-Size,X-Media-Type
+< Content-Type: text/javascript
+< Content-Length: 28
+< Date: Thu, 11 Apr 2024 15:50:10 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< 
+* Excess found in a read: excess = 4, size = 28, maxdownload = 28, bytecount = 0
+* Closing connection 0
+Hack the Planet!Hack the Pla
+```
+
 
 ## References
 * https://nodejs.org/api/vm.html
+* https://nodejs.org/docs/latest/api/stream.html#stream_implementing_a_transform_stream
