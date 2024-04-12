@@ -6,14 +6,17 @@
 - [x] Add executable flag
 - [x] Execute executable files on GET
 - [x] Fix duplicated output error
-- [ ] Standardize i/o interface (`x_in`, `x_out`, etc.)
+- [x] Standardize i/o interface (`x_in`, `x_out`, etc.)
   - [x] Expose some/all request input to the executing code
 - [x] Refactor (code structure, logging, error handling, etc.)
 - [ ] Experiment with `vm` settings to maximize stability, performance, security
 - [ ] Execute executable files on POST
 - [ ] Come up with a way to fetch the source of an executable w/o running it
+  - [ ] Don't execute if an access-key/token is presented
 - [ ] Preserve `executable` bit through `PUT`s (note: this might be an existing bug, other properties appear to behave the same way...)
-- [ ] Don't execute if an access-key/token is presented
+- [ ] Figure out how to set the `content-length`, `content-type` headers when executing code
+- [ ] Consider finding a way for a client to access `x_err` data (maybe a `debug` flag that dumps the entire context to `response`?)
+- [ ] Consider the impact of executables that emit large amounts of data (or continuous streams)
 
 ## curl to store an executable file
 ```bash
@@ -135,6 +138,18 @@ x_out = "The request method is: " + x_in.method;
 curl "http://localhost:7302/bin/input.js"
 The request method is: GET
 ```
+
+## X runtime environment/interface
+
+There will be a lot more to explore here in the future, but in the spirit of MVP or whatever here's what we're going to do for now.
+
+Files marked executable will be run as Javascript in a [Node.js VM](https://nodejs.org/api/vm.html#vm-executing-javascript).  At startup three variables will be initialized: `x_in`, `x_out` and `x_err`.  These map loosely to the `stdin`, `stdout` and `stderr` unix convention.
+* `x_in` is the entire `request` object sent by the user agent (for now)
+* `x_out` is returned to the user agent in the `response` object
+* `x_err` is written to the JSFS log
+
+It would be useful if `x_err` was more accessible by the user agent, and I have some ideas for this (maybe a `x-jsfs-debug` header that dumps the entire `context` to `response`?), but for now I'm just going to let it write to the log (if it's needed for debugging you can always do that using a local JSFS instance right?).
+
 
 ## References
 * https://nodejs.org/api/vm.html
