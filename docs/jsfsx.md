@@ -120,6 +120,22 @@ For whatever reason refactoring the code a bit made the duplicate output bug go 
 It's tempting to move on to `POST` but probably better to figure out the I/O first..
 
 
+## input
+
+Let's start by passing the whole `request` into the executor, what's the worst that can happen?
+
+Then this uploaded code:
+
+```javascript
+x_out = "The request method is: " + x_in.method;
+```
+
+...yeilds this result:
+```bash
+curl "http://localhost:7302/bin/input.js"
+The request method is: GET
+```
+
 ## References
 * https://nodejs.org/api/vm.html
 * https://nodejs.org/docs/latest/api/stream.html#stream_implementing_a_transform_stream
