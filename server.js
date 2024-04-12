@@ -182,6 +182,9 @@ http.createServer(function(req, res){
 
         var read_file = function read_file(path, try_compressed){
 
+          // DEBUG
+          console.log("Got read_file");
+
           var read_stream = operations.stream_read(path);
           var decryptor   = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
           var unzipper    = create_unzipper(try_compressed);
