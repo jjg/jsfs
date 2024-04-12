@@ -93,7 +93,9 @@ http.createServer(function(req, res){
         };
 
         var create_executor = function create_executor(executable){
-          return executable ? new XStream : through();
+          // TODO: We're passing the whole damn request in for now,
+          // but it might be a good ideal to pair this down at some point.
+          return executable ? new XStream(req) : through();
         };
 
         // return status

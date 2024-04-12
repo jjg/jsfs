@@ -7,12 +7,13 @@
 - [x] Execute executable files on GET
 - [x] Fix duplicated output error
 - [ ] Standardize i/o interface (`x_in`, `x_out`, etc.)
-  - [ ] Expose some/all request input to the executing code
+  - [x] Expose some/all request input to the executing code
 - [x] Refactor (code structure, logging, error handling, etc.)
 - [ ] Experiment with `vm` settings to maximize stability, performance, security
 - [ ] Execute executable files on POST
 - [ ] Come up with a way to fetch the source of an executable w/o running it
 - [ ] Preserve `executable` bit through `PUT`s (note: this might be an existing bug, other properties appear to behave the same way...)
+- [ ] Don't execute if an access-key/token is presented
 
 ## curl to store an executable file
 ```bash
