@@ -155,7 +155,8 @@ http.createServer(function(req, res){
           var read_stream = operations.stream_read(path);
           var decryptor   = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
           var unzipper    = create_unzipper(try_compressed);
-          var executor = create_executor(requested_file.executable);
+          // If access auth is present, don't execute
+          var executor = create_executor(requested_file.executable && !params.access_key && !params.access_token);
           var should_end  = (idx + 1) === total_blocks;
 
           function on_error(){

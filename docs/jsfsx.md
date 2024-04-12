@@ -11,8 +11,8 @@
 - [x] Refactor (code structure, logging, error handling, etc.)
 - [ ] Experiment with `vm` settings to maximize stability, performance, security
 - [ ] Execute executable files on POST
-- [ ] Come up with a way to fetch the source of an executable w/o running it
-  - [ ] Don't execute if an access-key/token is presented
+- [x] Come up with a way to fetch the source of an executable w/o running it
+  - [x] Don't execute if an access-key/token is presented
 - [ ] Preserve `executable` bit through `PUT`s (note: this might be an existing bug, other properties appear to behave the same way...)
 - [ ] Figure out how to set the `content-length`, `content-type` headers when executing code
 - [ ] Consider finding a way for a client to access `x_err` data (maybe a `debug` flag that dumps the entire context to `response`?)
