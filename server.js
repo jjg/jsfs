@@ -224,6 +224,8 @@ http.createServer(function(req, res){
 
         if (inode){
 
+          // TODO: If the file is executable, and access credentials are not present, execute the file.
+
           // check authorization
           if (validate.is_authorized(inode, req.method, params)){
             log.message(log.INFO, "File update request authorized");

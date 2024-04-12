@@ -150,6 +150,17 @@ Files marked executable will be run as Javascript in a [Node.js VM](https://node
 
 It would be useful if `x_err` was more accessible by the user agent, and I have some ideas for this (maybe a `x-jsfs-debug` header that dumps the entire `context` to `response`?), but for now I'm just going to let it write to the log (if it's needed for debugging you can always do that using a local JSFS instance right?).
 
+## view source
+Now you can retrieve the data (as opposed to executing the code) in a stored file that is marked as executable:
+
+```bash
+curl "http://localhost:7302/bin/viewsource2.js"
+Call me with an access-key to view my sourcecode!
+
+curl -H "x-access-key: jjg" "http://localhost:7302/bin/viewsource2.js"
+// If you're seeing this, the execute override worked!
+x_out = "Call me with an access-key to view my sourcecode!";
+```
 
 ## References
 * https://nodejs.org/api/vm.html
