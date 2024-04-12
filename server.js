@@ -19,12 +19,11 @@ var utils      = require("./lib/utils.js");
 var validate   = require("./lib/validate.js");
 var operations = require("./lib/" + (config.CONFIGURED_STORAGE || "fs") + "/disk-operations.js");
 
-// needed for exec support 
-const vm = require('node:vm');
-const { Transform } = require('node:stream');
-
 // base storage object
 var Inode = require("./lib/inode.js");
+
+// executable support 
+var XStream = require("./lib/xstream.js");
 
 // get this now, rather than at several other points
 var TOTAL_LOCATIONS = config.STORAGE_LOCATIONS.length;
@@ -94,52 +93,23 @@ http.createServer(function(req, res){
           return compressed ? zlib.createGunzip() : through();
         };
 
-        // TODO: Maybe we can follow the pattern above for the x stream
-        // and get rid of the need for the conditional pipeline below?
-
-        // TODO: This class almost certainly should be declared elsewhere...
-        class ExecutableStream extends Transform {
-          constructor() {
-            super();
-            this.code = null;
-          }
-          _construct(callback) {
-            this.code = "";
-            callback();
-          }
-          _flush(callback) {
-
-            // TODO: Find the right way to include the filename in the log below
-            log.message(log.INFO, "Beginning execution of ...");
-
-            // TODO: Ideally this would handle things like `console.log()` automatically,
-            // but for now we'll just define some sort of unix-like standard.
-            const context = {
-              x_in:"",
-              x_out:"",
-              x_err:""
-            };
-
-            vm.createContext(context);
-            vm.runInContext(this.code, context)
-            log.message(log.INFO, "Execution complete!");
-
-            this.push(context.x_out);
-            callback();
-          }
-          _transform(chunk, encoding, callback){
-            this.code = this.code + chunk.toString();
-            callback(null);
-          }
-        }
-        var xstream = new ExecutableStream();
+        var create_executor = function create_executor(executable){
+          return executable ? new XStream : through();
+        };
 
         // return status
         res.statusCode = 200;
 
         // return file metadata as HTTP headers
-        res.setHeader("Content-Type", requested_file.content_type);
-        res.setHeader("Content-Length", requested_file.file_size);
+        // TODO: These can change for executable files, 
+        // so for now only set them if we're not executing
+        // (a better solution would be to count the output
+        // from the running code, but I don't know how to
+        // do that yet...)
+        if(!requested_file.executable){
+          res.setHeader("Content-Type", requested_file.content_type);
+          res.setHeader("Content-Length", requested_file.file_size);
+        }
 
         var total_blocks = requested_file.blocks.length;
         var idx = 0;
@@ -185,6 +155,7 @@ http.createServer(function(req, res){
           var read_stream = operations.stream_read(path);
           var decryptor   = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
           var unzipper    = create_unzipper(try_compressed);
+          var executor = create_executor(requested_file.executable);
           var should_end  = (idx + 1) === total_blocks;
 
           function on_error(){
@@ -217,23 +188,7 @@ http.createServer(function(req, res){
           read_stream.on("end", on_end);
           read_stream.on("error", on_error);
 
-          // if file is executable, run it before returning the data 
-          // TODO: Try to consolidate this exec-specific stuff instead
-          // of having to have all these conditional checks everywhere.
-          if(requested_file.executable){
-
-            console.log("Running pipeline");
-
-            // TODO: Maybe this can be set by the code to something more specific? 
-            res.removeHeader("Content-Type");
-
-            // TODO: Can we get the Content-Length from the x_out value of the xstream? 
-            res.removeHeader("Content-Length");
-
-            read_stream.pipe(unzipper).pipe(decryptor).pipe(xstream).pipe(res, {end: should_end});
-          } else {
-            read_stream.pipe(unzipper).pipe(decryptor).pipe(res, {end: should_end});
-          }
+          read_stream.pipe(unzipper).pipe(decryptor).pipe(executor).pipe(res, {end: should_end});
         };
 
         var load_from_last_seen = function load_from_last_seen(try_compressed){

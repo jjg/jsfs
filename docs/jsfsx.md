@@ -5,10 +5,10 @@
 ## TODO (in no strict order)
 - [x] Add executable flag
 - [x] Execute executable files on GET
-- [ ] Fix duplicated output error
+- [x] Fix duplicated output error
 - [ ] Standardize i/o interface (`x_in`, `x_out`, etc.)
   - [ ] Expose some/all request input to the executing code
-- [ ] Refactor (code structure, logging, error handling, etc.)
+- [x] Refactor (code structure, logging, error handling, etc.)
 - [ ] Experiment with `vm` settings to maximize stability, performance, security
 - [ ] Execute executable files on POST
 - [ ] Come up with a way to fetch the source of an executable w/o running it
