@@ -1,5 +1,4 @@
 "use strict";
-
 /* globals require */
 
 /// jsfs - Javascript filesystem with a REST interface
@@ -84,7 +83,7 @@ http.createServer(function(req, res){
             return res.end();
           }
         }
-        
+
         var create_decryptor = function create_decryptor(options){
           return options.encrypted ? crypto.createDecipher("aes-256-cbc", options.key) : through();
         };
@@ -151,7 +150,6 @@ http.createServer(function(req, res){
         };
 
         var read_file = function read_file(path, try_compressed){
-
           var read_stream = operations.stream_read(path);
           var decryptor   = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
           var unzipper    = create_unzipper(try_compressed);
@@ -175,7 +173,6 @@ http.createServer(function(req, res){
             if (res.getMaxListeners !== undefined) {
               res.setMaxListeners(res.getMaxListeners() - 1);
             }
-
             send_blocks();
           }
 
@@ -187,7 +184,6 @@ http.createServer(function(req, res){
 
           read_stream.on("end", on_end);
           read_stream.on("error", on_error);
-
           read_stream.pipe(unzipper).pipe(decryptor).pipe(executor).pipe(res, {end: should_end});
         };
 
