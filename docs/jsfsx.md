@@ -10,6 +10,11 @@
   - [x] Expose some/all request input to the executing code
 - [x] Refactor (code structure, logging, error handling, etc.)
 - [ ] Experiment with `vm` settings to maximize stability, performance, security
+  - [ ] Caching/compiling scripts for faster startup time
+  - [ ] Other languages?
+  - [ ] How to handle modules/dependencies?
+  - [ ] Threading/eventloop impact/tuning
+  - [ ] Related: other workloads (external binaries, shell scripts, etc.)
 - [ ] Execute executable files on POST
 - [x] Come up with a way to fetch the source of an executable w/o running it
   - [x] Don't execute if an access-key/token is presented
