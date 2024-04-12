@@ -225,6 +225,7 @@ http.createServer(function(req, res){
         if (inode){
 
           // TODO: If the file is executable, and access credentials are not present, execute the file.
+          // This is really just GET, so maybe there is a way to branch-out to GET and avoid a lot of duplication?
 
           // check authorization
           if (validate.is_authorized(inode, req.method, params)){
