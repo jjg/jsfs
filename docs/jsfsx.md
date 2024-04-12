@@ -143,7 +143,7 @@ The request method is: GET
 
 There will be a lot more to explore here in the future, but in the spirit of MVP or whatever here's what we're going to do for now.
 
-Files marked executable will be run as Javascript in a [Node.js VM](https://nodejs.org/api/vm.html#vm-executing-javascript).  At startup three variables will be initialized: `x_in`, `x_out` and `x_err`.  These map loosely to the `stdin`, `stdout` and `stderr` unix convention.
+Files marked executable are run as Javascript in a [Node.js VM](https://nodejs.org/api/vm.html#vm-executing-javascript).  At startup three variables will be initialized: `x_in`, `x_out` and `x_err`.  These map loosely to the `stdin`, `stdout` and `stderr` unix convention.
 * `x_in` is the entire `request` object sent by the user agent (for now)
 * `x_out` is returned to the user agent in the `response` object
 * `x_err` is written to the JSFS log
