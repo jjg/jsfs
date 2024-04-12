@@ -12,7 +12,7 @@
 - [ ] Experiment with `vm` settings to maximize stability, performance, security
 - [ ] Execute executable files on POST
 - [ ] Come up with a way to fetch the source of an executable w/o running it
-- [ ] Preserve `executable` bit through `PUT`s (note: this might impact other properties...)
+- [ ] Preserve `executable` bit through `PUT`s (note: this might be an existing bug, other properties appear to behave the same way...)
 
 ## curl to store an executable file
 ```bash
@@ -111,6 +111,12 @@ curl -v "http://localhost:7302/bin/hello.js"
 * Closing connection 0
 Hack the Planet!Hack the Pla
 ```
+
+## Refactoring and bugs
+
+For whatever reason refactoring the code a bit made the duplicate output bug go away ("IT'S MAGIC!").  Now executable `GET` requests work as expected, so it's probably time to think more about the interface between requests, reponses and the executable code.
+
+It's tempting to move on to `POST` but probably better to figure out the I/O first..
 
 
 ## References
