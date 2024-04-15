@@ -1,8 +1,5 @@
-x_out = "";
-loop_count = 10;
+var loop_count = 5;
 
 for(var i=0;i<loop_count;i++){
-  x_out = x_out + "drip\n";
-  gong(x_out.length); 
-  loop_count--;
+  x_push("drip\n");
 }
