@@ -190,7 +190,7 @@ OK, so if I pass a function via the `context` object, I can invoke that function
 
 So what's it going to take to test this end-to-end?  I think `ExecutableStream` needs to be re-written as a `Duplex` stream provider, so let's checkpoint all this in git before we break everything...
 
-
+So it looks like I can cram what I need into the `_write()` and `_read()` methods of the `Duplex` stream, but I need a way to know when all the X code has been `_write()`-end, and I also need to know how to tell callers of `_read()` that the X is done generating output.
 
 
 
