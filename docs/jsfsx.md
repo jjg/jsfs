@@ -178,6 +178,25 @@ x_out = "Call me with an access-key to view my sourcecode!";
 ## streaming
 What if an X generates output for a long time on purpose (imagine an audio stream, just as a random example...)?
 
+This is tricky, and the more I think about it, the more I'm not sure it makes sense for code executing in this context to behave this way.  Let me try to explain...
+
+An HTTP request is made to an X file, the file is loaded, passed the request data and run.  When the run is complete, any output is passed back to the requestor.  This is pipelined using a Node.js stream but since the relationship between input and output is asymetrical the stream can't work in a "pipelined" fashion like passing a regular file back to the caller.  The `Transform` component used to execute the code can't "yield" output outside of fixed events which consist of either one per "chunk" passed to the component (not an option because the chunks are the sourcecode that can't be executed piecemeal) or at the end of receiving all the chunks (how we do it now).
+
+So this means that if an X needs all of it's code to run, it can only send data back to the caller in one shot.  That means that the output must be buffered in memory, unless there is some non-obvious way to "drain" the output downstream in the pipeline that I'm not finding in the docs...
+
+This might be overcome using a `Duplex` stream, however we also need a way to stream data out of the X running under `vm.runInContext()`.  Right now I don't see a way to do this as running the X in `vm` is a blocking operation, but maybe there's a way to get events out if it?  Maybe the `context` that gets passed-in could include a function that could somehow cross that barrier?
+
+OK, so if I pass a function via the `context` object, I can invoke that function from inside the `vm` that is running the X.  So this *could* be used to send a signal to the `ExecutableStream` that there's data to send along the pipeline.  I'm not sure yet if this is a *good* idea (it's starting to feel like entangling the X-world too much in the outer world) but let's just go with it for awhile and see if it actually works.
+
+So what's it going to take to test this end-to-end?  I think `ExecutableStream` needs to be re-written as a `Duplex` stream provider, so let's checkpoint all this in git before we break everything...
+
+
+
+
+
+
+This isn't all bad, in fact it hints at a better way to write X code.  Let me see if I can summarize that...
+
 
 
 ## References
