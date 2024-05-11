@@ -37,6 +37,10 @@ Keys are used to unlock all operations that can be performed on an object stored
 
 Tokens are more ephemeral, and any number of them can be generated to grant varying degrees of access to an object.  Token generation is described later.
 
+> If you want to limit the entire server to a fixed set of static `access_keys`, add the following parameter to `config.js`:
+> `STATIC_ACCESS_KEYS: ["foo", "bar"]`
+> Write requests for new files that do not include an `access_key` in this array will return `unauthorized`, as will any write request that includes no `access_key` or `access_token`.
+
 ### Parameters and Headers
 jsfs uses several parameters to control access to objects and how they are stored.  These values can also be supplied as request headers by adding a leading "x-" and changing "_" to "-" (`access_token` becomes `x-access-token`). Headers are preferred to querystring parameters because they are less likely to collide but both function the same. 
 
