@@ -38,7 +38,7 @@ Keys are used to unlock all operations that can be performed on an object stored
 Tokens are more ephemeral, and any number of them can be generated to grant varying degrees of access to an object.  Token generation is described later.
 
 #### Static access keys
-If you want to limit the entire server to a fixed set of static `access_keys`, add the following parameter to `config.js`:
+If you want to limit the entire server to a fixed set of static `access_keys`, add some keys to the `STATIC_ACCESS_KEYS` array in `config.js`:
 
 ```js
 STATIC_ACCESS_KEYS: ["foo", "bar"]
