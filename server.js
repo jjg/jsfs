@@ -215,6 +215,28 @@ http.createServer(function(req, res){
             return;
           }
         } else {
+
+          // if static access keys are configured, require an access key or token
+          // TODO: DRY up these unauthorized responses.
+          // TODO: Test with existing files, access_tokens
+          if(config.STATIC_ACCESS_KEYS.length > 0){
+            if((params.access_key.length < 1) && (params.access_token.length < 1)) {
+              log.message(log.WARN, "File update request unauthorized");
+              res.statusCode = 401;
+              res.end();
+              return;
+            }
+            // if an access_key was provided, check against the static keys
+            if(params.access_key.length > 0){
+              if(!config.STATIC_ACCESS_KEYS.includes(params.access_key)){
+                log.message(log.WARN, "File update request unauthorized");
+                res.statusCode = 401;
+                res.end();
+                return;
+              }
+            }
+          }
+
           log.message(log.DEBUG, "No existing file found, storing new file");
         }
 
