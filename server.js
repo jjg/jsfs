@@ -219,7 +219,7 @@ http.createServer(function(req, res){
           // if static access keys are configured, require an access key or token
           // TODO: DRY up these unauthorized responses.
           // TODO: Test with existing files, access_tokens
-          if(config.STATIC_ACCESS_KEYS.length > 0){
+          if("STATIC_ACCESS_KEYS" in config && config.STATIC_ACCESS_KEYS.length > 0){
             if((params.access_key.length < 1) && (params.access_token.length < 1)) {
               log.message(log.WARN, "File update request unauthorized");
               res.statusCode = 401;
