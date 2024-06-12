@@ -21,6 +21,9 @@ var operations = require("./lib/" + (config.CONFIGURED_STORAGE || "fs") + "/disk
 // base storage object
 var Inode = require("./lib/inode.js");
 
+// executable support 
+var XStream = require("./lib/xstream.js");
+
 // get this now, rather than at several other points
 var TOTAL_LOCATIONS = config.STORAGE_LOCATIONS.length;
 
@@ -89,12 +92,25 @@ http.createServer(function(req, res){
           return compressed ? zlib.createGunzip() : through();
         };
 
+        var create_executor = function create_executor(executable){
+          // TODO: We're passing the whole damn request in for now,
+          // but it might be a good ideal to pair this down at some point.
+          return executable ? new XStream(req) : through();
+        };
+
         // return status
         res.statusCode = 200;
 
         // return file metadata as HTTP headers
-        res.setHeader("Content-Type", requested_file.content_type);
-        res.setHeader("Content-Length", requested_file.file_size);
+        // TODO: These can change for executable files, 
+        // so for now only set them if we're not executing
+        // (a better solution would be to count the output
+        // from the running code, but I don't know how to
+        // do that yet...)
+        if(!requested_file.executable){
+          res.setHeader("Content-Type", requested_file.content_type);
+          res.setHeader("Content-Length", requested_file.file_size);
+        }
 
         var total_blocks = requested_file.blocks.length;
         var idx = 0;
@@ -139,6 +155,8 @@ http.createServer(function(req, res){
           var read_stream = operations.stream_read(path);
           var decryptor   = create_decryptor({ encrypted : requested_file.encrypted, key : requested_file.access_key});
           var unzipper    = create_unzipper(try_compressed);
+          // If access auth is present, don't execute
+          var executor = create_executor(requested_file.executable && !params.access_key && !params.access_token);
           var should_end  = (idx + 1) === total_blocks;
 
           function on_error(){
@@ -166,9 +184,10 @@ http.createServer(function(req, res){
           } else {
             res.setMaxListeners(0);
           }
+
           read_stream.on("end", on_end);
           read_stream.on("error", on_error);
-          read_stream.pipe(unzipper).pipe(decryptor).pipe(res, {end: should_end});
+          read_stream.pipe(unzipper).pipe(decryptor).pipe(executor).pipe(res, {end: should_end});
         };
 
         var load_from_last_seen = function load_from_last_seen(try_compressed){
@@ -204,6 +223,9 @@ http.createServer(function(req, res){
       utils.load_inode(target_url, function(err, inode){
 
         if (inode){
+
+          // TODO: If the file is executable, and access credentials are not present, execute the file.
+          // This is really just GET, so maybe there is a way to branch-out to GET and avoid a lot of duplication?
 
           // check authorization
           if (validate.is_authorized(inode, req.method, params)){
@@ -254,6 +276,10 @@ http.createServer(function(req, res){
         }
         if(params.encrypted){
           new_file.file_metadata.encrypted = true;
+        }
+
+        if(params.executable){
+          new_file.file_metadata.executable = true;
         }
 
         // if access_key is supplied with update, replace the default one
