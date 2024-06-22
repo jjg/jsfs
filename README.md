@@ -2,11 +2,6 @@
 
 A general-purpose, deduplicating filesystem with a REST interface, jsfs is intended to provide low-level filesystem functions for Javascript applications.  Additional functionality (private file indexes, token lockers, centralized authentication, etc.) are deliberately avoided here and will be implemented in a modular fashion on top of jsfs.
 
-## STATUS
-Based on field testing with large storage pools (>1TB) JSFS 4.x features a complete overhaul of the storage pool architecture.  As a result of these changes there are significant performance improvements and storage pool size is no longer constrained by avaliable memory.  Unfortunately some features have been depreciated out of necessity, at least temporarilly (if these features are needed they are still avaliable in the 3.0 release).
-
-The 4.x series server is not compatible with 3.x pools, so a migration utility (`migrate_superblock.js`) has been included in the `tools` directory.
-
 ## REQUIREMENTS
 * Node.js
 
@@ -41,6 +36,15 @@ When JSFS boots, it will load `./lib/${config.CONFIGURED_STORAGE || "fs"}/disk-o
 Keys are used to unlock all operations that can be performed on an object stored in JSFS, and objects can have only one key.  With an `access_key`, you can execute all supported HTTP verbs (GET, PUT, DELETE) as well as generate tokens that grant varying degrees of access to the object.
 
 Tokens are more ephemeral, and any number of them can be generated to grant varying degrees of access to an object.  Token generation is described later.
+
+#### Static access keys
+If you want to limit the entire server to a fixed set of static `access_keys`, add some keys to the `STATIC_ACCESS_KEYS` array in `config.js`:
+
+```js
+STATIC_ACCESS_KEYS: ["foo", "bar"]
+```
+
+Any write requests for new files that do not include an `access_key` in this array will return `unauthorized`, as will any write request that includes no `access_key` or `access_token`.
 
 ### Parameters and Headers
 jsfs uses several parameters to control access to objects and how they are stored.  These values can also be supplied as request headers by adding a leading "x-" and changing "_" to "-" (`access_token` becomes `x-access-token`). Headers are preferred to querystring parameters because they are less likely to collide but both function the same. 

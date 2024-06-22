@@ -37,7 +37,7 @@
     "test": "./node_modules/.bin/mocha --reporter spec"
   },
   "dependencies": {
-    "through": "2.3.8"
+    "through": "^2.3.8"
   },
   "devDependencies": {
     "chai": "^3.5.0",
