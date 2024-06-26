@@ -14,7 +14,6 @@ sudo apt install qemu-utils
 
 ## Build & Deploy
 ```
-# build the image
 ops image create -c config.json --package eyberg/node:20.5.0 -i jsfs -t do -c config.json
 ```
 
