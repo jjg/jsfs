@@ -4,7 +4,7 @@
   "Files": ["server.js","config.js","jlog-nomem.js"],
   "Args": ["server.js"],
   "CloudConfig": {
-    "BucketName": "busket",
+    "BucketName": "jsfs-unikernel-blocks",
     "Zone": "nyc3"
   }
 }
