@@ -1,0 +1,10 @@
+{
+  "BaseVolumeSz": "1g$ ops image list -t onprem",
+  "Dirs": ["node_modules","lib","tools","blocks"],
+  "Files": ["server.js","config.js","jlog-nomem.js"],
+  "Args": ["server.js"],
+  "CloudConfig": {
+    "BucketName": "jsfs-unikernel-blocks",
+    "Zone": "nyc3"
+  }
+}
