@@ -101,10 +101,20 @@ http.createServer(function(req, res){
 
         var search_for_block = function search_for_block(_idx){
           var location = config.STORAGE_LOCATIONS[_idx];
-          var search_path = location.path + requested_file.blocks[idx].block_hash;
+          var search_path = location.path + "/" + requested_file.blocks[idx].block_hash;
           _idx++;
 
           operations.exists(search_path + "gz", function(err, result){
+
+            // JJG DEBUG: I don't thing testing for existance of result
+            // is sufficient here.  Let's look inside that and at err as well.
+
+            log.message(log.INFO, "JJG: back from head check of " + search_path);
+            log.message(log.INFO, "err");
+            console.log(err)
+            log.message(log.INFO, "result");
+            console.log(result);
+            
             if (result) {
               log.message(log.INFO, "Found compressed block " + requested_file.blocks[idx].block_hash + ".gz in " + location.path);
               requested_file.blocks[idx].last_seen = location.path;
