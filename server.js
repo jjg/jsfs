@@ -101,7 +101,7 @@ http.createServer(function(req, res){
 
         var search_for_block = function search_for_block(_idx){
           var location = config.STORAGE_LOCATIONS[_idx];
-          var search_path = location.path + "/" + requested_file.blocks[idx].block_hash;
+          var search_path = location.path + requested_file.blocks[idx].block_hash;
           _idx++;
 
           operations.exists(search_path + "gz", function(err, result){
