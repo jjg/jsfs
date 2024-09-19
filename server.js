@@ -106,13 +106,11 @@ http.createServer(function(req, res){
 
           operations.exists(search_path + "gz", function(err, result){
 
-            // JJG DEBUG: I don't thing testing for existance of result
-            // is sufficient here.  Let's look inside that and at err as well.
-
-            log.message(log.INFO, "JJG: back from head check of " + search_path);
-            log.message(log.INFO, "err");
+            // JJG DEBUG
+            log.message(log.DEBUG, "JJG: back from head check of " + search_path);
+            log.message(log.DEBUG, "err");
             console.log(err)
-            log.message(log.INFO, "result");
+            log.message(log.DEBUG, "result");
             console.log(result);
             
             if (result) {
