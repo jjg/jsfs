@@ -1,6 +1,4 @@
 node_modules/
-config.js
-blocks
 *swp
 .DS_Store
 *.sublime-*
