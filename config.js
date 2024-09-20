@@ -7,5 +7,5 @@ module.exports = {
   SERVER_PORT: 7302,
   REQUEST_TIMEOUT: 30, // minutes
   CONFIGURED_STORAGE: "fs",
-  STATIC_ACCESS_KEYS: ["foobar69"]
+  STATIC_ACCESS_KEYS: []
 };
