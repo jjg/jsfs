@@ -9,6 +9,7 @@
 // *** UTILITIES  & MODULES ***
 var http       = require("http");
 var crypto     = require("crypto");
+var path       = require("path");
 var zlib       = require("zlib");
 var through    = require("through");
 var config     = require("./config.js");
@@ -101,7 +102,7 @@ http.createServer(function(req, res){
 
         var search_for_block = function search_for_block(_idx){
           var location = config.STORAGE_LOCATIONS[_idx];
-          var search_path = location.path + requested_file.blocks[idx].block_hash;
+          var search_path = path.join(location.path, requested_file.blocks[idx].block_hash);
           _idx++;
 
           operations.exists(search_path + "gz", function(err, result){
@@ -290,7 +291,7 @@ http.createServer(function(req, res){
 
             var remove_inode = function remove_inode(idx){
               var location = config.STORAGE_LOCATIONS[idx];
-              var file     = location.path + inode.fingerprint + ".json";
+              var file     = path.join(location.path, inode.fingerprint + ".json");
 
               operations.delete(file, function(err){
                 idx++;
