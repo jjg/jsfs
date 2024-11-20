@@ -6,6 +6,8 @@ Future work.
 
 Bring the current implementation up-to-date in terms of code, structure, modularity, packaging and testing.  
 
+> Seriously consider refactoring away from callback-oriented to async await or promises.
+
 Surface existing but undocumented (or unexplained) features such as the namespace, maintenance, advanced configuration.
 
 Make default configuration secure and private without increasing complexity.
