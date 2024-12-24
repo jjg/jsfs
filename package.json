@@ -1,0 +1,29 @@
+{
+  "name": "jsfs",
+  "version": "3.0.0",
+  "description": "An operating system for the web",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "mocha --config=test/.mocharc.json --node-env=test --exit",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jjg/jsfs.git"
+  },
+  "keywords": [
+    "javascript",
+    "filesystem",
+    "jsfs"
+  ],
+  "author": "Jason J. Gullickson",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/jjg/jsfs/issues"
+  },
+  "homepage": "https://github.com/jjg/jsfs#readme",
+  "devDependencies": {
+    "mocha": "^11.0.1"
+  }
+}

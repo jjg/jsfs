@@ -1,5 +1,20 @@
 # JSFS 3 Dev Journal
 
+## 12242024
+
+Setting up the repo and moving some of the sketching-out from below into the code.
+
+There's a lot to decide.  I'm going with [mocha](https://mochajs.org/) for testing but I'm being careful to avoid adding any external dependencies to the production build.  I'm also going with [es6](https://nodejs.org/api/esm.html) style modules, hopefully that works with any Blockdriver dependencies.
+
+Turns out that there is some tweaking to do to use ES6 modules, and this tripped me up setting up some initial tests.
+
+### References
+* https://nodejs.org/api/esm.html
+* https://mochajs.org/#installation
+* https://www.naukri.com/code360/library/native-es-modules-in-mocha
+* https://mocha-docs-next.netlify.app/explainers/nodejs-native-esm-support/
+
+
 ## 12232024
 
 This is going to be a rambling description of JSFS3.
