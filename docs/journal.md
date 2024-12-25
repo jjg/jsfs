@@ -1,5 +1,9 @@
 # JSFS 3 Dev Journal
 
+## 12252024
+Add readme and lots of TODO's.
+
+
 ## 12242024
 
 Setting up the repo and moving some of the sketching-out from below into the code.

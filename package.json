@@ -1,6 +1,6 @@
 {
   "name": "jsfs",
-  "version": "3.0.0",
+  "version": "5.0.0",
   "description": "An operating system for the web",
   "main": "index.js",
   "type": "module",
