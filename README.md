@@ -1,8 +1,8 @@
 # JSFS
 
-An operating system for the web.
+An [operating system for the web](https://jasongullickson.com/an-operating-system-for-the-web.html).
 
-## TODO:
+## TODO (in no particular order):
 
 - [ ] Add license
 - [ ] Add API to README
@@ -13,5 +13,6 @@ An operating system for the web.
 - [ ] Write example `blockdriver`
 - [ ] Write example `metadriver`
 - [ ] Re-write `jedi`
+- [ ] Setup repo automation (tests, lint, releases, etc.)
 - [ ] Clean-up Tasks
 
