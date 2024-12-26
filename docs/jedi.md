@@ -18,3 +18,4 @@ Jedi is being rewritten alongside JSFS and will be included with JSFS as a ROM. 
 * Pluggable render/preview view (Markdown, HTML, graphviz, etc.)
 * "wiki-like" code editing where things like functions can be clicked to reveal their source, and if the source doesn't exist, it is created
 
+Aside from being generally useful it provides a reference example for JSFS applications, establishing standards around how data is shared, how authentication is performed, etc.
