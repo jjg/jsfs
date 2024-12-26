@@ -16,14 +16,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { NewJnode } from '../../lib/jnode.mjs';
+import { Jnode } from '../../lib/jnode.mjs';
 import assert from 'assert';
 
 describe('jnode', function () {
     describe('#NewJnode()', function () {
         it('should return an initialized jnode', function () {
-            const foo = NewJnode();
-            assert.equal(foo.id, 0);
+            const aJnode = new Jnode();
+            assert.equal(aJnode.id, 0);
         });
     });
 });
