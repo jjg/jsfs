@@ -4,7 +4,7 @@ An [operating system for the web](https://jasongullickson.com/an-operating-syste
 
 ## TODO (in no particular order):
 
-- [ ] Add license
+- [X] Add license
 - [ ] Add API to README
 - [ ] Figure out `config`
 - [ ] Add config to README
@@ -16,3 +16,14 @@ An [operating system for the web](https://jasongullickson.com/an-operating-syste
 - [ ] Setup repo automation (tests, lint, releases, etc.)
 - [ ] Clean-up Tasks
 
+## Usage
+
+### Run tests
+```
+npm test
+```
+`
+### Start the server
+```
+npm start
+```
