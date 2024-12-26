@@ -22,7 +22,7 @@ An [operating system for the web](https://jasongullickson.com/an-operating-syste
 ```
 npm test
 ```
-`
+
 ### Start the server
 ```
 npm start
