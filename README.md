@@ -12,7 +12,7 @@ An [operating system for the web](https://jasongullickson.com/an-operating-syste
 - [ ] Write `verbs`
 - [ ] Write example `blockdriver`
 - [ ] Write example `metadriver`
-- [ ] Re-write `jedi`
+- [ ] Re-write [jedi](https://github.com/jjg/jedi)
 - [ ] Setup repo automation (tests, lint, releases, etc.)
 - [ ] Clean-up Tasks
 

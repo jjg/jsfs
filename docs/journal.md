@@ -5,6 +5,8 @@ Added license.
 
 Also decided that I'm going to commit to committing *something* to this project at least once a week in 2025.
 
+Added a bunch of docs for capturing ideas as they come.
+
 
 ## 12252024
 Add readme and lots of TODO's.
