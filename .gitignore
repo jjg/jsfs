@@ -4,3 +4,4 @@ blocks
 *swp
 .DS_Store
 *.sublime-*
+*.*~
