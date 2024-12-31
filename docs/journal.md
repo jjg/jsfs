@@ -1,5 +1,17 @@
 # JSFS 5 Dev Journal
 
+## 12312024
+Beginning to flesh-out `auth`.  This now depends on the concept of `directory`, so I might give some more thought to that (or just stub around it for now).
+
+This also brings-up the issue of `STATIC_ACCESS_KEYS`.  This is something  just added to JSFS and allows the administrator to configure keys that will be used when there's no existing `jnode` for a file.  This is a simple "locking" mechanism preventing writes from unknown clients.  I think this should be preserved but I'm not sure if it should still be a configuration-level thing or if it could leverage the new `directory` abstraction?
+
+For example, instead of a config value, an admin could `POST` a "root" `directory` to a newly-configured host, effectively establishing a static key for every subsequent write to that hostname.  Since establishing a new host *kinda* requires DNS changes (pointing an `A` or `AAA` record at the JSFS server) it has similar authority to storing these keys in the config.  Of course this isn't completely true, because a `jspace` path can always be used to write to a host-specific path without DNS configuration so... I'm not sure.
+
+Maybe we start with this and think about ways to address the `jspace`-path loophole as it would be a lot more elegant if we can get everything we need from the `directory` construct.
+
+I found a simple way to stub the `req` passed-in to `auth` that I'll use to write tests for the verbs as well.  It feels hacky but doesn't add any dependencies so I'll just run with it for now.
+
+
 ## 12302024
 After overthinking it, I'm just going to pass the whole request object around.
 

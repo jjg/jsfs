@@ -40,7 +40,14 @@ server.on('request', async (req, res) => {
         // so unless this is a *hard* error, continue.
     }
     
-    // TODO: Auth the request
+    // Auth the request
+    const authorized = await auth.Auth(req, jnode);
+    if(!authorized){
+        res.statusCode = 403;
+        res.statusMessage = "This request requires authorization, try again";
+        
+        // TODO: Skip the method switch below and exit immediately.
+    }
     
     switch(req.method) {
         case 'HEAD':
