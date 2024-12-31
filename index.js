@@ -16,9 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { http } from 'node:http';
+import http from 'node:http';
+import { GetJspace } from './lib/utils.mjs';
 import { Jnode } from './lib/jnode.mjs';
-import { head } from './lib/verbs/head.mjs';
+import { Head } from './lib/verbs/head.mjs';
 
 // DEBUG
 //const foo = NewJnode();
@@ -31,19 +32,23 @@ import { head } from './lib/verbs/head.mjs';
 const server = http.createServer();
 server.on('request', async (req, res) => {
 
-    // Translate the incoming url to jspace
-    const jspace = await GetJspace(req.host, req.url);
+    // Translate the incoming hostname url to jspace
+    const jspace = await GetJspace(req.headers['host'], req.url);
     
-    // TODO: Get the jnode
+    // Get the jnode
+    const jnode = new Jnode(jspace);
+    const err = await jnode.Load();
+    if(err){
+        // TODO: Some requests don't require an existing jnode,
+        // so unless this is a *hard* error, continue.
+    }
+    
     // TODO: Auth the request
     
     switch(req.method) {
         case 'HEAD':
             // Handle HEAD
-            // HEAD just returns metadata rendered as HTTP headers,
-            // so if we have a jnode, just translate it.  If not,
-            // return an error
-            res.write(await head(req));
+            await Head(res, jnode)
             break;
         case 'GET':
             // TODO: Handle GET
@@ -64,10 +69,9 @@ server.on('request', async (req, res) => {
             // TODO: Return error
             break;
     }
-    
     res.end();
 });
 server.on('clientError', async (err, socket) => {
     socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
 });
-
+server.listen(7302);

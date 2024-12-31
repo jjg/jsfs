@@ -21,9 +21,20 @@ import assert from 'assert';
 
 describe('jnode', function () {
     describe('#NewJnode()', function () {
-        it('should return an initialized jnode', function () {
+        it('should return a new jnode', function () {
             const aJnode = new Jnode();
-            assert.equal(aJnode.id, 0);
+            assert.equal(aJnode.version, 0);
+        });
+    });
+    describe('#ExistingJnode()', function () {
+        it('should return an existing jnode', async function () {
+            const aJnode = new Jnode("/com.jasongullickson/home/welcome.html");
+            const err = await aJnode.Load();
+            if(err){
+                console.log(err);
+                // TODO: fail test
+            }
+            assert.equal(aJnode.jspace, "/com.jasongullickson/home/welcome.html");
         });
     });
 });

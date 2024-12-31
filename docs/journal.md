@@ -3,8 +3,11 @@
 ## 12302024
 After overthinking it, I'm just going to pass the whole request object around.
 
-I'm calling the "jsfs address" `jspace` now.  I just got tired of having to re-describe it.  I also corrected the formatting of it in earlier journal entries.
+I'm calling the "jsfs address" `jspace` now.  I don't love this name, but I just got tired of having to re-describe it.  I also corrected the formatting of it in earlier journal entries.
 
+I've established something of a pattern for invoking the verbs.  I'm passing the `jnode` and the `res` object in to all verbs, and the `req` as well for verbs that will consume data from the client (`POST`, `PUT`, etc).  Each verb will be responsible for handling exceptions and setting the HTTP status if something weird happens while they're in control.  This feels heavy-handed, and is going to make writing tests harder, but it will work and should make streaming data easier.
+
+Server is handling it's first requests tonight.  It's just a `HEAD` request, and the results are pretty much rigged, but it at least demonstrates the verb calling pattern.  There's no automated test for the `head` module yet, I'll leave that for another time when I have more energy.
 
 
 ## 12262024
