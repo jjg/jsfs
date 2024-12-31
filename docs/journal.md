@@ -1,4 +1,4 @@
-# JSFS 3 Dev Journal
+# JSFS 5 Dev Journal
 
 ## 12302024
 After overthinking it, I'm just going to pass the whole request object around.
@@ -8,6 +8,10 @@ I'm calling the "jsfs address" `jspace` now.  I don't love this name, but I just
 I've established something of a pattern for invoking the verbs.  I'm passing the `jnode` and the `res` object in to all verbs, and the `req` as well for verbs that will consume data from the client (`POST`, `PUT`, etc).  Each verb will be responsible for handling exceptions and setting the HTTP status if something weird happens while they're in control.  This feels heavy-handed, and is going to make writing tests harder, but it will work and should make streaming data easier.
 
 Server is handling it's first requests tonight.  It's just a `HEAD` request, and the results are pretty much rigged, but it at least demonstrates the verb calling pattern.  There's no automated test for the `head` module yet, I'll leave that for another time when I have more energy.
+
+I've also added two new verbs (`MOVE`, `COPY`) which will be used to implement zero-op data copying (essentially adding a new inode pointing to existing blocks).  This is going to be like `EXECUTE` in that we'll come up with some way to trigger these using "normal" HTTP verbs with some header/etc. for clients that can't specify non-standard verbs.
+
+I've made breaking changes to the format of the `jnode` JSON.  I think this is the right thing to do, but I'll have to add support for backward-compatability to live-up to the commitments I've set earlier.  I think this will simply be a matter of additional logic in the `Jnode.Load()` method to detect pre-v5 `inode`s and mapping them into v5 `jnode`s in memory.  This way they are simply left untouched for read operations and will be upgraded automatically during writes.
 
 
 ## 12262024
@@ -99,7 +103,7 @@ Here's a high-level description of how each method works.
 5. Stream the output of the running code 
 
 
-### JSFS Address
+### JSFS Address (jspace)
 Incoming requests are parsed into a JSFS path which is a reverse of the hostname plus the rest of the path.  For example:
 
 `http://jasongullickson.com/about.html`

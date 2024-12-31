@@ -25,5 +25,9 @@ describe('utils', function () {
             const jspace = await GetJspace("jasongullickson.com", "/home/welcome.html");
             assert.equal(jspace, "/com.jasongullickson/home/welcome.html");
         });
+        it('should not modify jspace string', async function () {
+            const jspace = await GetJspace("jasongullickson.com", "/com.jasongullickson/home/welcome.html");
+            assert.equal(jspace, "/com.jasongullickson/home/welcome.html");
+        });
     });
 });

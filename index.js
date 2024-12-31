@@ -21,14 +21,11 @@ import { GetJspace } from './lib/utils.mjs';
 import { Jnode } from './lib/jnode.mjs';
 import { Head } from './lib/verbs/head.mjs';
 
-// DEBUG
-//const foo = NewJnode();
-//console.log(foo);
 
 // TODO: Start logging
 // TODO: Load the config
 
-// Start the http listener
+// Configure the http listener
 const server = http.createServer();
 server.on('request', async (req, res) => {
 
@@ -65,6 +62,12 @@ server.on('request', async (req, res) => {
         case 'EXECUTE':
             // TODO: Handle EXECUTE
             break;
+        case 'MOVE':
+            // TODO: Handle MOVE
+            break;
+        case 'COPY':
+            // TODO: Handle COPY
+            break;
         default:
             // TODO: Return error
             break;
@@ -74,4 +77,6 @@ server.on('request', async (req, res) => {
 server.on('clientError', async (err, socket) => {
     socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
 });
+
+// Start listening for requests.
 server.listen(7302);
