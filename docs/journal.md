@@ -11,7 +11,7 @@ Maybe we start with this and think about ways to address the `jspace`-path looph
 
 I found a simple way to stub the `req` passed-in to `auth` that I'll use to write tests for the verbs as well.  It feels hacky but doesn't add any dependencies so I'll just run with it for now.
 
-Also fixed a failing test in `jspace` calculation.
+Also fixed a failing test in `jspace` calculation and added some docs around `jspace` to the README.
 
 
 
