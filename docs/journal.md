@@ -1,5 +1,12 @@
 # JSFS 3 Dev Journal
 
+## 12302024
+After overthinking it, I'm just going to pass the whole request object around.
+
+I'm calling the "jsfs address" `jspace` now.  I just got tired of having to re-describe it.  I also corrected the formatting of it in earlier journal entries.
+
+
+
 ## 12262024
 Added license.
 
@@ -96,7 +103,7 @@ Incoming requests are parsed into a JSFS path which is a reverse of the hostname
 
 becomes:
 
-`.com.jasongullickson/about.html`
+`/com.jasongullickson/about.html`
 
 JSFS uses these paths internally to allow a JSFS instance to represent any valid DNS name without relying on DNS.
 

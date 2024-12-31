@@ -16,17 +16,58 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { NewJnode } from './lib/jnode.mjs';
+import { http } from 'node:http';
+import { Jnode } from './lib/jnode.mjs';
+import { head } from './lib/verbs/head.mjs';
 
 // DEBUG
-const foo = NewJnode();
-console.log(foo);
+//const foo = NewJnode();
+//console.log(foo);
 
+// TODO: Start logging
 // TODO: Load the config
-// TODO: Start an http listener
-// TODO: Handle HEAD
-// TODO: Handle GET
-// TODO: Handle POST
-// TODO: Handle PUT
-// TODO: Handle DELETE
-// TODO: Handle EXECUTE
+
+// Start the http listener
+const server = http.createServer();
+server.on('request', async (req, res) => {
+
+    // Translate the incoming url to jspace
+    const jspace = await GetJspace(req.host, req.url);
+    
+    // TODO: Get the jnode
+    // TODO: Auth the request
+    
+    switch(req.method) {
+        case 'HEAD':
+            // Handle HEAD
+            // HEAD just returns metadata rendered as HTTP headers,
+            // so if we have a jnode, just translate it.  If not,
+            // return an error
+            res.write(await head(req));
+            break;
+        case 'GET':
+            // TODO: Handle GET
+            break;
+        case 'POST':
+            // TODO: Handle POST
+            break;
+        case 'PUT':
+            // TODO: Handle PUT
+            break;
+        case 'DELETE':
+            // TODO: Handle DELETE
+            break;
+        case 'EXECUTE':
+            // TODO: Handle EXECUTE
+            break;
+        default:
+            // TODO: Return error
+            break;
+    }
+    
+    res.end();
+});
+server.on('clientError', async (err, socket) => {
+    socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+});
+
