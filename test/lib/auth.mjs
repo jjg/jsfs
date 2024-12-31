@@ -46,6 +46,24 @@ describe('auth', function () {
             
             assert.equal(authResult, true);
         });
+        
+        it('should accept key provied in querystring', async function () {
+             const req = {
+                url: '/about.html?accesskey=foo',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-key': 'foo',
+                }
+            }
+            
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+            
+            const authResult = await Auth(req, jnode);
+            
+            assert.equal(authResult, true);
+        });
 
         it('should allow a valid key for an upstream directory', async function () {
             assert.fail("Not implemented");
@@ -54,6 +72,5 @@ describe('auth', function () {
         it('should deny an invalid key for an existing directory', async function () {
             assert.fail("Not implemented");
         });
-        
     });
 });

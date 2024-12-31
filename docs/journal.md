@@ -13,6 +13,7 @@ I found a simple way to stub the `req` passed-in to `auth` that I'll use to writ
 
 Also fixed a failing test in `jspace` calculation and added some docs around `jspace` to the README.
 
+Got `auth` working in the server, and added some `curl` examples to the README.
 
 
 ## 12302024

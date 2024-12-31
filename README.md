@@ -20,16 +20,67 @@ An [operating system for the web](https://jasongullickson.com/an-operating-syste
 ## Usage
 
 ### Run tests
-```
-npm test
+```bash
+$ npm test
 ```
 
 ### Start the server
-```
-npm start
+```bash
+$ npm start
 ```
 
-## jspace
+## API
+
+> Lots TODO here, right now just some examples.
+
+### Examples
+
+#### HEAD request missing required auth info
+```bash
+$ curl -v -X HEAD -H "x-jsfs-access-key: baz" http://localhost:7302
+*   Trying 127.0.0.1:7302...
+* Connected to localhost (127.0.0.1) port 7302 (#0)
+> HEAD / HTTP/1.1
+> Host: localhost:7302
+> User-Agent: curl/7.81.0
+> Accept: */*
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 403 Forbidden
+< Date: Tue, 31 Dec 2024 17:06:04 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+* no chunk, no close, no size. Assume close to signal end
+< 
+* Closing connection 0
+
+```
+
+#### HEAD request with valid auth info
+```bash
+$ curl -v -X HEAD -H "x-jsfs-access-key: baz" http://localhost:7302
+*   Trying 127.0.0.1:7302...
+* Connected to localhost (127.0.0.1) port 7302 (#0)
+> HEAD / HTTP/1.1
+> Host: localhost:7302
+> User-Agent: curl/7.81.0
+> Accept: */*
+> x-jsfs-access-key: baz
+> 
+* Mark bundle as not supporting multiuse
+< HTTP/1.1 200 OK
+< x-jsfs-version: 0
+< Date: Tue, 31 Dec 2024 17:05:21 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+* no chunk, no close, no size. Assume close to signal end
+< 
+* Closing connection 0
+```
+
+## Features
+
+### jspace
 Internally, JSFS uses a URI format called `jspace`.  This provides two neat features:
 
 * By pointing a `A`, `AAA` records (or just your hostfile) at a JSFS server, any requests made using that record will automatically be "namespaced"
@@ -40,13 +91,13 @@ For example, I can point a DNS record for `jsfs.jasongullickson.com` as well as 
 If I want to access each of these files without relying on DNS or other name resolution, I can provide the `jspace` path via a request to *any name or address that points at the JSFS server*.  For example:
 
 ``` bash
-> curl http://10.1.10.1/.com.jasongullickson.jsfs/about.html
+$ curl http://10.1.10.1/.com.jasongullickson.jsfs/about.html
 ```
 
 Will return the same file as `http://jsfs.jasongullickson.com/about.html` whereas:
 
 ```bash
-> curl http://10.1.10.1/.com.mystuff.files/about.html
+$ curl http://10.1.10.1/.com.mystuff.files/about.html
 ```
 
 Will return the same file as `http://files.mystuff.com/about.html`.

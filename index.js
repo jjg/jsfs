@@ -20,6 +20,7 @@ import http from 'node:http';
 
 import { GetJspace } from './lib/utils.mjs';
 import { Jnode } from './lib/jnode.mjs';
+import { Auth } from './lib/auth.mjs';
 import { Head } from './lib/verbs/head.mjs';
 
 
@@ -30,7 +31,7 @@ import { Head } from './lib/verbs/head.mjs';
 const server = http.createServer();
 server.on('request', async (req, res) => {
 
-    // Translate the incoming hostname url to jspace
+    // Translate the incoming hostname & path to jspace
     const jspace = await GetJspace(req.headers['host'], req.url);
     
     // Get the jnode
@@ -42,12 +43,13 @@ server.on('request', async (req, res) => {
     }
     
     // Auth the request
-    const authorized = await auth.Auth(req, jnode);
+    const authorized = await Auth(req, jnode);
     if(!authorized){
         res.statusCode = 403;
-        res.statusMessage = "This request requires authorization, try again";
+        res.end();
         
-        // TODO: Skip the method switch below and exit immediately.
+        // TODO: Figure out how to end the connection immediately.
+        return;
     }
     
     switch(req.method) {
