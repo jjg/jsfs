@@ -106,31 +106,28 @@ Aside from removing the overhead of normal name resolution, applications using `
 
 
 ### Keys and Tokens
-Two parameters can be used to gain access to files in JSFS: **keys** and **tokens**.  A valid key can be used for any operation (`GET`,`POST`, etc.) forever as long as it matches the `accessKey` of the file, or in the case of new files, the nearest directory.  
+Two parameters can be used to gain access to files in JSFS: `access-key` and `access-token`.  A valid `access-key` can be used for any operation (`GET`,`POST`, etc.) forever as long as it matches the `access-key` of the file (or in the case of new files, the nearest directory).  
 
-For more precise control, or to provide access for a limited amount of time, a token can be used.  Tokens are method-specific, and can additionally be made to expire.
+For more precise control, or to provide access for a limited amount of time, an `access-token` can be created.  `access-token`s are method-specific and can also be made to expire.
 
-To generate a token, hash the key + method using SHA1:
+To generate an `access-token``, hash the `access-key` + method using SHA1:
 ```js
 // TODO: Test this to make sure it actually works.
 import crypto from `node:crypto`;
 
 const key = '077785b5e45418cf6caabdd686719813fb22e3ce';
 const method = 'GET';
-
-const inString = key + method;
-
-const token = crypto.hash('sha1', inString);
+const token = crypto.hash('sha1', key + method);
 
 console.log(token);
 ```
 
-The output can then be passed as `x-access-token` instead of `x-access-key`.
+The output is then passed as `access-token` instead of `access-key`.
 
 To create a temporary token, include a the expiration datetime in [Unix time](https://en.wikipedia.org/wiki/Unix_time) format:
 ```
 TODO: example
 ```
 
-When using a temporary token the expiration datetime must be included in the request as the `x-jsfs-expires` parameter.
+When using a temporary token the expiration datetime must be included in the request as the `expires` parameter.
 
