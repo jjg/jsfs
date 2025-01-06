@@ -1,5 +1,18 @@
 # JSFS 5 Dev Journal
 
+## 01062025
+Dad passed away last time I was working on this.  Taking me a few minutes to figure out where I left off...
+
+Looks like there's some failing `auth` tests, so that's as good a place to start as any.
+
+Added a bunch of `not implemented` tests as placeholders for things `auth` should (or shouldn't) do.  Also started documenting keys and tokens in the new README.
+
+Something I'm reconsidering is the use of SHA1 for token generation (and elsewhere).  It's no longer considered secure, but I'm not sure if that matters.  We're not really using it for security, only to generate collision-resistant hashes, so maybe it's OK to keep?  Keeping it ensures backward-compatibility, and using something more secure is probably going to be more resource-intensive (although I should verify this).  Something to think about...
+
+I also decided that we're going to use directories to replace `STATIC_ACCESS_KEYS`.  I think it can be as simple as creating a "root" directory, maybe I'm wrong, and if so we change it later.
+
+
+
 ## 12312024
 Beginning to flesh-out `auth`.  This now depends on the concept of `directory`, so I might give some more thought to that (or just stub around it for now).
 

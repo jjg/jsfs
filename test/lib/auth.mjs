@@ -26,9 +26,9 @@ import { GetJspace } from '../../lib/utils.mjs';
 
 describe('auth', function () {
     describe('#Auth()', function () {
-    
+
+        // Keys
         it('should allow a valid key for an existing jnode', async function () {
-        
             // TODO: See if there is a better way to mock http.IncomingMessage
             const req = {
                 url: '/about.html',
@@ -37,39 +37,104 @@ describe('auth', function () {
                     'x-jsfs-access-key': 'foo',
                 }
             }
-            
-            const jspace = await GetJspace(req.headers['host'], req.url);
-            const jnode = new Jnode(jspace);
-            jnode.accessKey = 'foo';
-            
-            const authResult = await Auth(req, jnode);
-            
-            assert.equal(authResult, true);
-        });
-        
-        it('should accept key provied in querystring', async function () {
-             const req = {
-                url: '/about.html?accesskey=foo',
-                headers: {
-                    'host': 'jasongullickson.com',
-                    'x-jsfs-access-key': 'foo',
-                }
-            }
-            
-            const jspace = await GetJspace(req.headers['host'], req.url);
-            const jnode = new Jnode(jspace);
-            jnode.accessKey = 'foo';
-            
-            const authResult = await Auth(req, jnode);
-            
-            assert.equal(authResult, true);
-        });
 
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+
+            assert.equal(authResult, true);
+        });
         it('should allow a valid key for an upstream directory', async function () {
             assert.fail("Not implemented");
         });
-
         it('should deny an invalid key for an existing directory', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should accept key provied in querystring', async function () {
+            const req = {
+                url: '/about.html?accesskey=foo',
+                headers: {
+                    'host': 'jasongullickson.com',
+                }
+            }
+
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+
+            assert.equal(authResult, true);
+        });
+
+        // Tokens
+        it('should allow a durable token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should allow a temporary token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should accept a valid token in the querystring', async function () {
+            assert.fail("Not implemented");
+        });
+
+        it('should deny an invalid durable token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should deny an invalid temporary token ', async function () {
+            assert.fail("Not implemented");
+        });
+
+        // Verb-specific tokens
+        it('should allow a valid HEAD token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should allow a valid GET token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should allow a valid POST token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should allow a valid PUT token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should allow a valid DELETE token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should allow a valid EXECUTE token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should allow a valid MOVE token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should allow a valid COPY token ', async function () {
+            assert.fail("Not implemented");
+        });
+
+        it('should deny an invalid HEAD token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should deny an invalid GET token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should deny an invalid POST token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should deny an invalid PUT token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should deny an invalid DELETE token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should deny an invalid EXECUTE token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should deny an invalid MOVE token ', async function () {
+            assert.fail("Not implemented");
+        });
+        it('should deny an invalid COPY token ', async function () {
             assert.fail("Not implemented");
         });
     });

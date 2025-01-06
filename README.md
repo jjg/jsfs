@@ -105,3 +105,32 @@ Will return the same file as `http://files.mystuff.com/about.html`.
 Aside from removing the overhead of normal name resolution, applications using `jspace` paths makes them immune to DNS hacks or DDOS attacks on DNS servers.
 
 
+### Keys and Tokens
+Two parameters can be used to gain access to files in JSFS: **keys** and **tokens**.  A valid key can be used for any operation (`GET`,`POST`, etc.) forever as long as it matches the `accessKey` of the file, or in the case of new files, the nearest directory.  
+
+For more precise control, or to provide access for a limited amount of time, a token can be used.  Tokens are method-specific, and can additionally be made to expire.
+
+To generate a token, hash the key + method using SHA1:
+```js
+// TODO: Test this to make sure it actually works.
+import crypto from `node:crypto`;
+
+const key = '077785b5e45418cf6caabdd686719813fb22e3ce';
+const method = 'GET';
+
+const inString = key + method;
+
+const token = crypto.hash('sha1', inString);
+
+console.log(token);
+```
+
+The output can then be passed as `x-access-token` instead of `x-access-key`.
+
+To create a temporary token, include a the expiration datetime in [Unix time](https://en.wikipedia.org/wiki/Unix_time) format:
+```
+TODO: example
+```
+
+When using a temporary token the expiration datetime must be included in the request as the `x-jsfs-expires` parameter.
+
