@@ -54,7 +54,7 @@ describe('auth', function () {
         });
         it('should accept key provied in querystring', async function () {
             const req = {
-                url: '/about.html?accesskey=foo',
+                url: '/about.html?access-key=foo',
                 headers: {
                     'host': 'jasongullickson.com',
                 }
