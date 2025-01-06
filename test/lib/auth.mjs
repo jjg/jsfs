@@ -101,14 +101,52 @@ describe('auth', function () {
             assert.equal(authResult, true);
         });
         it('should accept a valid token in the querystring', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html?access-token=15bc6cfd907fcf2a86b1da6d1b7b75c0a79536a9',
+                method: 'GET',
+                headers: {
+                    'host': 'jasongullickson.com',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
 
         it('should deny an invalid durable token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html?access-token=bogus',
+                method: 'GET',
+                headers: {
+                    'host': 'jasongullickson.com',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
         });
-        it('should deny an invalid temporary token ', async function () {
-            assert.fail("Not implemented");
+        it.only('should deny an invalid temporary token ', async function () {
+            const req = {
+                url: '/about.html',
+                method: 'GET',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'bogus',
+                    'x-jsfs-expires': 555,
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
         });
 
         // Verb-specific tokens
