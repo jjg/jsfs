@@ -112,8 +112,7 @@ For more precise control, or to provide access for a limited amount of time, an 
 
 To generate an `access-token``, hash the `access-key` + method using SHA1:
 ```js
-// TODO: Test this to make sure it actually works.
-import crypto from `node:crypto`;
+import crypto from 'node:crypto';
 
 const key = '077785b5e45418cf6caabdd686719813fb22e3ce';
 const method = 'GET';

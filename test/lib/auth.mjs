@@ -37,13 +37,10 @@ describe('auth', function () {
                     'x-jsfs-access-key': 'foo',
                 }
             }
-
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
-
             const authResult = await Auth(req, jnode);
-
             assert.equal(authResult, true);
         });
         it('should allow a valid key for an upstream directory', async function () {
@@ -71,10 +68,37 @@ describe('auth', function () {
 
         // Tokens
         it('should allow a durable token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'GET',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': '15bc6cfd907fcf2a86b1da6d1b7b75c0a79536a9',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
         it('should allow a temporary token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'GET',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': '14cc3a47c2ce6bae52b5a8da90b5eb219d9b1ded',
+                    'x-jsfs-expires': 555,
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
         it('should accept a valid token in the querystring', async function () {
             assert.fail("Not implemented");

@@ -13,6 +13,11 @@ I also decided that we're going to use directories to replace `STATIC_ACCESS_KEY
 
 
 
+### References
+* https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Conditional_operator
+* https://nodejs.org/api/url.html#class-urlsearchparams
+
+
 ## 12312024
 Beginning to flesh-out `auth`.  This now depends on the concept of `directory`, so I might give some more thought to that (or just stub around it for now).
 
