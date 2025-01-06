@@ -11,6 +11,7 @@ Something I'm reconsidering is the use of SHA1 for token generation (and elsewhe
 
 I also decided that we're going to use directories to replace `STATIC_ACCESS_KEYS`.  I think it can be as simple as creating a "root" directory, maybe I'm wrong, and if so we change it later.
 
+Got keys and tokens essentially done, still need to flesh-out the verb-specific token tests but I think this is enough for today.
 
 
 ### References
