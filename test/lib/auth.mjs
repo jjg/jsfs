@@ -200,53 +200,261 @@ describe('auth', function () {
 
         // Verb-specific tokens
         it('should allow a valid HEAD token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'HEAD',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': '64e6670827dc90c6e3106c9085afd71e44efb349',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
         it('should allow a valid GET token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'GET',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': '15bc6cfd907fcf2a86b1da6d1b7b75c0a79536a9',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
         it('should allow a valid POST token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'POST',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'af27af8f7e7147e5b21bb9592a2ba18ba207c245',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
         it('should allow a valid PUT token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'PUT',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': '8cf9096295099296c898f9f832acaa3604149f2c',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
         it('should allow a valid DELETE token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'DELETE',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': '81b0c5682956c3e89cce66be99bdc0159f61daee',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
         it('should allow a valid EXECUTE token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'EXECUTE',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'c89bf9f44398fceb7b3542361802bdaedd754242',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
         it('should allow a valid MOVE token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'MOVE',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'f973af2f03f81e761c53b5fb13c344f492a64b25',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
         it('should allow a valid COPY token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'COPY',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': '55ba55476ceef72ae9ed6b68807e601bc6001aa2',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
         });
 
         it('should deny an invalid HEAD token ', async function () {
-            assert.fail("Not implemented");
+           const req = {
+                url: '/about.html',
+                method: 'HEAD',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'bad',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
         });
         it('should deny an invalid GET token ', async function () {
-            assert.fail("Not implemented");
+           const req = {
+                url: '/about.html',
+                method: 'GET',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'bad',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
         });
         it('should deny an invalid POST token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'POST',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'bad',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
         });
         it('should deny an invalid PUT token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'PUT',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'bad',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
         });
         it('should deny an invalid DELETE token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'DELETE',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'bad',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
         });
         it('should deny an invalid EXECUTE token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'EXECUTE',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'bad',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
         });
         it('should deny an invalid MOVE token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'MOVE',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'bad',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
         });
         it('should deny an invalid COPY token ', async function () {
-            assert.fail("Not implemented");
+            const req = {
+                url: '/about.html',
+                method: 'COPY',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': 'bad',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
         });
     });
 });

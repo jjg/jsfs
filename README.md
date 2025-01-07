@@ -116,7 +116,7 @@ import crypto from 'node:crypto';
 
 const key = '077785b5e45418cf6caabdd686719813fb22e3ce';
 const method = 'GET';
-const token = crypto.hash('sha1', key + method);
+const token = crypto.hash('sha1', `${key}${method}`);
 
 console.log(token);
 ```
