@@ -85,15 +85,25 @@ describe('auth', function () {
             assert.equal(authResult, true);
         });
         it('should allow a temporary token ', async function () {
+            // Create a token that expires 6 hours from now.
+            let d = new Date();
+            d.setTime(d.getTime() + 6 * 60*60*1000);
+
+            const key = 'foo';
+            const method = 'GET';
+            const expires = `${Math.floor(d.getTime() / 1000)}`;
+            const hash = crypto.hash('sha1', `${key}${method}${expires}`);
+            const token = `${hash}${expires}`;
+
             const req = {
                 url: '/about.html',
                 method: 'GET',
                 headers: {
                     'host': 'jasongullickson.com',
-                    'x-jsfs-access-token': '14cc3a47c2ce6bae52b5a8da90b5eb219d9b1ded',
-                    'x-jsfs-expires': 555,
+                    'x-jsfs-access-token': token,
                 }
             }
+
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
@@ -133,15 +143,25 @@ describe('auth', function () {
             assert.equal(authResult, false);
         });
         it('should deny an invalid temporary token ', async function () {
+            // Create a token that expires 6 hours from now.
+            let d = new Date();
+            d.setTime(d.getTime() + 6 * 60*60*1000);
+
+            const key = 'bar';
+            const method = 'GET';
+            const expires = `${Math.floor(d.getTime() / 1000)}`;
+            const hash = crypto.hash('sha1', `${key}${method}${expires}`);
+            const token = `${hash}${expires}`;
+
             const req = {
                 url: '/about.html',
                 method: 'GET',
                 headers: {
                     'host': 'jasongullickson.com',
-                    'x-jsfs-access-token': 'bogus',
-                    'x-jsfs-expires': 555,
+                    'x-jsfs-access-token': token,
                 }
             }
+
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
@@ -149,7 +169,7 @@ describe('auth', function () {
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
         });
-        it.only('should deny an expired temporary token ', async function () {
+        it('should deny an expired temporary token ', async function () {
 
             // Create a token that expires 6 hours ago.
             let d = new Date();
