@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import http from 'node:http';
+import crypto from 'node:crypto';
 import assert from 'assert';
 
 import { Auth } from '../../lib/auth.mjs';
@@ -131,7 +132,7 @@ describe('auth', function () {
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
         });
-        it.only('should deny an invalid temporary token ', async function () {
+        it('should deny an invalid temporary token ', async function () {
             const req = {
                 url: '/about.html',
                 method: 'GET',
@@ -141,6 +142,34 @@ describe('auth', function () {
                     'x-jsfs-expires': 555,
                 }
             }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
+        });
+        it.only('should deny an expired temporary token ', async function () {
+
+            // Create a token that expires 6 hours ago.
+            let d = new Date();
+            d.setTime(d.getTime() - 6 * 60*60*1000);
+
+            const key = 'foo';
+            const method = 'GET';
+            const expires = `${Math.floor(d.getTime() / 1000)}`;
+            const hash = crypto.hash('sha1', `${key}${method}${expires}`);
+            const token = `${hash}${expires}`;
+
+            const req = {
+                url: '/about.html',
+                method: 'GET',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-token': token,
+                }
+            }
+
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';

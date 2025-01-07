@@ -110,7 +110,7 @@ Two parameters can be used to gain access to files in JSFS: `access-key` and `ac
 
 For more precise control, or to provide access for a limited amount of time, an `access-token` can be created.  `access-token`s are method-specific and can also be made to expire.
 
-To generate an `access-token``, hash the `access-key` + method using SHA1:
+To generate an `access-token`, hash the `access-key` + method using SHA1:
 ```js
 import crypto from 'node:crypto';
 
@@ -124,8 +124,20 @@ console.log(token);
 The output is then passed as `access-token` instead of `access-key`.
 
 To create a temporary token, include a the expiration datetime in [Unix time](https://en.wikipedia.org/wiki/Unix_time) format:
-```
-TODO: example
+```js
+import crypto from 'node:crypto';
+
+// This token expires 6 hours from now.
+let d = new Date();
+d.setTime(d.getTime() + 6 * 60*60*1000);
+
+const key = '077785b5e45418cf6caabdd686719813fb22e3ce';
+const method = 'GET';
+const expires = `${Math.floor(d.getTime() / 1000)}`;
+const hash = crypto.hash('sha1', key + method);
+const token = `${hash}${expires}`;
+
+console.log(token);
 ```
 
 When using a temporary token the expiration datetime must be included in the request as the `expires` parameter.

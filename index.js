@@ -51,7 +51,10 @@ server.on('request', async (req, res) => {
         // TODO: Figure out how to end the connection immediately.
         return;
     }
-    
+
+    // TODO: Add "action" param to let clients specify the
+    // method explicity (needed for clients that can't
+    // supply the extended HTTP methods used below).
     switch(req.method) {
         case 'HEAD':
             // Handle HEAD

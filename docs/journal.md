@@ -1,5 +1,13 @@
 # JSFS 5 Dev Journal
 
+## 01072025
+I thought of a few things I overlooked overnight.  The first is that I need to make sure that expired tokens are not authorized and also, there might be a way to eliminate the extra `expires` parameter when using a temporary token.
+
+I think I can also clean-up some of the method handling code by moving param extraction into the `utils` module, and I have an idea for supporting clients that can't use the "custom" methods as well.
+
+
+
+
 ## 01062025
 Dad passed away last time I was working on this.  Taking me a few minutes to figure out where I left off...
 
