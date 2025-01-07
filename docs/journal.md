@@ -11,6 +11,12 @@ So what's next?
 
 Could be implementing enough of the directory logic to get the two remaining `auth` tests to pass (crawling the jspace for keys), or could be adding the method override parameter (easier, but not as important right now).
 
+It would be cool to have passing tests, and the directory thing is more interesting (maybe the verb thing isn't even a problem?).
+
+This is fairly complex and might not even be possible until I implement more of the underlying I/O code (blockstore, etc.).  There's also the question of treating jnodes for directories differently from other files.  I've considered writing directory data (file listing, etc.) directly into the jnode instead of into individual blocks.  The upside of this is that it simplifies directory I/O (we can simply load the jnode and skip loading blocks) but it has the downside of limiting directory size to the size of a single block (jnodes are stored in a single block).  It also creates a somewhat special case for this data instead of being consistent across all types of data stored in JSFS.  
+
+The only real reason I'm considering this is that if the data is stored like everything else that means that directory lookups will need to go through the blockstore and blockdrivers, potentially generating an HTTP request for every directory lookup.  If there a very deep jspace with no directory files but the root, this could result in a *lot* of http requests.
+
 
 
 

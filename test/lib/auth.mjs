@@ -44,8 +44,39 @@ describe('auth', function () {
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
         });
-        it('should allow a valid key for an upstream directory', async function () {
-            assert.fail("Not implemented");
+        it.only('should allow a valid key for an upstream directory', async function () {
+            // This request POSTs a new file so there is no jnode to use to
+            // check authorization, so we need to check the upstream directories.
+
+            // Create the root directory
+            // TODO: Actually create the directory on the server.
+            const rootReq = {
+                url: '/',
+                method: 'POST',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-key': 'foo',
+                }
+            }
+
+            // Create a file under the root directory.
+            const req = {
+                url: '/about.html',
+                method: 'POST',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-key': 'foo',
+                }
+            }
+
+            const jspace = await GetJspace(req.headers['host'], req.url);
+
+            const jnode = new Jnode(jspace);
+            //jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
+
         });
         it('should deny an invalid key for an existing directory', async function () {
             assert.fail("Not implemented");
