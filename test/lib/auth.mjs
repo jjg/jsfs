@@ -73,6 +73,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
         });
@@ -104,6 +105,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
 
             const jnode = new Jnode(jspace);
+            jnode.private = true;
             //jnode.accessKey = 'foo';
 
             const authResult = await Auth(req, jnode);
@@ -124,6 +126,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
 
@@ -143,6 +146,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -170,6 +174,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -185,6 +190,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -201,6 +207,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
@@ -228,6 +235,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
@@ -256,6 +264,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
@@ -274,6 +283,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -290,6 +300,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -306,6 +317,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -322,6 +334,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -338,6 +351,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -354,6 +368,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -370,6 +385,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -386,6 +402,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
@@ -403,6 +420,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
@@ -419,6 +437,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
@@ -435,6 +454,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
@@ -451,6 +471,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
@@ -467,6 +488,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
@@ -483,6 +505,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
@@ -499,6 +522,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
@@ -515,6 +539,7 @@ describe('auth', function () {
             const jspace = await GetJspace(req.headers['host'], req.url);
             const jnode = new Jnode(jspace);
             jnode.accessKey = 'foo';
+            jnode.private = true;
 
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, false);
