@@ -127,18 +127,16 @@ To create a temporary token, include a the expiration datetime in [Unix time](ht
 ```js
 import crypto from 'node:crypto';
 
-// This token expires 6 hours from now.
+// This a token expires 6 hours from now.
 let d = new Date();
 d.setTime(d.getTime() + 6 * 60*60*1000);
 
-const key = '077785b5e45418cf6caabdd686719813fb22e3ce';
+const key = 'foo';
 const method = 'GET';
 const expires = `${Math.floor(d.getTime() / 1000)}`;
-const hash = crypto.hash('sha1', key + method);
+const hash = crypto.hash('sha1', `${key}${method}${expires}`);
 const token = `${hash}${expires}`;
 
 console.log(token);
 ```
-
-When using a temporary token the expiration datetime must be included in the request as the `expires` parameter.
 
