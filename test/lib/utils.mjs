@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { GetJspace } from '../../lib/utils.mjs';
+import { GetJspace, GetParam } from '../../lib/utils.mjs';
 import assert from 'assert';
 
 describe('utils', function () {
@@ -27,8 +27,40 @@ describe('utils', function () {
         });
         it('should not modify a provided jspace string', async function () {
             const jspace = await GetJspace("jasongullickson.com", "/.com.jasongullickson/home/welcome.html");
-            
             assert.equal(jspace, "/com.jasongullickson/home/welcome.html");
+        });
+    });
+    describe.only('#GetParam()', function () {
+        it('should return an access-key provided in a header', async function () {
+            const req = {
+                url: '/about.html',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-key': 'foo',
+                }
+            }
+            const result = await GetParam(req, 'access-key');
+            assert.equal(result, "foo");
+        });
+        it('should return an access-key provided in the querystring', async function () {
+            const req = {
+                url: '/about.html?access-key=foo',
+                headers: {
+                    'host': 'jasongullickson.com',
+                }
+            }
+            const result = await GetParam(req, 'access-key');
+            assert.equal(result, "foo");
+        });
+        it('should return null if the param is not found', async function () {
+            const req = {
+                url: '/about.html',
+                headers: {
+                    'host': 'jasongullickson.com',
+                }
+            }
+            const result = await GetParam(req, 'access-key');
+            assert.equal(result, null);
         });
     });
 });
