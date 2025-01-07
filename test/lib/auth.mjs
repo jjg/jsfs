@@ -28,6 +28,38 @@ import { GetJspace } from '../../lib/utils.mjs';
 describe('auth', function () {
     describe('#Auth()', function () {
 
+        // Public files
+        it('should allow access to public files without a key', async function () {
+            const req = {
+                url: '/about.html',
+                method: 'GET',
+                headers: {
+                    'host': 'jasongullickson.com',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+            jnode.private = false;
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, true);
+        });
+        it('should deny access to private files without a key', async function () {
+            const req = {
+                url: '/about.html',
+                method: 'GET',
+                headers: {
+                    'host': 'jasongullickson.com',
+                }
+            }
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            jnode.accessKey = 'foo';
+            jnode.private = true;
+            const authResult = await Auth(req, jnode);
+            assert.equal(authResult, false);
+        });
+
         // Keys
         it('should allow a valid key for an existing jnode', async function () {
             // TODO: See if there is a better way to mock http.IncomingMessage
@@ -44,7 +76,7 @@ describe('auth', function () {
             const authResult = await Auth(req, jnode);
             assert.equal(authResult, true);
         });
-        it.only('should allow a valid key for an upstream directory', async function () {
+        it('should allow a valid key for an upstream directory', async function () {
             // This request POSTs a new file so there is no jnode to use to
             // check authorization, so we need to check the upstream directories.
 

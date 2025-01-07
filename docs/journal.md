@@ -17,7 +17,7 @@ This is fairly complex and might not even be possible until I implement more of 
 
 The only real reason I'm considering this is that if the data is stored like everything else that means that directory lookups will need to go through the blockstore and blockdrivers, potentially generating an HTTP request for every directory lookup.  If there a very deep jspace with no directory files but the root, this could result in a *lot* of http requests.
 
-
+I also just remembered that `auth` needs to differentiate between `public` and `private` files...
 
 
 ## 01062025
