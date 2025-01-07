@@ -30,7 +30,7 @@ describe('utils', function () {
             assert.equal(jspace, "/com.jasongullickson/home/welcome.html");
         });
     });
-    describe.only('#GetParam()', function () {
+    describe('#GetParam()', function () {
         it('should return an access-key provided in a header', async function () {
             const req = {
                 url: '/about.html',
