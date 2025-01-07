@@ -5,6 +5,12 @@ I thought of a few things I overlooked overnight.  The first is that I need to m
 
 I think I can also clean-up some of the method handling code by moving param extraction into the `utils` module, and I have an idea for supporting clients that can't use the "custom" methods as well.
 
+New temporary token implemented (no more `expires` param!), param extraction moved to the `util` module and all token-related tests passing!
+
+So what's next?
+
+Could be implementing enough of the directory logic to get the two remaining `auth` tests to pass (crawling the jspace for keys), or could be adding the method override parameter (easier, but not as important right now).
+
 
 
 
