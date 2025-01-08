@@ -26,7 +26,7 @@ import { Auth } from '../../../lib/auth.mjs';
 import { Get } from '../../../lib/verbs/get.mjs';
 
 
-describe.only('get', function () {
+describe('get', function () {
     describe('#Get()', function () {
         it('should return a stored file', async function () {
 

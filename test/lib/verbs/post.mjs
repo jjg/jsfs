@@ -26,7 +26,7 @@ import { Auth } from '../../../lib/auth.mjs';
 import { Post } from '../../../lib/verbs/post.mjs';
 
 
-describe.only('post', function () {
+describe('post', function () {
     describe('#Post()', function () {
         it('should accept a file and return a jnode', async function () {
 
@@ -38,19 +38,12 @@ describe.only('post', function () {
                     'host': 'jasongullickson.com',
                 }
             }
+            // TODO: Mock a more complete response object()?
             const res = {};
 
-            // Mock the steps before the method switch
-            // Get jspace
+            // Simulate the steps taken when processing the client request.
             const jspace = await GetJspace(req.headers['host'], req.url);
-            // Get jnode
             const jnode = new Jnode(jspace);
-
-            // TODO: Set the accessKey using a value provided by the request.
-            //jnode.accessKey = 'foo';
-            //jnode.private = false;
-
-            // Auth the request
             const authResult = await Auth(req, res, jnode);
 
             // Do the Post
@@ -60,8 +53,16 @@ describe.only('post', function () {
             assert.equal(res.status, 200);
 
             // TODO: Do a more complete job of testing the result
-            //console.log(jnode);
+            // TODO: Test version
+            // TODO: Test fingerprint
+            // TODO: Test accessKey
+            // TODO: Test fileSize
+            // TODO: Test blockSize
             assert.equal(jnode.blocks.length, 1);
+            
+            // TODO: Issue additional verbs (HEAD, GET) to ensure that
+            // the file has been stored correctly?
         });
+        it('should utilize a client-provided accessKey')
     });
 });

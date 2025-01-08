@@ -26,7 +26,7 @@ import { Auth } from '../../../lib/auth.mjs';
 import { Head } from '../../../lib/verbs/head.mjs';
 
 
-describe.only('head', function () {
+describe('head', function () {
     describe('#Head()', function () {
         it('should return metadata as headers', async function () {
 

@@ -9,6 +9,7 @@ An [operating system for the web](https://jasongullickson.com/an-operating-syste
 - [ ] Figure out `config`
 - [ ] Add config to README
 - [X] Document `jspace` in README
+- [ ] Finish `Auth` (mainly directory handling)
 - [ ] Write `jnode`
 - [ ] Write `verbs`
 - [ ] Write example `blockdriver`
