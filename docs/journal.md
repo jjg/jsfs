@@ -33,6 +33,7 @@ So far so good.
 
 Now that I'm implementing some of the `Post` module I'm going to have to decide where the line is between the `Post` verb handler and the `blockstore` (and additionally, `blockdriver`(s)).
 
+OK, I'm passing a file from a test to the `Post` handler, and the handler is parsing the stream and adding block names to the `jnode`.  It's not persisting any data yet, but I'll probably save that for tomorrow since it will involve starting work on the `blockstore` and that's a bit more than I'm ready to bite off today.
 
 
 ### References
