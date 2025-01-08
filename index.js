@@ -22,6 +22,7 @@ import { GetJspace } from './lib/utils.mjs';
 import { Jnode } from './lib/jnode.mjs';
 import { Auth } from './lib/auth.mjs';
 import { Head } from './lib/verbs/head.mjs';
+import { Post } from './lib/verbs/post.mjs';
 
 
 // TODO: Start logging
@@ -57,14 +58,14 @@ server.on('request', async (req, res) => {
     // supply the extended HTTP methods used below).
     switch(req.method) {
         case 'HEAD':
-            // Handle HEAD
-            await Head(res, jnode)
+            await Head(req, res, jnode);
             break;
         case 'GET':
             // TODO: Handle GET
             break;
         case 'POST':
-            // TODO: Handle POST
+            // TODO: Should this capture the return value and do something?
+            await Post(req, res, jnode);
             break;
         case 'PUT':
             // TODO: Handle PUT
