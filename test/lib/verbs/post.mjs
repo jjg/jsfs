@@ -29,29 +29,17 @@ import { Post } from '../../../lib/verbs/post.mjs';
 
 
 describe('POST verb handling', function () {
-    describe.only('#Post()', function () {
+    describe('#Post()', function () {
         it('should create a new file from posted data', async function () {
 
-            // Simulate a request by mutating a filehandle...?
+            // Simulate a request by mutating a ...filehandle?
             // TODO: Figure out how to not use an absolute path here.
             const req = await open('/home/jason/Projects/jsfs/test/testdata/about.html');
-            /*
-            for await (const chunk of file.readableWebStream()) {
-                console.log(chunk);
-            }
-            await file.close();
-            */
-            
-            //class Req extends Readable{};
-            //const req = Req;
-            
             req.url = '/about.html';
             req.method = 'POST';
             req.headers = {
                 'host': 'jasongullickson.com',
             };
-
-            console.log(req);
 
             // TODO: Mock a more complete response object()?
             const res = {};
@@ -61,14 +49,13 @@ describe('POST verb handling', function () {
             const jnode = new Jnode(jspace);
             const authResult = await Auth(req, res, jnode);
 
-            // Do the Post
+            // Process as Post
             await Post(req, res, jnode);
 
             // Make sure HTTP status is sucessful.
             assert.equal(res.status, 200);
 
             // TODO: Do a more complete job of testing the result
-            console.log(jnode);
             // TODO: Test version
             // TODO: Test fingerprint
             // TODO: Test accessKey
@@ -78,10 +65,9 @@ describe('POST verb handling', function () {
 
             // TODO: Issue additional verbs (HEAD, GET) to ensure that
             // the file has been stored correctly?
-            
+
             // Cleanup
             await req.close();
-            
         });
         it('should utilize a client-provided accessKey')
         it('should set HTTP status to 401 if authorization is denied')

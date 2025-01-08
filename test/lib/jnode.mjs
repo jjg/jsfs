@@ -22,7 +22,7 @@ import assert from 'assert';
 describe('jnode', function () {
     describe('#NewJnode()', function () {
         it('should return a new jnode', function () {
-            const aJnode = new Jnode();
+            const aJnode = new Jnode('foo');
             assert.equal(aJnode.version, 0);
         });
     });
