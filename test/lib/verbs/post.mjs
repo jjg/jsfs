@@ -17,7 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import http from 'node:http';
-import crypto from 'node:crypto';
 import assert from 'assert';
 
 import { GetJspace } from '../../../lib/utils.mjs';
@@ -26,7 +25,7 @@ import { Auth } from '../../../lib/auth.mjs';
 import { Post } from '../../../lib/verbs/post.mjs';
 
 
-describe('post', function () {
+describe.only('POST verb handling', function () {
     describe('#Post()', function () {
         it('should accept a file and return a jnode', async function () {
 
@@ -59,10 +58,16 @@ describe('post', function () {
             // TODO: Test fileSize
             // TODO: Test blockSize
             assert.equal(jnode.blocks.length, 1);
-            
+
             // TODO: Issue additional verbs (HEAD, GET) to ensure that
             // the file has been stored correctly?
         });
         it('should utilize a client-provided accessKey')
+        it('should set HTTP status to 401 if authorization is denied')
+        it('should set HTTP status to 500 if an error occurs')
+        it('should handle streaming data correctly')
+        it('should write the correct content-length header')
+        it('should set HTTP method not allowed if file exists')
+        it('should handle range requests correctly')
     });
 });
