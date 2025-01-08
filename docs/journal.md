@@ -27,12 +27,20 @@ I thought there might be some examples of this on the web, but the answer is alw
 
 `http.IncomingMessag` extends `stream.Readable` so maybe I can just do that to get what I need?
 
+As I dig into this I'm reminded that there's two types of stream in Node.js, the "original" and "WebStream".  I want to stick to the latter as it should be more like the rest of the web.
+
+So far so good.
+
+Now that I'm implementing some of the `Post` module I'm going to have to decide where the line is between the `Post` verb handler and the `blockstore` (and additionally, `blockdriver`(s)).
+
 
 
 ### References
 * https://stackoverflow.com/questions/34955787/is-a-javascript-array-order-guaranteed
 * https://stackoverflow.com/questions/28152740/how-to-make-empty-placeholder-tests-intentionally-fail-in-mocha
 * https://nodejs.org/docs/latest-v22.x/api/http.html#class-httpincomingmessage
+* https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/extends
+* https://nodejs.org/docs/latest-v22.x/api/stream.html#readable-streams
 
 
 ## 01072025
