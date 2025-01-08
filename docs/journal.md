@@ -1,5 +1,14 @@
 # JSFS 5 Dev Journal
 
+## 01082025
+After thinking about it overnight I'm not going to do anything clever with directory files and will instead treat them like any other for now.  Maybe I'll move the data into the jnode at some point as an optimization, but for now they will get treated like any other file.
+
+This does mean that I have a chicken-and-egg problem with implementing the parts of `auth` that use directories so that will have to get parked until I've written enough of the "write" verbs to write out some directories.
+
+So what does that mean for *what's next*?
+
+I think it means it's time to start implementing `POST`.  
+
 ## 01072025
 I thought of a few things I overlooked overnight.  The first is that I need to make sure that expired tokens are not authorized and also, there might be a way to eliminate the extra `expires` parameter when using a temporary token.
 
