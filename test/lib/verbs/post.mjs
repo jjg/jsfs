@@ -38,6 +38,7 @@ describe.only('post', function () {
                     'host': 'jasongullickson.com',
                 }
             }
+            const res = {};
 
             // Mock the steps before the method switch
             // Get jspace
@@ -50,13 +51,17 @@ describe.only('post', function () {
             //jnode.private = false;
 
             // Auth the request
-            const authResult = await Auth(req, jnode);
+            const authResult = await Auth(req, res, jnode);
 
-            // TODO: Call Post and get an actual jnode back
-            const postResult = await Post(req, jnode);
+            // Do the Post
+            await Post(req, res, jnode);
+
+            // Make sure HTTP status is sucessful.
+            assert.equal(res.status, 200);
 
             // TODO: Do a more complete job of testing the result
-            assert.equal(postResult.jspace, jspace);
+            //console.log(jnode);
+            assert.equal(jnode.blocks.length, 1);
         });
     });
 });

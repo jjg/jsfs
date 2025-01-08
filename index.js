@@ -64,7 +64,7 @@ server.on('request', async (req, res) => {
             // TODO: Handle GET
             break;
         case 'POST':
-            // TODO: Should this capture the return value and do something?
+            // TODO: Should verb handlers return anything?
             await Post(req, res, jnode);
             break;
         case 'PUT':

@@ -9,6 +9,16 @@ So what does that mean for *what's next*?
 
 I think it means it's time to start implementing `POST`.  
 
+```
+client -> index.js -> 
+```
+
+Once I started implementing `POST` it became clear that I should probably pass the request and response to each verb handler and just let them set the HTTP status, etc.  This is essential for verbs that stream data, so why not make the interface consistent?  I'm still not sure if each verb method should return anything at all because I'm not sure how that would change the main loop, so I left a note and will revisit that later.
+
+I also changed `blocks` back to an array; I had changed it to an object because I've always worried that the order of an array might change but according to the docs I can find ES6 treats arrays as objects so this isn't likely to happen.  AFAIK it's never been a problem in any previous version of JSFS, so I'll leave it as an array for now and do some additional testing to see if I can break it.
+
+
+
 ## 01072025
 I thought of a few things I overlooked overnight.  The first is that I need to make sure that expired tokens are not authorized and also, there might be a way to eliminate the extra `expires` parameter when using a temporary token.
 
