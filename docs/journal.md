@@ -19,10 +19,20 @@ I also changed `blocks` back to an array; I had changed it to an object because 
 
 Added initial tests (and some implementation) for `HEAD`, `GET`.
 
+> Reminder: use `let` instead of `var`, etc.
+
+OK, it's time to make the fake `req` (`IncomingMessage`) I'm using in the tests behave more like the real thing.
+
+I thought there might be some examples of this on the web, but the answer is always to use some third-party module.  I'd rather understand how this works and learn something, so I'm going to see what I can do myself before reaching for some random code that I'm going to have to evaluate introduce more dependencies/risks/etc.
+
+`http.IncomingMessag` extends `stream.Readable` so maybe I can just do that to get what I need?
+
+
 
 ### References
 * https://stackoverflow.com/questions/34955787/is-a-javascript-array-order-guaranteed
 * https://stackoverflow.com/questions/28152740/how-to-make-empty-placeholder-tests-intentionally-fail-in-mocha
+* https://nodejs.org/docs/latest-v22.x/api/http.html#class-httpincomingmessage
 
 
 ## 01072025

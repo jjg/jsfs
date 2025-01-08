@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { Readable } from 'node:stream';
 import http from 'node:http';
 import assert from 'assert';
 
@@ -27,16 +28,19 @@ import { Post } from '../../../lib/verbs/post.mjs';
 
 describe.only('POST verb handling', function () {
     describe('#Post()', function () {
-        it('should accept a file and return a jnode', async function () {
+        it('should create a new file from posted data', async function () {
 
             // TODO: Add file data to this fake IncomingMessage.
-            const req = {
-                url: '/about.html',
-                method: 'POST',
-                headers: {
-                    'host': 'jasongullickson.com',
-                }
-            }
+            class Req extends Readable{};
+            const req = Req;
+            req.url = '/about.html';
+            req.method = 'POST';
+            req.headers = {
+                'host': 'jasongullickson.com',
+            };
+            
+            console.log(req);
+
             // TODO: Mock a more complete response object()?
             const res = {};
 
