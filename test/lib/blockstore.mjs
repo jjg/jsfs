@@ -23,11 +23,24 @@ import assert from 'assert';
 import { Load, Store } from '../../lib/blockstore.mjs';
 
 
-describe.only('blockstore', function () {
-    describe('#Load()', function () {
-        it('should load the requested block data')
-    });
+describe('blockstore', function () {
+
+    // Share the name across describes.
+    let blockName = '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33';
+
     describe('#Store()', function () {
-        it('should store a block and return the block name')
+        it('should store a block and return the block name', async function() {
+            blockName = await Store('foo');
+            assert.notEqual(blockName, null);
+        });
+    });
+
+    describe('#Load()', function () {
+        it('should load the requested block data', async function(){
+            const result = await Load(blockName);
+
+            // TODO: Test this in a more meaningful way.
+            assert.notEqual(result, null);
+        });
     });
 });
