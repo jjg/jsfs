@@ -1,5 +1,28 @@
 # JSFS 5 Dev Journal
 
+## 01092025
+I've been thinking about putting the [blockstore](./blockstore.md) on a separate thread/process in a way that it can be shared by all requests.  The reasoning is that it can run off it it's own corner of the computer and not block the main thread.  It also opens up the possibility of caching across requests/clients, and since it works at the block level this could provide a sort of *compute-level deduplication*.  Also having a very clean interface with the blockstore might make it easier to spin the blockstore out into a stand-alone program that could be run without the rest of JSFS on remote servers to support federation, replication, etc.
+
+Anyway, back to the task at hand.
+
+Yesterday I was able to load *something* via the blockstore's `Load()` method.  It was very juryrigged so that needs work.  I also need to get `Store()` working, and I think it makes sense to do that first so there's an automated way to write data before continuing work on reading it.
+
+Getting `Store()` to work was a matter of using an easier API than where I started.  
+
+Now that I'm seeing more of how this will be wired-up I wonder if it could be as simple as not having the verb handler `await` the call to the `blockstore`?  This would allow the verb handler to complete the client request without waiting for the data to be persisted and cleanly delegates things like raid, retry, etc. to the blockstore.  However if some unrecoverable problem occurs writing the block there's no way to tell the client, so there will have to be another way, maybe by writing something to the `jnode` to indicate corruption status?
+
+Not sure how best to handle that but I want to design this with the idea that each component/module can trust the others to do there job, so a verb handler should be able to trust that the blockstore will store a block one way or another, and that when called upon to retrieve the block, it will do so unless it's completely impossible (in which case what is the verb handler going to do anyway?).  This encourages module autonomy and prevents exception handling from leaking across module boundaries.
+
+The only thing I don't like about this is that I think it forces the block naming (hashing the block data to generate a name) back into the verb handler, which feels less clean.  Hmm...
+
+I decided to move block hash/name generation out of the blockstore so `Store()` can be called w/o `await`ing the result.
+
+
+### References
+* https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
+* https://nodejs.org/docs/latest-v22.x/api/webstreams.html#class-readablestream
+
+
 ## 01082025
 After thinking about it overnight I'm not going to do anything clever with directory files and will instead treat them like any other for now.  Maybe I'll move the data into the jnode at some point as an optimization, but for now they will get treated like any other file.
 

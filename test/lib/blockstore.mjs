@@ -23,24 +23,46 @@ import assert from 'assert';
 import { Load, Store } from '../../lib/blockstore.mjs';
 
 
-describe('blockstore', function () {
+describe.only('blockstore', function () {
 
-    // Share the name across describes.
-    let blockName = '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33';
+    // NOTE: This test has cross-describe dependencies
+    // on files written to the filesystem.  I'm not sure
+    // if that's OK, so this might have to be revisited.
+
+    const blockData = 'foo';
+    const blockHash = crypto.hash('sha1', blockData);
 
     describe('#Store()', function () {
-        it('should store a block and return the block name', async function() {
-            blockName = await Store('foo');
-            assert.notEqual(blockName, null);
+        it('should store a block of data', async function() {
+            Store(blockHash, blockData);
+
+            // TODO: Right now this test will pass unless
+            // an exception is thrown.  It would be better
+            // to also try reading the block back, but since
+            // this is a detached async operation, I'm not
+            // sure how to do that in a way that doesn't 
+            // result in false-positives (i.e. flaky tests).
+            //
+            // I guess for testing purposes Store() could be
+            // awaited since this test isn't about maximizing
+            // performance...?
         });
     });
 
     describe('#Load()', function () {
         it('should load the requested block data', async function(){
-            const result = await Load(blockName);
+            const result = await Load(blockHash);
 
             // TODO: Test this in a more meaningful way.
             assert.notEqual(result, null);
+
+            // TODO: Do I really need all this decoding?
+            const decoder = new TextDecoder();
+            const resultString = decoder.decode(result);
+            assert.equal(resultString, blockData);
         });
     });
+    describe('#Purge()', function () {
+        it('should erase a block from the store')
+    })
 });
