@@ -20,10 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import crypto from 'node:crypto';
 import assert from 'assert';
 
-import { Load, Store } from '../../lib/blockstore.mjs';
+import { Load, Store, Purge } from '../../lib/blockstore.mjs';
 
 
-describe.only('blockstore', function () {
+describe('blockstore', function () {
 
     // NOTE: This test has cross-describe dependencies
     // on files written to the filesystem.  I'm not sure
@@ -63,6 +63,12 @@ describe.only('blockstore', function () {
         });
     });
     describe('#Purge()', function () {
-        it('should erase a block from the store')
-    })
+        it('should erase a block from the store', async function (){
+            Purge(blockHash);
+
+            // Confirm the purge.
+            const result = await Load(blockHash);
+            assert.equal(result, null);
+        });
+    });
 });
