@@ -10,7 +10,7 @@ So what does that mean for *what's next*?
 I think it means it's time to start implementing `POST`.  
 
 ```
-client -> index.js -> post.mjs -> 
+client -> index.js -> post.mjs -> blockstore.mjs -> blockdrivers 
 ```
 
 Once I started implementing `POST` it became clear that I should probably pass the request and response to each verb handler and just let them set the HTTP status, etc.  This is essential for verbs that stream data, so why not make the interface consistent?  I'm still not sure if each verb method should return anything at all because I'm not sure how that would change the main loop, so I left a note and will revisit that later.
@@ -35,6 +35,10 @@ Now that I'm implementing some of the `Post` module I'm going to have to decide 
 
 OK, I'm passing a file from a test to the `Post` handler, and the handler is parsing the stream and adding block names to the `jnode`.  It's not persisting any data yet, but I'll probably save that for tomorrow since it will involve starting work on the `blockstore` and that's a bit more than I'm ready to bite off today.
 
+I had a little more time today to think about the blockstore/blockdriver bits.  One change I've had in mind is to consolidate all persistence via the blockstore so that both jblocks and jnodes are stored the same way.  In previous versions of JSFS these were separate, which made things complicated when moving beyond local disk-based blockstores.
+
+So the blockstore should have a simple two-method interface; one to store a jblock/jnode and one to retrieve them.  Hmm...  
+
 
 ### References
 * https://stackoverflow.com/questions/34955787/is-a-javascript-array-order-guaranteed
@@ -42,6 +46,7 @@ OK, I'm passing a file from a test to the `Post` handler, and the handler is par
 * https://nodejs.org/docs/latest-v22.x/api/http.html#class-httpincomingmessage
 * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/extends
 * https://nodejs.org/docs/latest-v22.x/api/stream.html#readable-streams
+* https://nodejs.org/api/buffer.html#static-method-bufferfromarraybuffer-byteoffset-length
 
 
 ## 01072025
