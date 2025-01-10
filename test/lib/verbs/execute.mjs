@@ -16,4 +16,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// TODO: Write example metadriver
+import assert from 'assert';
+
+import { Execute } from '../../../lib/verbs/execute.mjs';
+
+
+describe('execute', function () {
+    describe('#Execute()', function () {
+        it('should execute an existing file')
+        it('should 404 if file doesnt exist')
+        it('should 401 if auth fails?')
+    });
+});
