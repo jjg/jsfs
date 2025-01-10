@@ -9,6 +9,11 @@ I'm almost afraid to simply "catalog" everything I can think of that is outstand
 
 Instead maybe what I should do is finish laying-down the foundation for the most obvious things (the remaining verbs, etc.) so that when I wrap things up this week the branch should have at least a toehold for each essential component.
 
+That's done with the exception of `config`.  I still don't know exactly how config should work.  In previous versions of JSFS it was a Javascript file, which I like but isn't the best way to go for various reasons I don't recall off-hand.  It could be JSON, but you can't put comments in JSON and it could be YAML, but I don't want to add a dependency just to use YAML so unless node.js can deal with YAML natively that's not an option.
+
+I might just punt on config for right now.
+
+Another thing I'd like to get setup before the end of the week is CI-ish stuff.  It would be nice to have tests and linting running automated in the repo.
 
 
 ## 01092025
