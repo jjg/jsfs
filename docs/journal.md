@@ -15,6 +15,14 @@ I might just punt on config for right now.
 
 Another thing I'd like to get setup before the end of the week is CI-ish stuff.  It would be nice to have tests and linting running automated in the repo.
 
+Got a basic GA that runs the tests against the `main` branch and PR's:
+
+https://github.com/jjg/jsfs/actions
+
+Might add a linter too...
+
+Linter added.  Weird note: I couldn't get it to ignore the `test` directory using the config, so I had to cram it into the command-line arguments in `package.json`.
+
 
 ## 01092025
 I've been thinking about putting the [blockstore](./blockstore.md) on a separate thread/process in a way that it can be shared by all requests.  The reasoning is that it can run off it it's own corner of the computer and not block the main thread.  It also opens up the possibility of caching across requests/clients, and since it works at the block level this could provide a sort of *compute-level deduplication*.  Also having a very clean interface with the blockstore might make it easier to spin the blockstore out into a stand-alone program that could be run without the rest of JSFS on remote servers to support federation, replication, etc.
