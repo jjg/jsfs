@@ -1,5 +1,16 @@
 # JSFS 5 Dev Journal
 
+## 01102025
+It's the end of the mourning week (I know, it's never the end) and while I won't be able to work on this every day anymore I want to make at least one commit a week if not more.  I should take some time today to package this week's work up in a way that will be easy to pick-up and set-down when I have less time to work on it.
+
+One thing I've noticed over this week is that an hour is the absolute minimum I need to make any progress at all, and really it's more like two hours.  Four hours seems to be the maximum single-session length before I start to slow down, so two-to-four hours is really the goal for scheduling future work sessions.
+
+I'm almost afraid to simply "catalog" everything I can think of that is outstanding as it would be as overwhelming as it would be incorrect.  Another thing I've found working this week is that I've found a "grain size" in the work that lets me comfortably work through several generations of a component, making better choices as I go.  This is good for making progress and producing quality results, but it also means that what I thought I would do isn't always what I end-up doing, which means things like detailed TODO lists would just end up being wrong.
+
+Instead maybe what I should do is finish laying-down the foundation for the most obvious things (the remaining verbs, etc.) so that when I wrap things up this week the branch should have at least a toehold for each essential component.
+
+
+
 ## 01092025
 I've been thinking about putting the [blockstore](./blockstore.md) on a separate thread/process in a way that it can be shared by all requests.  The reasoning is that it can run off it it's own corner of the computer and not block the main thread.  It also opens up the possibility of caching across requests/clients, and since it works at the block level this could provide a sort of *compute-level deduplication*.  Also having a very clean interface with the blockstore might make it easier to spin the blockstore out into a stand-alone program that could be run without the rest of JSFS on remote servers to support federation, replication, etc.
 
