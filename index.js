@@ -34,7 +34,7 @@ server.on('request', async (req, res) => {
 
     // Translate the incoming hostname & path to jspace
     const jspace = await GetJspace(req.headers['host'], req.url);
-    
+
     // Get the jnode
     const jnode = new Jnode(jspace);
     const err = await jnode.Load();
@@ -42,13 +42,13 @@ server.on('request', async (req, res) => {
         // TODO: Some requests don't require an existing jnode,
         // so unless this is a *hard* error, continue.
     }
-    
+
     // Auth the request
     const authorized = await Auth(req, jnode);
     if(!authorized){
         res.statusCode = 403;
         res.end();
-        
+
         // TODO: Figure out how to end the connection immediately.
         return;
     }
