@@ -7,7 +7,7 @@ I want to try moving the config into jspace, as part of the jnode that is stored
 
 http://10.1.10.1/.com.jasongullickson.jsfs/about.html
 
-The "/." after the IP address would point to a special jnode file that would contain node configuration data in addition to the usual directory contents and access key.
+The "/." after the IP address (I think...) would point to a special jnode file that would contain node configuration data in addition to the usual directory contents and access key.
 
 This allows the configuration to be modified at runtime via the JSFS API like any other file stores in JSFS, while preserving the ability to create & modify the configuration from outside as well since jnodes are just json files.
 
