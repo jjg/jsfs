@@ -1,8 +1,29 @@
 # JSFS 5 Dev Journal
 
+
 ## 01112025
 Had a few minutes to space so I'm just picking at adding some more test and notes to define what needs to be done.
 
+
+## 01132025
+Had a new idea for config, and it also solves the "static access keys" replacement problem.
+
+I want to try moving the config into jspace, as part of the jnode that is stored at the absolute root of jspace.  So for example, if you look at the jspace path:
+
+http://10.1.10.1/.com.jasongullickson.jsfs/about.html
+
+The "/." after the IP address (I think...) would point to a special jnode file that would contain node configuration data in addition to the usual directory contents and access key.
+
+This allows the configuration to be modified at runtime via the JSFS API like any other file stores in JSFS, while preserving the ability to create & modify the configuration from outside as well since jnodes are just json files.
+
+> This also decides the config format going forward, its JSON.
+
+This does mean that all JSFS 5 servers will have a "local storage" blockdriver since this "boot block" will need to be readable as the server starts-up, but it could be limited to startup/restart time if desired.  Theres also the matter of deciding if this jnode gets copied/replicated/etc. to other persistence areas, etc. but those details can be worked-out once I'm sure this will work at all.
+
+Part of this will also be adding a startup check that walks the operatoe through creating the config if none is found (maybe even via optional web interface), defining standards for where this jnode file is stored, maybe providing a comand argument to pass a custom location (or complete jnode file?), etc.
+
+There's a lot of interesting applications for this beyond basic configuration.  For example, it provides a means for a server admin to provision host/domains as adding them will require the root access key.  An admin could create the host's root directory using the root-root access key and then set the domain's root access key to something known by the domain's admin.
+>>>>>>> 9bab282b449ed942592de7afaf326059f39d149f
 
 ## 01102025
 It's the end of the mourning week (I know, it's never the end) and while I won't be able to work on this every day anymore I want to make at least one commit a week if not more.  I should take some time today to package this week's work up in a way that will be easy to pick-up and set-down when I have less time to work on it.
