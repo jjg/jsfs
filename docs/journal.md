@@ -1,5 +1,9 @@
 # JSFS 5 Dev Journal
 
+## 01112025
+Had a few minutes to space so I'm just picking at adding some more test and notes to define what needs to be done.
+
+
 ## 01102025
 It's the end of the mourning week (I know, it's never the end) and while I won't be able to work on this every day anymore I want to make at least one commit a week if not more.  I should take some time today to package this week's work up in a way that will be easy to pick-up and set-down when I have less time to work on it.
 

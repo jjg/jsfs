@@ -24,7 +24,8 @@ import { Put } from '../../../lib/verbs/put.mjs';
 describe('put', function () {
     describe('#Put()', function () {
         it('should update an existing file')
-        it('should 404 if file doesnt exist')
-        it('should 401 if auth fails?')
+        it('should error if the file doesnt exist')
+        it('should increment the file version')
+        it('should 401 if auth fails')
     });
 });
