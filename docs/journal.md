@@ -6,6 +6,11 @@ Looks like I left myself a mess, where was I?
 
 Cleaned-up some tests around the blockstore.  The world is a fucking mess today.
 
+I *think* the blockstore works well enough to save a jnode file, maybe it's time to work on directories a bit so I can get the failing auth tests to pass?
+
+OK, jnode is now Loading and Saving itself.
+
+
 
 ## 01192025
 Can't fall back asleep so I thought about JSFS and came up with a few new/revised ideas.

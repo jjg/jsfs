@@ -37,6 +37,7 @@ describe('POST verb handling', function () {
             req.method = 'POST';
             req.headers = {
                 'host': 'jasongullickson.com',
+                'x-jsfs-access-key': 'foo',
             };
 
             // TODO: Mock a more complete response object()?
@@ -44,8 +45,12 @@ describe('POST verb handling', function () {
 
             // Simulate the steps taken when processing the client request.
             const jspace = await GetJspace(req.headers['host'], req.url);
+
+            // TODO: Replace this fake jnode by loading a real one?
             const jnode = new Jnode(jspace);
-            const authResult = await Auth(req, res, jnode);
+            jnode.accessKey = 'foo';
+
+            const authResult = await Auth(req, jnode);
 
             // Process as Post
             await Post(req, res, jnode);

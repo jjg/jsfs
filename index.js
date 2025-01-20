@@ -35,12 +35,13 @@ server.on('request', async (req, res) => {
     // Translate the incoming hostname & path to jspace
     const jspace = await GetJspace(req.headers['host'], req.url);
 
-    // Get the jnode
+    // Get the existing or create a new jnode for this jspace.
+    // TODO: Consider condensing this into a single constructor.
     const jnode = new Jnode(jspace);
     const err = await jnode.Load();
     if(err){
-        // TODO: Some requests don't require an existing jnode,
-        // so unless this is a *hard* error, continue.
+        // TODO: Some requests don't need an existing jnode,
+        // so an error here shouldn't stop all requests.
     }
 
     // Auth the request

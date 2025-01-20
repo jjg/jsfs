@@ -83,6 +83,7 @@ describe('auth', function () {
 
             // Create the root directory
             // TODO: Actually create the directory on the server.
+            /*
             const rootReq = {
                 url: '/',
                 method: 'POST',
@@ -91,6 +92,9 @@ describe('auth', function () {
                     'x-jsfs-access-key': 'foo',
                 }
             }
+            */
+            // TODO: For now, manually create a jnode for the root directory
+            
 
             // Create a file under the root directory.
             const req = {
