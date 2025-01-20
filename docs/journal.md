@@ -1,9 +1,37 @@
 # JSFS 5 Dev Journal
 
+
 ## 01202025
 Looks like I left myself a mess, where was I?
 
 Cleaned-up some tests around the blockstore.  The world is a fucking mess today.
+
+
+## 01192025
+Can't fall back asleep so I thought about JSFS and came up with a few new/revised ideas.
+
+### delegated auth
+Instead of using a static, internal auth function, allow a jnode to point to an auth function stored as an executable file inside jsfs.  By default this is the current internal auth function, but it could point to a custom, user-defined functiom instead.  I think this could be a simple way to support things like oauth.
+
+It means adding overhead to each call (the auth function would need to be resolved, loaded, executed, etc.) but I can imagine ways to optimize the "default" auth function if performace was more important to the applicatiom than custom auth.
+
+> Of course this can't be implemented until X support is implemented so until then the internal auth module will continue to be developed.
+
+### slorp mode
+This has been discussed many times over the years but I want to codify it now because I think it's a fascinating use case.
+
+With slorp enabled, jsfs can capture the content of any website and serve it by making a simple http request using the jspace name of the website.  For example:
+
+https://.com.jasongullickson/about.html
+
+returns the contents of https://jasongullickson.com/about.html even if that file wasn't previously stored in this jsfs instance.  It does this by first looking in the local store for a jnode for this file, and if one is not found, the server creates one and makes an http request to fetch the contents.  The contents are then stored in jsfs and returned to the client.  As a result, subsequent requests for this site are served directly from jsfs at much higher speed, and are also avaliable when the original site is unreachable. This is similar to a caching proxy, and has a number of practical uses.
+
+The primary use is migrating a site to JSFS.  With slorp enabled, the site is crawled by making requests against the JSFS server.  When the craw is complete, the DNS for the site can simply be changed to point to the JSFS server and the migration is complete.
+
+There are many other applicatioms for this feature, such as making replicas for avaliability or even offline use, or simply caching a site to reduce pressure on the origin and speed-up access.  This also is a way to rapidly build-out the blocks in thr blockstore, potentially increasing deduplication performance.
+
+> Note: slorped files are always initially public, and inherit the root-root access key.
+
 
 ## 01172025
 It's only been a few days since I wrote some functional code (as opposed to tests) here and I'm already feeling disconnected from what exactly needs to be done next; not a good sign.
@@ -11,7 +39,6 @@ It's only been a few days since I wrote some functional code (as opposed to test
 I have a little time now and might have a few free hours coming in a few days, so let's see if I can put the needle back in the groove.
 
 Let's start by tidying-up the test output, that should make it a little easier to see what is broken vs. what just doesn't exist yet.
-
 
 
 ## 01132025
