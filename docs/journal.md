@@ -1,5 +1,18 @@
 # JSFS 5 Dev Journal
 
+## 01202025
+Looks like I left myself a mess, where was I?
+
+Cleaned-up some tests around the blockstore.  The world is a fucking mess today.
+
+## 01172025
+It's only been a few days since I wrote some functional code (as opposed to tests) here and I'm already feeling disconnected from what exactly needs to be done next; not a good sign.
+
+I have a little time now and might have a few free hours coming in a few days, so let's see if I can put the needle back in the groove.
+
+Let's start by tidying-up the test output, that should make it a little easier to see what is broken vs. what just doesn't exist yet.
+
+
 
 ## 01132025
 Had a new idea for config, and it also solves the "static access keys" replacement problem.
@@ -14,9 +27,9 @@ This allows the configuration to be modified at runtime via the JSFS API like an
 
 > This also decides the config format going forward, its JSON.
 
-This does mean that all JSFS 5 servers will have a "local storage" blockdriver since this "boot block" will need to be readable as the server starts-up, but it could be limited to startup/restart time if desired.  Theres also the matter of deciding if this jnode gets copied/replicated/etc. to other persistence areas, etc. but those details can be worked-out once I'm sure this will work at all.
+This does mean that all JSFS 5 servers will have a "local storage" blockdriver since this "boot block" will need to be readable as the server starts-up, but it could be limited to startup/restart time if desired.  There's also the matter of deciding if this jnode gets copied/replicated/etc. to other persistence areas, etc. but those details can be worked-out once I'm sure this will work at all.
 
-Part of this will also be adding a startup check that walks the operatoe through creating the config if none is found (maybe even via optional web interface), defining standards for where this jnode file is stored, maybe providing a comand argument to pass a custom location (or complete jnode file?), etc.
+Part of this will also be adding a startup check that walks the operator through creating the config if none is found (maybe even via optional web interface), defining standards for where this jnode file is stored, maybe providing a command argument to pass a custom location (or complete jnode file?), etc.
 
 There's a lot of interesting applications for this beyond basic configuration.  For example, it provides a means for a server admin to provision host/domains as adding them will require the root access key.  An admin could create the host's root directory using the root-root access key and then set the domain's root access key to something known by the domain's admin.
 
