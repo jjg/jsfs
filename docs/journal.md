@@ -10,6 +10,9 @@ I *think* the blockstore works well enough to save a jnode file, maybe it's time
 
 OK, jnode is now Loading and Saving itself.
 
+OK, now that we can create directory jnodes, back to working on directory-based auth.
+
+Directory-based auth seems to be working?  The code is pretty messy but since my time is almost up I'm going to call it for now.
 
 
 ## 01192025

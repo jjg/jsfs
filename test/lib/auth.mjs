@@ -78,25 +78,22 @@ describe('auth', function () {
             assert.equal(authResult, true);
         });
         it('should allow a valid key for an upstream directory', async function () {
-            // This request POSTs a new file so there is no jnode to use to
-            // check authorization, so we need to check the upstream directories.
+            // This request POSTs a new file, so there is no jnode 
+            // to use to check authorization, so we need to check 
+            // the upstream directorie(s) for an access key.
 
-            // Create the root directory
-            // TODO: Actually create the directory on the server.
-            /*
-            const rootReq = {
-                url: '/',
-                method: 'POST',
-                headers: {
-                    'host': 'jasongullickson.com',
-                    'x-jsfs-access-key': 'foo',
-                }
+            // Create the root directory jnode
+            const rootJspace = await GetJspace('jasongullickson.com', '/');
+            const rootJnode = new Jnode(rootJspace);
+            rootJnode.accessKey = 'foo';
+            const err = await rootJnode.Save();
+            if(err){
+                // TODO: Fail the test.
+                console.log(err);
             }
-            */
-            // TODO: For now, manually create a jnode for the root directory
-            
 
-            // Create a file under the root directory.
+            // Simulate an HTTP request to create a new file
+            // under the root directory.
             const req = {
                 url: '/about.html',
                 method: 'POST',
@@ -106,18 +103,47 @@ describe('auth', function () {
                 }
             }
 
+            // Simulate the request processing pipeline.
             const jspace = await GetJspace(req.headers['host'], req.url);
-
             const jnode = new Jnode(jspace);
-            jnode.private = true;
-            //jnode.accessKey = 'foo';
-
+            await jnode.Load(); // NOTE: this is expecected to fail.
             const authResult = await Auth(req, jnode);
-            assert.equal(authResult, true);
 
+            assert.equal(authResult, true);
         });
         it('should deny an invalid key for an existing directory', async function () {
-            assert.fail("Not implemented");
+            // This request POSTs a new file, so there is no jnode 
+            // to use to check authorization, so we need to check 
+            // the upstream directorie(s) for an access key.
+
+            // Create the root directory jnode
+            const rootJspace = await GetJspace('jasongullickson.com', '/');
+            const rootJnode = new Jnode(rootJspace);
+            rootJnode.accessKey = 'foo';
+            const err = await rootJnode.Save();
+            if(err){
+                // TODO: Fail the test.
+                console.log(err);
+            }
+
+            // Simulate an HTTP request to create a new file
+            // under the root directory.
+            const req = {
+                url: '/about.html',
+                method: 'POST',
+                headers: {
+                    'host': 'jasongullickson.com',
+                    'x-jsfs-access-key': 'bar',
+                }
+            }
+
+            // Simulate the request processing pipeline.
+            const jspace = await GetJspace(req.headers['host'], req.url);
+            const jnode = new Jnode(jspace);
+            await jnode.Load(); // NOTE: this is expecected to fail.
+            const authResult = await Auth(req, jnode);
+
+            assert.equal(authResult, false);
         });
         it('should accept key provied in querystring', async function () {
             const req = {
