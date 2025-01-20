@@ -14,6 +14,14 @@ OK, now that we can create directory jnodes, back to working on directory-based 
 
 Directory-based auth seems to be working?  The code is pretty messy but since my time is almost up I'm going to call it for now.
 
+Since I have a couple of minutes maybe I can leave myself some notes for what's next.
+
+Since directory I/O seems to work, maybe I can start working on the "subspace root"-based configuration stuff?
+
+Actually now that I peek at the CI, I need to do something about these hard-coded paths because it's causing [test failures in CI](https://github.com/jjg/jsfs/actions/runs/12875688555/job/35897433725?pr=161#step:7:147).
+
+I guess maybe that is related to the config stuff?  Maybe.
+
 
 ## 01192025
 Can't fall back asleep so I thought about JSFS and came up with a few new/revised ideas.
